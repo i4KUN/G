@@ -38,7 +38,7 @@ let world = loadWorld();
 let player = { x: 100, y: 100, speed: 4, dir: 'down' };
 let onlinePlayers = {};
 
-const playerId = getPlayerId();
+const playerId = currentUser || getPlayerId();
 const keys = {};
 
 const categories = {
@@ -99,11 +99,12 @@ function saveWorld() {
   saveWorldToFirebase();
 }
 
-function saveWorldToFirebase() {
+function saveCellToFirebase(cellKey) {
   if (!window.db || !window.ref || !window.set) return;
+  if (!world[cellKey]) return;
 
-  window.set(window.ref(window.db, 'world'), world)
-    .catch(err => console.error('Firebase save error:', err));
+  window.set(window.ref(window.db, 'world/' + cellKey), world[cellKey])
+    .catch(err => console.error('Firebase cell save error:', err));
 }
 
 function listenWorldFromFirebase() {
@@ -637,7 +638,10 @@ function paintAt(x,y){
     blocking: blockingMode
   });
 
-  saveWorld();
+localStorage.setItem(SAVE_KEY, JSON.stringify(world));
+saveCellToFirebase(cell.key);  
+  
+  
 }
 
 function eraseAt(x,y){
@@ -647,7 +651,10 @@ function eraseAt(x,y){
   if (!canEditCell(hit.cell)) return showToast('ممنوع تعديل أرض لاعب آخر');
 
   world[hit.cell].items = world[hit.cell].items.filter(i => i.uid !== hit.uid);
-  saveWorld();
+  
+localStorage.setItem(SAVE_KEY, JSON.stringify(world));
+saveCellToFirebase(hit.cell);
+
 }
 
 function hitItem(x,y){
