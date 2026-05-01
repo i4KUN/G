@@ -208,7 +208,25 @@ function itemRect(item) {
   return { x:(cell.col-1)*CELL+item.x, y:(cell.row-1)*CELL+item.y, w:item.w, h:item.h };
 }
 
-function currentOwner(){ return currentUser || 'local-device'; }
+const GUEST_KEY = 'GameNjd_guest_id';
+
+function getGuestId() {
+  let id = localStorage.getItem(GUEST_KEY);
+
+  if (!id) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    id = 'GNJ' + Array.from({length:3}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+    localStorage.setItem(GUEST_KEY, id);
+  }
+
+  return id;
+}
+
+function currentOwner(){
+  if (currentUser) return currentUser;
+  return 'guest:' + getGuestId();
+}
+
 
 function canEditCell(key) {
   const c = world[key];
