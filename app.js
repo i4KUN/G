@@ -485,6 +485,7 @@ function login(){
   window.signInWithEmailAndPassword(window.auth, email, pass)
     .then(() => {
       currentUser = email;
+	  transferGuestOwnership();
       localStorage.setItem(USER_KEY, email);
       updateAuthUI();
       savePlayerToFirebase();
@@ -895,3 +896,26 @@ function loginWithGuestCode() {
   savePlayerToFirebase();
   showToast('تم الدخول بالرمز');
 }
+
+
+function transferGuestOwnership() {
+  const guestId = getGuestId();
+  const oldOwner = 'guest:' + guestId;
+  const newOwner = currentUser;
+
+  let changed = false;
+
+  for (const key in world) {
+    if (world[key].owner === oldOwner) {
+      world[key].owner = newOwner;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    saveWorld();
+    showToast('تم نقل ملكية أرضك للحساب');
+  }
+}
+
+
