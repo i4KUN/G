@@ -880,6 +880,21 @@ window.addEventListener('beforeunload', () => {
   savePlayerToFirebase();
 });
 
+
+
+function startAnonymousAuth() {
+  if (!window.auth || !window.signInAnonymously) {
+    setTimeout(startAnonymousAuth, 500);
+    return;
+  }
+
+  window.signInAnonymously(window.auth)
+    .catch(err => console.error('Anonymous login error:', err));
+}
+
+
+startAnonymousAuth();
+
 initUI();
 setupJoystick();
 camX = 0;
