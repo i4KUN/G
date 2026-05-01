@@ -374,6 +374,7 @@ function drawOnlinePlayers(){
 requestAnimationFrame(draw);
 
 function initUI(){
+	document.getElementById('guestCodeBtn').onclick = loginWithGuestCode;
   const cat = document.getElementById('categorySelect');
   cat.innerHTML = Object.entries(categories).map(([id,c]) => `<option value="${id}">${c.name}</option>`).join('');
   cat.onchange = renderTiles;
@@ -845,3 +846,19 @@ camY = 0;
 listenWorldFromFirebase();
 listenPlayersFromFirebase();
 savePlayerToFirebase();
+
+function loginWithGuestCode() {
+  const code = document.getElementById('guestCodeInput').value.trim().toUpperCase();
+
+  if (!/^GNJ[A-Z0-9]{3}$/.test(code)) {
+    return showToast('رمز غير صحيح');
+  }
+
+  localStorage.setItem(GUEST_KEY, code);
+  currentUser = '';
+  localStorage.removeItem(USER_KEY);
+
+  updateAuthUI();
+  savePlayerToFirebase();
+  showToast('تم الدخول بالرمز');
+}
