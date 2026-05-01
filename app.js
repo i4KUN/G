@@ -12,6 +12,7 @@ const MINI = 6;
 const SAVE_KEY = 'GameNjd_v03_world';
 const USER_KEY = 'GameNjd_v01_user';
 const USERS_KEY = 'GameNjd_v01_users';
+const PLAYER_KEY = 'GameNjd_v03_player_id';
 
 let zoom = 0.7;
 let camX = 0;
@@ -35,6 +36,9 @@ let currentUser = localStorage.getItem(USER_KEY) || '';
 
 let world = loadWorld();
 let player = { x: 100, y: 100, speed: 4, dir: 'down' };
+let onlinePlayers = {};
+
+const playerId = getPlayerId();
 const keys = {};
 
 const categories = {
@@ -76,6 +80,15 @@ const categories = {
 
 const tileMap = Object.fromEntries(Object.values(categories).flatMap(c => c.tiles.map(t => [t.id, t])));
 
+function getPlayerId() {
+  let id = localStorage.getItem(PLAYER_KEY);
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+    localStorage.setItem(PLAYER_KEY, id);
+  }
+  return id;
+}
+
 function loadWorld() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
   catch { return {}; }
@@ -107,6 +120,31 @@ function listenWorldFromFirebase() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(world));
   }, () => {
     showToast('فشل الاتصال بـ Firebase');
+  });
+}
+
+function savePlayerToFirebase() {
+  if (!window.db || !window.ref || !window.set) return;
+
+  const name = currentUser || 'لاعب';
+  window.set(window.ref(window.db, 'players/' + playerId), {
+    id: playerId,
+    name: name,
+    x: player.x,
+    y: player.y,
+    walkMode: walkMode,
+    updatedAt: Date.now()
+  }).catch(err => console.error('Firebase player save error:', err));
+}
+
+function listenPlayersFromFirebase() {
+  if (!window.db || !window.ref || !window.onValue) {
+    setTimeout(listenPlayersFromFirebase, 500);
+    return;
+  }
+
+  window.onValue(window.ref(window.db, 'players'), (snapshot) => {
+    onlinePlayers = snapshot.val() || {};
   });
 }
 
@@ -261,18 +299,58 @@ function draw() {
     ctx.setLineDash([]);
   }
 
+  drawOnlinePlayers();
+
   if (walkMode) drawPlayer();
+
   requestAnimationFrame(draw);
 }
 
 function drawPlayer(){
   const p = worldToScreen(player.x, player.y);
+
   ctx.fillStyle = '#22c55e';
   ctx.beginPath();
   ctx.arc(p.x, p.y, 15*zoom, 0, Math.PI*2);
   ctx.fill();
+
   ctx.fillStyle = '#052e16';
   ctx.fillRect(p.x-7*zoom, p.y-4*zoom, 14*zoom, 18*zoom);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `${Math.max(10, 12*zoom)}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.fillText('أنا', p.x, p.y - 20*zoom);
+  ctx.textAlign = 'start';
+}
+
+function drawOnlinePlayers(){
+  const now = Date.now();
+
+  for (const id in onlinePlayers) {
+    if (id === playerId) continue;
+
+    const pData = onlinePlayers[id];
+    if (!pData) continue;
+
+    if (now - (pData.updatedAt || 0) > 20000) continue;
+
+    const p = worldToScreen(pData.x || 0, pData.y || 0);
+
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 15*zoom, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(p.x-7*zoom, p.y-4*zoom, 14*zoom, 18*zoom);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `${Math.max(10, 12*zoom)}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText(pData.name || 'لاعب', p.x, p.y - 20*zoom);
+    ctx.textAlign = 'start';
+  }
 }
 
 requestAnimationFrame(draw);
@@ -355,6 +433,7 @@ function signup(){
   currentUser = email;
   localStorage.setItem(USER_KEY, email);
   updateAuthUI();
+  savePlayerToFirebase();
   showToast('تم إنشاء الحساب');
 }
 
@@ -368,6 +447,7 @@ function login(){
   currentUser = email;
   localStorage.setItem(USER_KEY, email);
   updateAuthUI();
+  savePlayerToFirebase();
   showToast('تم تسجيل الدخول');
 }
 
@@ -375,6 +455,7 @@ function logout(){
   currentUser = '';
   localStorage.removeItem(USER_KEY);
   updateAuthUI();
+  savePlayerToFirebase();
   showToast('تم الخروج');
 }
 
@@ -625,6 +706,7 @@ function toggleWalk(){
   document.getElementById('walkBtn').textContent = walkMode ? 'رجوع للتصميم' : 'تجول';
 
   updateAuthUI();
+  savePlayerToFirebase();
 }
 
 function isBlocked(x,y){
@@ -650,6 +732,10 @@ function walkLoop(){
     if (!isBlocked(nx, ny)) {
       player.x = nx;
       player.y = ny;
+
+      if (dx || dy) {
+        savePlayerToFirebase();
+      }
     } else if (dx || dy) {
       showToast('يوجد عائق');
     }
@@ -719,8 +805,14 @@ function setupJoystick(){
   });
 }
 
+window.addEventListener('beforeunload', () => {
+  savePlayerToFirebase();
+});
+
 initUI();
 setupJoystick();
 camX = 0;
 camY = 0;
 listenWorldFromFirebase();
+listenPlayersFromFirebase();
+savePlayerToFirebase();
