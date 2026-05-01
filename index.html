@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GameNjd v01</title>
+  <title>GameNjd v02</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <div>
-        <strong>GameNjd v01</strong>
+        <strong>GameNjd v02</strong>
         <span id="statusText">وضع البناء</span>
       </div>
       <div class="authBox">
@@ -102,27 +102,27 @@
 
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "PLACE",
-    authDomain: "PLACE",
-    databaseURL: "https://gamenjd-0001-default-rtdb.firebaseio.com",
-    projectId: "gamenjd-0001",
-    storageBucket: "PLACE",
-    messagingSenderId: "PLACE",
-    appId: "PLACE"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
+      authDomain: "gamenjd-0001.firebaseapp.com",
+      databaseURL: "https://gamenjd-0001-default-rtdb.firebaseio.com",
+      projectId: "gamenjd-0001",
+      storageBucket: "gamenjd-0001.firebasestorage.app",
+      messagingSenderId: "1076362661145",
+      appId: "1:1076362661145:web:4c171f17ec05854b324988"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  window.db = db;
-  window.ref = ref;
-  window.set = set;
-  window.onValue = onValue;
-</script>
+    window.db = db;
+    window.ref = ref;
+    window.set = set;
+    window.onValue = onValue;
+  </script>
 
 
   
