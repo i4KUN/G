@@ -453,41 +453,74 @@ function updateAuthUI(){
 function signup(){
   const email = document.getElementById('emailInput').value.trim().toLowerCase();
   const pass = document.getElementById('passInput').value;
+
   if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
 
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
-  if (users[email]) return showToast('تم إنشاء حساب بنفس الإيميل، جرب تسجيل دخول');
+  if (!window.auth) return showToast('Firebase Auth غير جاهز');
 
-  users[email] = { pass };
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  currentUser = email;
-  localStorage.setItem(USER_KEY, email);
-  updateAuthUI();
-  savePlayerToFirebase();
-  showToast('تم إنشاء الحساب');
+  window.createUserWithEmailAndPassword(window.auth, email, pass)
+    .then(() => {
+      currentUser = email;
+      localStorage.setItem(USER_KEY, email);
+      updateAuthUI();
+      savePlayerToFirebase();
+      showToast('تم إنشاء الحساب');
+    })
+    .catch(err => {
+      showToast('فشل إنشاء الحساب');
+      console.error(err);
+    });
 }
+
+
 
 function login(){
   const email = document.getElementById('emailInput').value.trim().toLowerCase();
   const pass = document.getElementById('passInput').value;
 
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
-  if (!users[email] || users[email].pass !== pass) return showToast('بيانات الدخول غير صحيحة');
+  if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
 
-  currentUser = email;
-  localStorage.setItem(USER_KEY, email);
-  updateAuthUI();
-  savePlayerToFirebase();
-  showToast('تم تسجيل الدخول');
+  if (!window.auth) return showToast('Firebase Auth غير جاهز');
+
+  window.signInWithEmailAndPassword(window.auth, email, pass)
+    .then(() => {
+      currentUser = email;
+      localStorage.setItem(USER_KEY, email);
+      updateAuthUI();
+      savePlayerToFirebase();
+      showToast('تم تسجيل الدخول');
+    })
+    .catch(err => {
+      showToast('بيانات الدخول غير صحيحة');
+      console.error(err);
+    });
 }
+
+
+
+
 
 function logout(){
-  currentUser = '';
-  localStorage.removeItem(USER_KEY);
-  updateAuthUI();
-  savePlayerToFirebase();
-  showToast('تم الخروج');
+  if (!window.auth) {
+    currentUser = '';
+    localStorage.removeItem(USER_KEY);
+    updateAuthUI();
+    savePlayerToFirebase();
+    showToast('تم الخروج');
+    return;
+  }
+
+  window.signOut(window.auth).then(() => {
+    currentUser = '';
+    localStorage.removeItem(USER_KEY);
+    updateAuthUI();
+    savePlayerToFirebase();
+    showToast('تم الخروج');
+  });
 }
+
+
+
 
 canvas.addEventListener('mousedown', e => {
   if (walkMode) return;
