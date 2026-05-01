@@ -224,7 +224,10 @@ function getGuestId() {
 }
 
 function currentOwner(){
-  if (currentUser) return currentUser;
+  if (window.auth && window.auth.currentUser) {
+    return window.auth.currentUser.uid;
+  }
+
   return 'guest:' + getGuestId();
 }
 
