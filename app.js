@@ -38,7 +38,7 @@ let world = loadWorld();
 let player = { x: 100, y: 100, speed: 4, dir: 'down' };
 let onlinePlayers = {};
 
-const playerId = currentUser || getPlayerId();
+const playerId = window.auth?.currentUser?.uid || getPlayerId();
 const keys = {};
 
 const categories = {
