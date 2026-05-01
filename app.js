@@ -435,8 +435,19 @@ function switchTab(tab){
 
 function updateAuthUI(){
   document.getElementById('statusText').textContent =
-    walkMode ? 'وضع التجول' : `وضع البناء ${currentUser ? '- '+currentUser : '- محلي'}`;
+    walkMode ? 'وضع التجول' : `وضع البناء ${currentUser ? '- '+currentUser : ''}`;
+
+  const box = document.getElementById('guestIdBox');
+
+  if (!currentUser) {
+    const id = getGuestId();
+    box.textContent = ` | رمزك: ${id}`;
+  } else {
+    box.textContent = '';
+  }
 }
+
+
 
 function signup(){
   const email = document.getElementById('emailInput').value.trim().toLowerCase();
