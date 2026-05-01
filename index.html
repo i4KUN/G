@@ -108,6 +108,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+	
+	import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+	
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
@@ -121,11 +124,17 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+	const auth = getAuth(app);
 
     window.db = db;
     window.ref = ref;
     window.set = set;
     window.onValue = onValue;
+	window.auth = auth;
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.signOut = signOut;
+
   </script>
 
 
