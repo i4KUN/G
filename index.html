@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>بون سيكاي</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="https://n4anime.github.io/bon/icon/va2.png">
+
+  <!-- Open Graph / Twitter (for https://n4anime.github.io/bon/) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="بون سيكاي">
+  <meta property="og:description" content="نافذة على عالمي بين أفكاري ومشاعري وهواياتي ♡ من أنمي ومانجا وألعاب.. بروقان وهدوء.">
+  <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png">
+  <meta property="og:url" content="https://n4anime.github.io/bon/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="loadingScreen"><div class="loaderBox"><div class="loaderText">انتظر التحميل</div><div class="loaderBar"><span></span></div></div></div>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <strong>GameNjd v08</strong>
+        <span id="statusText">وضع البناء</span>
+		<span id="guestIdBox"></span>
+      </div>
+      <div class="authBox">
+        <input id="emailInput" type="email" placeholder="الإيميل" />
+        <input id="passInput" type="password" placeholder="الرقم السري" />
+        <input id="displayNameInput" placeholder="الاسم الظاهر" />
+		<input id="guestCodeInput" placeholder="رمز الزائر مثل GNJ8F3" />
+<button id="guestCodeBtn">دخول بالرمز</button>
+
+        <button id="signupBtn">إنشاء حساب</button>
+        <button id="loginBtn">دخول</button>
+        <button id="logoutBtn">خروج</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="worldWrap">
+        <canvas id="worldCanvas"></canvas>
+        <div id="toast"></div>
+        <div id="joystick" class="joystick hidden">
+          <div id="stick"></div>
+        </div>
+        <button id="mobileGearBtn" class="floatingBtn gearBtn" title="الإعدادات">⚙</button>
+        <div id="zoomControls" class="zoomControls">
+          <button id="zoomInBtn" title="تكبير">+</button>
+          <button id="zoomOutBtn" title="تصغير">−</button>
+        </div>
+        <button id="stopWalkBtn" class="stopWalkBtn hidden">إيقاف التجول</button>
+      </section>
+
+      <aside id="panel" class="panel">
+        <button id="togglePanel" class="mobileOnly">إخفاء / إظهار الإعدادات</button>
+
+        <p id="loginHint">عليك تسجيل حساب لحفظ بنائك وتعديلاتك أو سوف تبقى محليًا فقط.</p>
+
+        <div class="section">
+          <button id="walkBtn" class="mainBtn">تجول</button>
+          <button id="changeCharacterBtn" class="mainBtn secondaryBtn">تغيير الشخصية</button>
+        </div>
+
+        <div class="section two">
+          <button id="elementsTab" class="active">العناصر</button>
+          <button id="layersTab">الطبقة</button>
+        </div>
+
+        <div id="elementsPanel" class="section">
+          <label>القسم</label>
+          <select id="categorySelect"></select>
+          <label>المقاس</label>
+          <select id="sizeFilter"><option value="all">الكل</option></select>
+          <div id="tileset"></div>
+        </div>
+
+        <div id="layersPanel" class="section hidden">
+          <label>رقم الطبقة</label>
+          <input id="layerInput" type="number" min="1" max="99" value="1" />
+        </div>
+
+        <div class="section">
+          <label>شفافية الجدول</label>
+          <input id="gridOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
+        </div>
+
+        <div class="section">
+          <label>حجم ريشة الرسم</label>
+          <input id="brushSize" type="range" min="1" max="4" step="1" value="1" />
+        </div>
+
+        <div class="section two">
+          <button id="eraseBtn">ممحاة: إيقاف</button>
+          <button id="undoBtn">استعادة</button>
+        </div>
+
+        <div class="section">
+          <button id="blockBtn">جعل العنصر عائق: إيقاف</button>
+        </div>
+
+        <div class="section two">
+          <button id="flipBtn">عكس العنصر: إيقاف</button>
+          <button id="deleteAllBtn">حذف جميع عناصري</button>
+        </div>
+
+        <div class="section">
+          <label>حجم العنصر</label>
+          <input id="itemScale" type="range" min="0.5" max="1.8" step="0.05" value="1" />
+        </div>
+
+        <div class="section jumpBox">
+          <label>انتقال إلى خلية</label>
+          <input id="jumpInput" placeholder="مثال K90" />
+          <button id="jumpBtn">سافر</button>
+        </div>
+
+        <div class="section">
+          <button id="exportBtn">تصدير بيانات Google Sheets</button>
+          <button id="importBtn">استيراد بيانات</button>
+          <textarea id="sheetData" placeholder="بيانات JSON للتصدير أو الاستيراد"></textarea>
+        </div>
+
+        <div class="section help">
+          <p>Ctrl + عجلة: تقريب/إبعاد</p>
+          <p>Shift + عجلة: يمين/يسار</p>
+          <p>Ctrl+C / Ctrl+V: نسخ ولصق</p>
+          <p>الأسهم: تحريك العنصر المحدد بكسل واحد</p>
+        </div>
+
+        <div class="section two">
+          <button id="shortcutsBtn">شرح الاختصارات</button>
+          <button id="aboutBtn">من نحن</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+
+  <div id="characterModal" class="characterModal hidden">
+    <div class="characterBox">
+      <h2>اختر شخصيتك</h2>
+      <p>اختر شخصية واحدة، وسيتم ربطها بحسابك أو رمزك.</p>
+      <div id="characterChoices"></div>
+    </div>
+  </div>
+
+  <div id="infoModal" class="characterModal hidden">
+    <div class="characterBox smallBox">
+      <h2 id="infoTitle">تنبيه</h2>
+      <p id="infoText"></p>
+      <button id="infoCloseBtn" class="mainBtn">إغلاق</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+
+
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+	
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";	
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
+      authDomain: "gamenjd-0001.firebaseapp.com",
+      databaseURL: "https://gamenjd-0001-default-rtdb.firebaseio.com",
+      projectId: "gamenjd-0001",
+      storageBucket: "gamenjd-0001.firebasestorage.app",
+      messagingSenderId: "1076362661145",
+      appId: "1:1076362661145:web:4c171f17ec05854b324988"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+	const auth = getAuth(app);
+
+    window.db = db;
+    window.ref = ref;
+    window.set = set;
+    window.onValue = onValue;
+	window.auth = auth;
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.signOut = signOut;
+window.signInAnonymously = signInAnonymously;
+
+  </script>
+
+
+  
+</body>
+</html>
