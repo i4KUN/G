@@ -236,7 +236,7 @@ button:hover, button.active { background: #2563eb; }
   gap: 10px;
 }
 .characterChoice {
-  min-height: 150px;
+  min-height: 132px;
   background: #111827;
   border: 1px solid #334155;
   display: flex;
@@ -245,20 +245,18 @@ button:hover, button.active { background: #2563eb; }
   justify-content: center;
   gap: 8px;
 }
-.characterChoice:hover,
-.characterChoice.active { background: #1d4ed8; }
-.characterPreviewImg {
-  width: 84px;
-  height: 92px;
-  object-fit: none;
-  object-position: 0 0;
+.characterChoice:hover { background: #1d4ed8; }
+.charPreview {
+  width: 58px;
+  height: 72px;
   image-rendering: pixelated;
-  clip-path: inset(0 75% 75% 0);
-  transform: scale(1.35);
-  transform-origin: top left;
-  margin-left: -8px;
-  margin-bottom: 8px;
+  background-image: url('walk.png');
+  background-size: 232px 288px;
+  background-position: 0 0;
+  display: block;
+  filter: hue-rotate(190deg) saturate(1.1);
 }
+.charPreview.female { filter: none; }
 .tileImg {
   width: 42px;
   height: 42px;
@@ -306,3 +304,16 @@ body.walking #stopWalkBtn{ display:block !important; }
   body.walking .worldWrap{ height:100vh; }
   body.walking .layout{ height:100vh; }
 }
+
+
+/* v09: صور الشخصيات الحقيقية */
+.characterChoice.active { outline: 2px solid #60a5fa; }
+.characterChoice img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 6px;
+  image-rendering: auto;
+}
+.charPreview { display: none !important; background-image: none !important; }
