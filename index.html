@@ -24,7 +24,7 @@
   <div id="app">
     <header class="topbar">
       <div>
-        <strong>GameNjd v08</strong>
+        <strong>GameNjd v09</strong>
         <span id="statusText">وضع البناء</span>
 		<span id="guestIdBox"></span>
       </div>
@@ -32,8 +32,6 @@
         <input id="emailInput" type="email" placeholder="الإيميل" />
         <input id="passInput" type="password" placeholder="الرقم السري" />
         <input id="displayNameInput" placeholder="الاسم الظاهر" />
-		<input id="guestCodeInput" placeholder="رمز الزائر مثل GNJ8F3" />
-<button id="guestCodeBtn">دخول بالرمز</button>
 
         <button id="signupBtn">إنشاء حساب</button>
         <button id="loginBtn">دخول</button>
@@ -144,7 +142,7 @@
   <div id="characterModal" class="characterModal hidden">
     <div class="characterBox">
       <h2>اختر شخصيتك</h2>
-      <p>اختر شخصية واحدة، وسيتم ربطها بحسابك أو رمزك.</p>
+      <p>اختر شخصية واحدة، وسيتم ربطها بمعرفك الآمن في Firebase.</p>
       <div id="characterChoices"></div>
     </div>
   </div>
@@ -165,7 +163,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
 	
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";	
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";	
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
@@ -190,6 +188,8 @@ window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
 window.signOut = signOut;
 window.signInAnonymously = signInAnonymously;
+window.EmailAuthProvider = EmailAuthProvider;
+window.linkWithCredential = linkWithCredential;
 
   </script>
 
