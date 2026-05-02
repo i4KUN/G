@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v08
+// GameNjd v09
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -12,13 +12,8 @@ const CELL = 180;
 const MINI = 6;
 const SAVE_KEY = 'GameNjd_v03_world';
 const USER_KEY = 'GameNjd_v01_user';
-const USERS_KEY = 'GameNjd_v01_users';
-const PLAYER_KEY = 'GameNjd_v03_player_id';
-const CHARACTER_KEY = 'GameNjd_v08_character';
+const CHARACTER_KEY = 'GameNjd_v05_character';
 const DISPLAY_NAME_KEY = 'GameNjd_v07_display_name';
-const CHARACTER_BASE = 'Characters';
-const SPRITE_COLS = 4;
-const SPRITE_ROWS = 4;
 const PLAYER_DRAW_W = 120;
 const PLAYER_DRAW_H = 120;
 const FLOOR_TILE_SRC = 'All-Pic-tiles/04-Floors/Big/Floors-big-36.png';
@@ -53,35 +48,34 @@ let onlinePlayers = {};
 let myCharacterId = localStorage.getItem(CHARACTER_KEY) || '';
 let playerMoving = false;
 
-const characterImageCache = {};
 const floorImage = new Image();
 floorImage.src = FLOOR_TILE_SRC;
 
 function getCurrentPlayerId() {
-  return window.auth?.currentUser?.uid || getPlayerId();
+  return window.auth?.currentUser?.uid || null;
 }
 
-function normalizeCharacterId(id) {
-  if (!id) return '';
-  if (id.startsWith('male_')) return 'man-' + Number(id.split('_')[1] || 1);
-  if (id.startsWith('female_')) return 'woman-' + Number(id.split('_')[1] || 1);
-  return id;
-}
-
-function getCharacterSrc(id) {
-  const fixedId = normalizeCharacterId(id || 'woman-1');
-  if (fixedId.startsWith('man-')) return `${CHARACTER_BASE}/man/${fixedId}.png`;
-  if (fixedId.startsWith('woman-')) return `${CHARACTER_BASE}/woman/${fixedId}.png`;
-  return `${CHARACTER_BASE}/woman/woman-1.png`;
+function shortUid() {
+  const uid = getCurrentPlayerId();
+  return uid ? uid.slice(0, 8) : 'جاري...';
 }
 
 function getCharacterName(id) {
-  const fixedId = normalizeCharacterId(id || 'woman-1');
-  if (fixedId.startsWith('man-')) return 'رجل ' + Number(fixedId.split('-')[1] || 1);
-  if (fixedId.startsWith('woman-')) return 'امرأة ' + Number(fixedId.split('-')[1] || 1);
-  return 'شخصية';
+  if (!id) return 'بدون شخصية';
+  const parts = id.split('_');
+  return (parts[0] === 'male' ? 'رجل ' : 'امرأة ') + Number(parts[1] || 1);
 }
 
+function getCharacterSrc(id) {
+  const fallback = 'female_01';
+  const safeId = id || fallback;
+  const parts = safeId.split('_');
+  const gender = parts[0] === 'male' ? 'man' : 'woman';
+  const num = Math.max(1, Math.min(10, Number(parts[1] || 1)));
+  return `Characters/${gender}/${gender}-${num}.png`;
+}
+
+const characterImageCache = {};
 function getCharacterImage(id) {
   const src = getCharacterSrc(id);
   if (!characterImageCache[src]) {
@@ -93,8 +87,8 @@ function getCharacterImage(id) {
 }
 
 function setCharacter(id) {
-  myCharacterId = normalizeCharacterId(id);
-  localStorage.setItem(CHARACTER_KEY, myCharacterId);
+  myCharacterId = id;
+  localStorage.setItem(CHARACTER_KEY, id);
   document.getElementById('characterModal')?.classList.add('hidden');
   savePlayerToFirebase();
   showToast('تم اختيار الشخصية');
@@ -106,30 +100,24 @@ function buildCharacterChoices() {
 
   let html = '<h3>رجال</h3><div class="characterGrid">';
   for (let i = 1; i <= 10; i++) {
-    const id = 'man-' + i;
-    html += '<button class="characterChoice" data-id="' + id + '"><img class="characterPreviewImg" src="Characters/man/man-' + i + '.png" alt="رجل ' + i + '"><b>رجل ' + i + '</b></button>';
+    const id = 'male_' + String(i).padStart(2,'0');
+    html += `<button class="characterChoice" data-id="${id}"><img src="${getCharacterSrc(id)}" alt="رجل ${i}"><b>رجل ${i}</b></button>`;
   }
-
   html += '</div><h3>نساء</h3><div class="characterGrid">';
   for (let i = 1; i <= 10; i++) {
-    const id = 'woman-' + i;
-    html += '<button class="characterChoice" data-id="' + id + '"><img class="characterPreviewImg" src="Characters/woman/woman-' + i + '.png" alt="امرأة ' + i + '"><b>امرأة ' + i + '</b></button>';
+    const id = 'female_' + String(i).padStart(2,'0');
+    html += `<button class="characterChoice" data-id="${id}"><img src="${getCharacterSrc(id)}" alt="امرأة ${i}"><b>امرأة ${i}</b></button>`;
   }
   html += '</div>';
   box.innerHTML = html;
 
   box.querySelectorAll('.characterChoice').forEach(btn => {
-    if (normalizeCharacterId(myCharacterId) === btn.dataset.id) btn.classList.add('active');
-    btn.onclick = () => {
-      box.querySelectorAll('.characterChoice').forEach(x => x.classList.remove('active'));
-      btn.classList.add('active');
-      setCharacter(btn.dataset.id);
-    };
+    if (btn.dataset.id === myCharacterId) btn.classList.add('active');
+    btn.onclick = () => setCharacter(btn.dataset.id);
   });
 }
 
 function showCharacterModal(force = false) {
-  myCharacterId = normalizeCharacterId(myCharacterId);
   if (myCharacterId && !force) return;
   buildCharacterChoices();
   document.getElementById('characterModal')?.classList.remove('hidden');
@@ -223,15 +211,6 @@ function getTileImage(src) {
   return imageCache[src];
 }
 
-function getPlayerId() {
-  let id = localStorage.getItem(PLAYER_KEY);
-  if (!id) {
-    id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
-    localStorage.setItem(PLAYER_KEY, id);
-  }
-  return id;
-}
-
 function loadWorld() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
   catch { return {}; }
@@ -279,8 +258,10 @@ function listenWorldFromFirebase() {
 function savePlayerToFirebase() {
   if (!window.db || !window.ref || !window.set) return;
 
-  const name = displayName || (currentUser ? 'لاعب' : getGuestId());
   const id = getCurrentPlayerId();
+  if (!id) return;
+
+  const name = displayName || 'لاعب';
   window.set(window.ref(window.db, 'players/' + id), {
     id: id,
     name: name,
@@ -289,7 +270,7 @@ function savePlayerToFirebase() {
     dir: player.dir,
     moving: playerMoving,
     walkMode: walkMode,
-    character: normalizeCharacterId(myCharacterId) || 'woman-1',
+    character: myCharacterId || 'female_01',
     updatedAt: Date.now()
   }).catch(err => console.error('Firebase player save error:', err));
 }
@@ -365,37 +346,23 @@ function itemRect(item) {
   return { x:(cell.col-1)*CELL+item.x, y:(cell.row-1)*CELL+item.y, w:item.w, h:item.h };
 }
 
-const GUEST_KEY = 'GameNjd_guest_id';
-
-function getGuestId() {
-  let id = localStorage.getItem(GUEST_KEY);
-
-  if (!id) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    id = 'GNJ' + Array.from({length:3}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-    localStorage.setItem(GUEST_KEY, id);
-  }
-
-  return id;
-}
-
 function currentOwner(){
-  if (window.auth && window.auth.currentUser) {
-    return window.auth.currentUser.uid;
-  }
-
-  return 'guest:' + getGuestId();
+  return getCurrentPlayerId();
 }
 
 
 function canEditCell(key) {
+  const owner = currentOwner();
+  if (!owner) return false;
   const c = world[key];
-  return !c || !c.owner || c.owner === currentOwner();
+  return !c || !c.owner || c.owner === owner;
 }
 
 function ensureCell(key) {
-  world[key] ||= { owner: currentOwner(), items: [] };
-  world[key].owner ||= currentOwner();
+  const owner = currentOwner();
+  if (!owner) return null;
+  world[key] ||= { owner: owner, items: [] };
+  world[key].owner ||= owner;
   return world[key];
 }
 
@@ -495,10 +462,6 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
   const p = worldToScreen(x, y);
   const drawW = PLAYER_DRAW_W * zoom;
   const drawH = PLAYER_DRAW_H * zoom;
-  const rowMap = { down: 0, right: 1, up: 2, left: 3 };
-  const row = rowMap[dir] ?? 0;
-  const frame = moving ? Math.floor(Date.now() / 150) % SPRITE_COLS : 0;
-  const img = getCharacterImage(characterId || myCharacterId || 'woman-1');
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -508,15 +471,12 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
   ctx.ellipse(p.x, p.y + 10 * zoom, 24 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  if (img.complete && img.naturalWidth) {
-    const frameW = img.naturalWidth / SPRITE_COLS;
-    const frameH = img.naturalHeight / SPRITE_ROWS;
-    const sx = frame * frameW;
-    const sy = row * frameH;
-    const dx = p.x - drawW / 2;
-    const dy = p.y - drawH + 22 * zoom;
+  const img = getCharacterImage(characterId || 'female_01');
+  const dx = p.x - drawW / 2;
+  const dy = p.y - drawH + 22 * zoom;
 
-    ctx.drawImage(img, sx, sy, frameW, frameH, dx, dy, drawW, drawH);
+  if (img.complete && img.naturalWidth) {
+    ctx.drawImage(img, dx, dy, drawW, drawH);
   } else {
     ctx.fillStyle = isMe ? '#22c55e' : '#f97316';
     ctx.beginPath();
@@ -539,7 +499,7 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
 }
 
 function drawPlayer(){
-  drawSpriteCharacter(player.x, player.y, player.dir, playerMoving, 'أنا', myCharacterId || 'woman-1', true);
+  drawSpriteCharacter(player.x, player.y, player.dir, playerMoving, 'أنا', myCharacterId || 'female_01', true);
 }
 
 function drawOnlinePlayers(){
@@ -559,7 +519,7 @@ function drawOnlinePlayers(){
       pData.dir || 'down',
       !!pData.moving,
       pData.name || 'لاعب',
-      pData.character || 'woman-1',
+      pData.character || 'female_01',
       false
     );
   }
@@ -568,7 +528,6 @@ function drawOnlinePlayers(){
 requestAnimationFrame(draw);
 
 function initUI(){
-  document.getElementById('guestCodeBtn').onclick = loginWithGuestCode;
   document.getElementById('displayNameInput').value = displayName;
   document.getElementById('displayNameInput').onchange = saveDisplayName;
   document.getElementById('aboutBtn').onclick = () => showInfo('من نحن', 'انا مصمم مبتدئ في الالعاب.');
@@ -655,19 +614,15 @@ function switchTab(tab){
 }
 
 function updateAuthUI(){
+  const idText = shortUid();
   document.getElementById('statusText').textContent =
-    walkMode ? 'وضع التجول' : `وضع البناء ${currentUser ? '- '+currentUser : ''}`;
+    walkMode ? `وضع التجول - معرفك: ${idText}` : `وضع البناء - معرفك: ${idText}`;
 
   const nameInput = document.getElementById('displayNameInput');
   if (nameInput && nameInput.value !== displayName) nameInput.value = displayName;
-  const box = document.getElementById('guestIdBox');
 
-  if (!currentUser) {
-    const id = getGuestId();
-    box.textContent = ` | رمزك: ${id}`;
-  } else {
-    box.textContent = '';
-  }
+  const box = document.getElementById('guestIdBox');
+  if (box) box.textContent = currentUser ? ' | حساب مسجل' : ' | زائر آمن';
 }
 
 
@@ -677,19 +632,31 @@ function signup(){
   const pass = document.getElementById('passInput').value;
 
   if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
-
   if (!window.auth) return showToast('Firebase Auth غير جاهز');
 
+  const finishSignup = () => {
+    currentUser = email;
+    saveDisplayName(false);
+    localStorage.setItem(USER_KEY, email);
+    updateAuthUI();
+    savePlayerToFirebase();
+    showToast('تم إنشاء الحساب وربطه بنفس المعرف');
+  };
+
+  const current = window.auth.currentUser;
+  if (current && current.isAnonymous && window.EmailAuthProvider && window.linkWithCredential) {
+    const credential = window.EmailAuthProvider.credential(email, pass);
+    window.linkWithCredential(current, credential)
+      .then(finishSignup)
+      .catch(err => {
+        console.error(err);
+        showToast('فشل الربط، جرّب تسجيل الدخول');
+      });
+    return;
+  }
+
   window.createUserWithEmailAndPassword(window.auth, email, pass)
-    .then(() => {
-      currentUser = email;
-      saveDisplayName(false);
-      transferGuestOwnership();
-      localStorage.setItem(USER_KEY, email);
-      updateAuthUI();
-      savePlayerToFirebase();
-      showToast('تم إنشاء الحساب');
-    })
+    .then(finishSignup)
     .catch(err => {
       showToast('فشل إنشاء الحساب');
       console.error(err);
@@ -703,14 +670,12 @@ function login(){
   const pass = document.getElementById('passInput').value;
 
   if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
-
   if (!window.auth) return showToast('Firebase Auth غير جاهز');
 
   window.signInWithEmailAndPassword(window.auth, email, pass)
     .then(() => {
       currentUser = email;
       saveDisplayName(false);
-      transferGuestOwnership();
       localStorage.setItem(USER_KEY, email);
       updateAuthUI();
       savePlayerToFirebase();
@@ -724,25 +689,17 @@ function login(){
 
 
 
-
-
 function logout(){
-  if (!window.auth) {
+  const finishLogout = () => {
     currentUser = '';
     localStorage.removeItem(USER_KEY);
     updateAuthUI();
-    savePlayerToFirebase();
+    startAnonymousAuth();
     showToast('تم الخروج');
-    return;
-  }
+  };
 
-  window.signOut(window.auth).then(() => {
-    currentUser = '';
-    localStorage.removeItem(USER_KEY);
-    updateAuthUI();
-    savePlayerToFirebase();
-    showToast('تم الخروج');
-  });
+  if (!window.auth) return finishLogout();
+  window.signOut(window.auth).then(finishLogout);
 }
 
 
@@ -834,6 +791,7 @@ function paintAt(x,y){
   const cell = cellFromWorld(x,y);
   if (!cell) return;
 
+  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
   if (!canEditCell(cell.key)) return showToast('ممنوع البناء في أرض لاعب آخر');
 
   const localX = Math.max(2, Math.min(CELL-2, x - cell.x));
@@ -875,6 +833,7 @@ function eraseAt(x,y){
   const hit = hitItem(x,y);
   if (!hit) return;
 
+  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
   if (!canEditCell(hit.cell)) return showToast('ممنوع تعديل أرض لاعب آخر');
 
   world[hit.cell].items = world[hit.cell].items.filter(i => i.uid !== hit.uid);
@@ -949,6 +908,7 @@ window.addEventListener('keyup', e => keys[e.key] = false);
 
 function pasteItems(){
   if (!copyBuffer.length) return;
+  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
 
   pushUndo();
   selectedIds.clear();
@@ -1260,12 +1220,16 @@ function startAnonymousAuth() {
   }
 
   if (window.auth.currentUser) {
+    updateAuthUI();
     savePlayerToFirebase();
     return;
   }
 
   window.signInAnonymously(window.auth)
-    .then(() => savePlayerToFirebase())
+    .then(() => {
+      updateAuthUI();
+      savePlayerToFirebase();
+    })
     .catch(err => console.error('Anonymous login error:', err));
 }
 
@@ -1273,50 +1237,10 @@ function startAnonymousAuth() {
 startAnonymousAuth();
 
 initUI();
-myCharacterId = normalizeCharacterId(myCharacterId);
-if (myCharacterId) localStorage.setItem(CHARACTER_KEY, myCharacterId);
 showCharacterModal(false);
 setupJoystick();
 listenWorldFromFirebase();
 setTimeout(centerStartOnce, 900);
 listenPlayersFromFirebase();
 savePlayerToFirebase();
-
-function loginWithGuestCode() {
-  const code = document.getElementById('guestCodeInput').value.trim().toUpperCase();
-
-  if (!/^GNJ[A-Z0-9]{3}$/.test(code)) {
-    return showToast('رمز غير صحيح');
-  }
-
-  localStorage.setItem(GUEST_KEY, code);
-  currentUser = '';
-  localStorage.removeItem(USER_KEY);
-
-  updateAuthUI();
-  savePlayerToFirebase();
-  showToast('تم الدخول بالرمز');
-}
-
-
-function transferGuestOwnership() {
-  const guestId = getGuestId();
-  const oldOwner = 'guest:' + guestId;
-  const newOwner = currentOwner();
-
-  let changed = false;
-
-  for (const key in world) {
-    if (world[key].owner === oldOwner) {
-      world[key].owner = newOwner;
-      changed = true;
-    }
-  }
-
-  if (changed) {
-    saveWorld();
-    showToast('تم نقل ملكية أرضك للحساب');
-  }
-}
-
 
