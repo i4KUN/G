@@ -1,33 +1,59 @@
 'use strict';
-// GameNjd v09
+
+/* =========================
+   GameNjd v11.5
+   ========================= */
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
+
 const panel = document.getElementById('panel');
 const toast = document.getElementById('toast');
 
-const WORLD_COLS = 500;
-const WORLD_ROWS = 500;
-const CELL = 180;
+/* =========================
+   إعدادات العالم
+   ========================= */
+
+const WORLD_COLS = 200;
+const WORLD_ROWS = 200;
+const CELL = 320;
 const MINI = 6;
-const SAVE_KEY = 'GameNjd_v03_world';
-const USER_KEY = 'GameNjd_v01_user';
-const CHARACTER_KEY = 'GameNjd_v05_character';
-const DISPLAY_NAME_KEY = 'GameNjd_v07_display_name';
-const PLAYER_DRAW_W = 120;
-const PLAYER_DRAW_H = 120;
+
+const SAVE_KEY = 'GameNjd_v11_5_world_cache';
+const PROFILE_ID_KEY = 'GameNjd_v11_5_profile_id';
+const PROFILE_PASS_KEY = 'GameNjd_v11_5_profile_pass_flag';
+const CHARACTER_KEY = 'GameNjd_v11_5_character';
+const DISPLAY_NAME_KEY = 'GameNjd_v11_5_display_name';
+const LAST_EMAIL_KEY = 'GameNjd_v11_5_last_email';
+
+const CHARACTER_BASE = 'Characters';
+const ASSET_BASE = 'All-Pic-tiles';
+
 const FLOOR_TILE_SRC = 'All-Pic-tiles/04-Floors/Big/Floors-big-36.png';
 
-let zoom = 0.7;
+const SPRITE_COLS = 4;
+const SPRITE_ROWS = 4;
+
+const PLAYER_DRAW_W = 120;
+const PLAYER_DRAW_H = 120;
+
+const BUILD_ZOOM_DEFAULT = 0.7;
+const WALK_ZOOM_DEFAULT = 1.25;
+
+let zoom = BUILD_ZOOM_DEFAULT;
+let previousBuildZoom = BUILD_ZOOM_DEFAULT;
+
 let camX = 0;
 let camY = 0;
-let gridOpacity = 0.45;
+
+let gridOpacity = 0.75;
 let selectedTile = null;
 let activeLayer = 1;
 let brushSize = 1;
 let eraser = false;
 let blockingMode = false;
 let walkMode = false;
+
 let isDown = false;
 let lastPaintKey = '';
 let selectedIds = new Set();
@@ -36,95 +62,41 @@ let dragMode = null;
 let dragStart = null;
 let copyBuffer = [];
 let undoStack = [];
-let currentUser = localStorage.getItem(USER_KEY) || '';
+
 let displayName = localStorage.getItem(DISPLAY_NAME_KEY) || '';
+let currentEmail = localStorage.getItem(LAST_EMAIL_KEY) || '';
+
 let flipMode = false;
 let itemScale = 1;
+
 let didInitialCenter = false;
+let playerMoving = false;
+
+let isTouchPanning = false;
+let lastTouch = null;
 
 let world = loadWorld();
-let player = { x: (250 - 0.5) * CELL, y: (250 - 0.5) * CELL, speed: 4, dir: 'down' };
 let onlinePlayers = {};
-let myCharacterId = localStorage.getItem(CHARACTER_KEY) || '';
-let playerMoving = false;
+
+let player = {
+  x: (Math.ceil(WORLD_COLS / 2) - 0.5) * CELL,
+  y: (Math.ceil(WORLD_ROWS / 2) - 0.5) * CELL,
+  speed: 4,
+  dir: 'down'
+};
+
+let myCharacterId = normalizeCharacterId(localStorage.getItem(CHARACTER_KEY) || '');
+
+const keys = {};
+const imageCache = {};
+const characterImageCache = {};
 
 const floorImage = new Image();
 floorImage.src = FLOOR_TILE_SRC;
 
-function getCurrentPlayerId() {
-  return window.auth?.currentUser?.uid || null;
-}
-
-function shortUid() {
-  const uid = getCurrentPlayerId();
-  return uid ? uid.slice(0, 8) : 'جاري...';
-}
-
-function getCharacterName(id) {
-  if (!id) return 'بدون شخصية';
-  const parts = id.split('_');
-  return (parts[0] === 'male' ? 'رجل ' : 'امرأة ') + Number(parts[1] || 1);
-}
-
-function getCharacterSrc(id) {
-  const fallback = 'female_01';
-  const safeId = id || fallback;
-  const parts = safeId.split('_');
-  const gender = parts[0] === 'male' ? 'man' : 'woman';
-  const num = Math.max(1, Math.min(10, Number(parts[1] || 1)));
-  return `Characters/${gender}/${gender}-${num}.png`;
-}
-
-const characterImageCache = {};
-function getCharacterImage(id) {
-  const src = getCharacterSrc(id);
-  if (!characterImageCache[src]) {
-    const img = new Image();
-    img.src = src;
-    characterImageCache[src] = img;
-  }
-  return characterImageCache[src];
-}
-
-function setCharacter(id) {
-  myCharacterId = id;
-  localStorage.setItem(CHARACTER_KEY, id);
-  document.getElementById('characterModal')?.classList.add('hidden');
-  savePlayerToFirebase();
-  showToast('تم اختيار الشخصية');
-}
-
-function buildCharacterChoices() {
-  const box = document.getElementById('characterChoices');
-  if (!box) return;
-
-  let html = '<h3>رجال</h3><div class="characterGrid">';
-  for (let i = 1; i <= 10; i++) {
-    const id = 'male_' + String(i).padStart(2,'0');
-    html += `<button class="characterChoice" data-id="${id}"><img src="${getCharacterSrc(id)}" alt="رجل ${i}"><b>رجل ${i}</b></button>`;
-  }
-  html += '</div><h3>نساء</h3><div class="characterGrid">';
-  for (let i = 1; i <= 10; i++) {
-    const id = 'female_' + String(i).padStart(2,'0');
-    html += `<button class="characterChoice" data-id="${id}"><img src="${getCharacterSrc(id)}" alt="امرأة ${i}"><b>امرأة ${i}</b></button>`;
-  }
-  html += '</div>';
-  box.innerHTML = html;
-
-  box.querySelectorAll('.characterChoice').forEach(btn => {
-    if (btn.dataset.id === myCharacterId) btn.classList.add('active');
-    btn.onclick = () => setCharacter(btn.dataset.id);
-  });
-}
-
-function showCharacterModal(force = false) {
-  if (myCharacterId && !force) return;
-  buildCharacterChoices();
-  document.getElementById('characterModal')?.classList.remove('hidden');
-}
-const keys = {};
-
-const ASSET_BASE = 'All-Pic-tiles';
+/* =========================
+   بيانات التايلز
+   ========================= */
 
 const SIZE_DATA = {
   Big: { label: 'كبير', w: 160, h: 160 },
@@ -147,12 +119,13 @@ const tileGroups = [
 
 function getTileSize(groupKey, size) {
   if (groupKey === 'floors') return { w: 180, h: 180 };
-  if (groupKey === 'walls' && size === 'Big') return { w: 160, h: 160 };
-  if (groupKey === 'walls' && size === 'Medium') return { w: 120, h: 120 };
-  if (groupKey === 'carpets' && size === 'Medium') return { w: 120, h: 120 };
-  if (groupKey === 'carpets' && size === 'Small') return { w: 70, h: 70 };
-  if (groupKey === 'doors' && size === 'Medium') return { w: 80, h: 80 };
-  if (groupKey === 'doors' && size === 'Precise') return { w: 38, h: 38 };
+  if (groupKey === 'walls' && size === 'Big') return { w: 170, h: 170 };
+  if (groupKey === 'walls' && size === 'Medium') return { w: 130, h: 130 };
+  if (groupKey === 'carpets' && size === 'Medium') return { w: 130, h: 130 };
+  if (groupKey === 'carpets' && size === 'Small') return { w: 75, h: 75 };
+  if (groupKey === 'doors' && size === 'Medium') return { w: 90, h: 90 };
+  if (groupKey === 'doors' && size === 'Precise') return { w: 42, h: 42 };
+
   const data = SIZE_DATA[size] || SIZE_DATA.Medium;
   return { w: data.w, h: data.h };
 }
@@ -191,271 +164,905 @@ function buildCategories() {
       }
     }
 
-    result[group.key] = { name: group.name, tiles };
+    result[group.key] = {
+      name: group.name,
+      tiles
+    };
   }
 
   return result;
 }
 
 const categories = buildCategories();
-const tileMap = Object.fromEntries(Object.values(categories).flatMap(c => c.tiles.map(t => [t.id, t])));
-const imageCache = {};
+const tileMap = Object.fromEntries(
+  Object.values(categories).flatMap(category => category.tiles.map(tile => [tile.id, tile]))
+);
+
+/* =========================
+   أدوات عامة
+   ========================= */
+
+function showToast(msg) {
+  if (!toast) return;
+
+  toast.textContent = msg;
+  toast.style.display = 'block';
+
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 1800);
+}
+
+function safeJSON(text, fallback) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return fallback;
+  }
+}
+
+function loadWorld() {
+  return safeJSON(localStorage.getItem(SAVE_KEY), {});
+}
+
+function saveWorldCache() {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(world));
+}
+
+function pushUndo() {
+  undoStack.push(JSON.stringify(world));
+
+  if (undoStack.length > 80) {
+    undoStack.shift();
+  }
+}
+
+function resetPointerState() {
+  isDown = false;
+  dragMode = null;
+  dragStart = null;
+  selectionBox = null;
+  lastPaintKey = '';
+}
+
+function normalizeId(id) {
+  return String(id || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function makeProfileId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = '';
+
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  return id;
+}
+
+function getProfileId() {
+  let id = normalizeId(localStorage.getItem(PROFILE_ID_KEY));
+
+  if (!id) {
+    id = makeProfileId();
+    localStorage.setItem(PROFILE_ID_KEY, id);
+  }
+
+  return id;
+}
+
+function setProfileId(id) {
+  const clean = normalizeId(id);
+
+  if (!/^[A-Z0-9]{4,16}$/.test(clean)) {
+    return false;
+  }
+
+  localStorage.setItem(PROFILE_ID_KEY, clean);
+  return true;
+}
+
+function currentOwner() {
+  return getProfileId();
+}
+
+function currentPlayerId() {
+  return getProfileId();
+}
+
+function updateProfileBox() {
+  const box = document.getElementById('profileIdBox');
+  const input = document.getElementById('profileIdInput');
+
+  const id = getProfileId();
+
+  if (box) box.textContent = `معرفك: ${id}`;
+  if (input && !input.value) input.value = id;
+}
+
+function setAuthBadge(isLogged, text) {
+  const badge = document.getElementById('authStateBadge');
+
+  if (!badge) return;
+
+  badge.classList.toggle('on', !!isLogged);
+  badge.classList.toggle('off', !isLogged);
+  badge.textContent = text || (isLogged ? 'أنت مسجل دخول' : 'أنت لم تسجل دخول');
+}
 
 function getTileImage(src) {
   if (!src) return null;
+
   if (!imageCache[src]) {
     const img = new Image();
     img.src = src;
     imageCache[src] = img;
   }
+
   return imageCache[src];
 }
 
-function loadWorld() {
-  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
-  catch { return {}; }
+/* =========================
+   الشخصيات
+   ========================= */
+
+function normalizeCharacterId(id) {
+  if (!id) return '';
+
+  if (id.startsWith('male_')) {
+    return 'man-' + Number(id.split('_')[1] || 1);
+  }
+
+  if (id.startsWith('female_')) {
+    return 'woman-' + Number(id.split('_')[1] || 1);
+  }
+
+  return id;
 }
 
-function saveWorld() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-  saveWorldToFirebase();
+function getCharacterSrc(id) {
+  const fixedId = normalizeCharacterId(id || 'woman-1');
+
+  if (fixedId.startsWith('man-')) {
+    return `${CHARACTER_BASE}/man/${fixedId}.png`;
+  }
+
+  if (fixedId.startsWith('woman-')) {
+    return `${CHARACTER_BASE}/woman/${fixedId}.png`;
+  }
+
+  return `${CHARACTER_BASE}/woman/woman-1.png`;
 }
 
-function saveWorldToFirebase() {
-  if (!window.db || !window.ref || !window.set) return;
+function getCharacterName(id) {
+  const fixedId = normalizeCharacterId(id || 'woman-1');
 
-  for (const key in world) {
-    if (canEditCell(key)) saveCellToFirebase(key);
+  if (fixedId.startsWith('man-')) {
+    return 'رجل ' + Number(fixedId.split('-')[1] || 1);
+  }
+
+  if (fixedId.startsWith('woman-')) {
+    return 'امرأة ' + Number(fixedId.split('-')[1] || 1);
+  }
+
+  return 'شخصية';
+}
+
+function getCharacterImage(id) {
+  const src = getCharacterSrc(id);
+
+  if (!characterImageCache[src]) {
+    const img = new Image();
+    img.src = src;
+    characterImageCache[src] = img;
+  }
+
+  return characterImageCache[src];
+}
+
+function setCharacter(id) {
+  myCharacterId = normalizeCharacterId(id);
+
+  if (!myCharacterId) {
+    myCharacterId = 'woman-1';
+  }
+
+  localStorage.setItem(CHARACTER_KEY, myCharacterId);
+
+  document.getElementById('characterModal')?.classList.add('hidden');
+
+  saveProfileToFirebase();
+  savePlayerToFirebase();
+
+  showToast('تم اختيار الشخصية');
+}
+
+function buildCharacterChoices() {
+  const box = document.getElementById('characterChoices');
+
+  if (!box) return;
+
+  let html = '<h3>رجال</h3><div class="characterGrid">';
+
+  for (let i = 1; i <= 10; i++) {
+    const id = `man-${i}`;
+    const src = `Characters/man/${id}.png`;
+
+    html += `
+      <button class="characterChoice" data-id="${id}" type="button">
+        <div class="characterPreview" style="background-image:url('${src}')"></div>
+        <b>رجل ${i}</b>
+      </button>
+    `;
+  }
+
+  html += '</div><h3>نساء</h3><div class="characterGrid">';
+
+  for (let i = 1; i <= 10; i++) {
+    const id = `woman-${i}`;
+    const src = `Characters/woman/${id}.png`;
+
+    html += `
+      <button class="characterChoice" data-id="${id}" type="button">
+        <div class="characterPreview" style="background-image:url('${src}')"></div>
+        <b>امرأة ${i}</b>
+      </button>
+    `;
+  }
+
+  html += '</div>';
+
+  box.innerHTML = html;
+
+  box.querySelectorAll('.characterChoice').forEach(btn => {
+    if (normalizeCharacterId(myCharacterId) === btn.dataset.id) {
+      btn.classList.add('active');
+    }
+
+    btn.onclick = () => {
+      box.querySelectorAll('.characterChoice').forEach(item => item.classList.remove('active'));
+      btn.classList.add('active');
+      setCharacter(btn.dataset.id);
+    };
+  });
+}
+
+function showCharacterModal(force = false) {
+  myCharacterId = normalizeCharacterId(myCharacterId);
+
+  if (myCharacterId && !force) return;
+
+  buildCharacterChoices();
+  document.getElementById('characterModal')?.classList.remove('hidden');
+}
+
+/* =========================
+   Firebase
+   ========================= */
+
+function firebaseReady() {
+  return !!(window.db && window.ref && window.set && window.get && window.update && window.remove && window.onValue);
+}
+
+function profilePath(id = getProfileId()) {
+  return `profiles/${id}`;
+}
+
+function playerPath(id = currentPlayerId()) {
+  return `players/${id}`;
+}
+
+function worldPath(cellKey) {
+  return `world/${cellKey}`;
+}
+
+async function saveProfileToFirebase(extra = {}) {
+  if (!firebaseReady()) return;
+
+  const id = getProfileId();
+
+  const data = {
+    id,
+    displayName: displayName || '',
+    email: currentEmail || '',
+    linkedUid: window.auth?.currentUser?.uid || '',
+    character: normalizeCharacterId(myCharacterId) || 'woman-1',
+    updatedAt: Date.now(),
+    ...extra
+  };
+
+  try {
+    await window.update(window.ref(window.db, profilePath(id)), data);
+  } catch (err) {
+    console.error('profile save error:', err);
   }
 }
 
-function saveCellToFirebase(cellKey) {
-  if (!window.db || !window.ref || !window.set) return;
-  if (!world[cellKey]) return;
+async function saveProfilePassword() {
+  if (!firebaseReady()) return showToast('Firebase غير جاهز');
 
-  window.set(window.ref(window.db, 'world/' + cellKey), world[cellKey])
-    .catch(err => console.error('Firebase cell save error:', err));
+  const idInput = document.getElementById('profileIdInput');
+  const passInput = document.getElementById('profilePassInput');
+
+  const id = normalizeId(idInput?.value || getProfileId());
+  const pass = String(passInput?.value || '').trim();
+
+  if (!setProfileId(id)) {
+    return showToast('المعرف غير صحيح');
+  }
+
+  if (pass.length < 4) {
+    return showToast('اكتب رقم سري للمعرف 4 أحرف أو أكثر');
+  }
+
+  try {
+    const snap = await window.get(window.ref(window.db, profilePath(id)));
+    const old = snap.val();
+
+    if (old && old.pass && old.pass !== pass) {
+      return showToast('هذا المعرف له رقم سري مختلف');
+    }
+
+    localStorage.setItem(PROFILE_PASS_KEY, '1');
+
+    await saveProfileToFirebase({ pass });
+
+    updateProfileBox();
+    updateAuthUI();
+    savePlayerToFirebase();
+
+    showToast('تم حفظ المعرف');
+  } catch (err) {
+    console.error(err);
+    showToast('فشل حفظ المعرف');
+  }
+}
+
+async function loginWithProfile() {
+  if (!firebaseReady()) return showToast('Firebase غير جاهز');
+
+  const id = normalizeId(document.getElementById('profileIdInput')?.value);
+  const pass = String(document.getElementById('profilePassInput')?.value || '').trim();
+
+  if (!/^[A-Z0-9]{4,16}$/.test(id)) {
+    return showToast('المعرف غير صحيح');
+  }
+
+  if (pass.length < 4) {
+    return showToast('اكتب الرقم السري للمعرف');
+  }
+
+  try {
+    const snap = await window.get(window.ref(window.db, profilePath(id)));
+    const data = snap.val();
+
+    if (!data || data.pass !== pass) {
+      return showToast('المعرف أو الرقم السري غير صحيح');
+    }
+
+    setProfileId(id);
+
+    displayName = data.displayName || displayName || '';
+    myCharacterId = normalizeCharacterId(data.character || myCharacterId || 'woman-1');
+
+    localStorage.setItem(DISPLAY_NAME_KEY, displayName);
+    localStorage.setItem(CHARACTER_KEY, myCharacterId);
+    localStorage.setItem(PROFILE_PASS_KEY, '1');
+
+    document.getElementById('displayNameInput').value = displayName;
+    document.getElementById('profileIdInput').value = id;
+
+    updateProfileBox();
+    updateAuthUI();
+    savePlayerToFirebase();
+
+    showToast('تم الدخول بالمعرف');
+  } catch (err) {
+    console.error(err);
+    showToast('فشل الدخول بالمعرف');
+  }
+}
+
+async function linkProfileWithEmail() {
+  if (!firebaseReady()) return showToast('Firebase غير جاهز');
+
+  const user = window.auth?.currentUser;
+
+  if (!user || user.isAnonymous) {
+    return showToast('سجل دخول بالإيميل أولًا');
+  }
+
+  const id = getProfileId();
+  const email = user.email || currentEmail || '';
+
+  try {
+    const emailKey = email.replace(/[.#$[\]]/g, '_');
+    const linkSnap = await window.get(window.ref(window.db, `emailLinks/${emailKey}`));
+    const oldLink = linkSnap.val();
+
+    if (oldLink && oldLink.profileId && oldLink.profileId !== id) {
+      return showToast('هذا الإيميل مربوط بمعرف آخر');
+    }
+
+    await window.update(window.ref(window.db), {
+      [`profiles/${id}/linkedUid`]: user.uid,
+      [`profiles/${id}/email`]: email,
+      [`profiles/${id}/updatedAt`]: Date.now(),
+      [`emailLinks/${emailKey}`]: {
+        email,
+        profileId: id,
+        uid: user.uid,
+        updatedAt: Date.now()
+      }
+    });
+
+    currentEmail = email;
+    localStorage.setItem(LAST_EMAIL_KEY, email);
+
+    updateAuthUI();
+    showToast('تم ربط المعرف بالإيميل');
+  } catch (err) {
+    console.error(err);
+    showToast('فشل ربط المعرف بالإيميل');
+  }
+}
+
+async function loadProfileByEmail(email) {
+  if (!firebaseReady() || !email) return false;
+
+  const emailKey = email.replace(/[.#$[\]]/g, '_');
+
+  try {
+    const linkSnap = await window.get(window.ref(window.db, `emailLinks/${emailKey}`));
+    const link = linkSnap.val();
+
+    if (!link || !link.profileId) return false;
+
+    const profileSnap = await window.get(window.ref(window.db, profilePath(link.profileId)));
+    const profile = profileSnap.val();
+
+    if (!profile) return false;
+
+    setProfileId(link.profileId);
+
+    displayName = profile.displayName || displayName || '';
+    myCharacterId = normalizeCharacterId(profile.character || myCharacterId || 'woman-1');
+
+    localStorage.setItem(DISPLAY_NAME_KEY, displayName);
+    localStorage.setItem(CHARACTER_KEY, myCharacterId);
+
+    document.getElementById('displayNameInput').value = displayName;
+    document.getElementById('profileIdInput').value = link.profileId;
+
+    updateProfileBox();
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+async function signup() {
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+  const pass = document.getElementById('passInput').value;
+
+  if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
+
+  if (!window.auth || !window.createUserWithEmailAndPassword) {
+    return showToast('Firebase Auth غير جاهز');
+  }
+
+  try {
+    const cred = await window.createUserWithEmailAndPassword(window.auth, email, pass);
+
+    currentEmail = cred.user.email || email;
+    localStorage.setItem(LAST_EMAIL_KEY, currentEmail);
+
+    saveDisplayName(false);
+    await saveProfileToFirebase({ linkedUid: cred.user.uid, email: currentEmail });
+    await linkProfileWithEmail();
+
+    updateAuthUI();
+    savePlayerToFirebase();
+
+    showToast('تم إنشاء الحساب');
+  } catch (err) {
+    console.error(err);
+    showToast('فشل إنشاء الحساب');
+  }
+}
+
+async function login() {
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+  const pass = document.getElementById('passInput').value;
+
+  if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
+
+  if (!window.auth || !window.signInWithEmailAndPassword) {
+    return showToast('Firebase Auth غير جاهز');
+  }
+
+  try {
+    const cred = await window.signInWithEmailAndPassword(window.auth, email, pass);
+
+    currentEmail = cred.user.email || email;
+    localStorage.setItem(LAST_EMAIL_KEY, currentEmail);
+
+    await loadProfileByEmail(currentEmail);
+    await saveProfileToFirebase({ linkedUid: cred.user.uid, email: currentEmail });
+
+    updateAuthUI();
+    savePlayerToFirebase();
+
+    showToast('تم تسجيل الدخول');
+  } catch (err) {
+    console.error(err);
+    showToast('بيانات الدخول غير صحيحة');
+  }
+}
+
+async function logout() {
+  if (!window.auth || !window.signOut) {
+    currentEmail = '';
+    localStorage.removeItem(LAST_EMAIL_KEY);
+    updateAuthUI();
+    savePlayerToFirebase();
+    showToast('تم الخروج');
+    return;
+  }
+
+  try {
+    await window.signOut(window.auth);
+
+    currentEmail = '';
+    localStorage.removeItem(LAST_EMAIL_KEY);
+
+    await startAnonymousAuth();
+
+    updateAuthUI();
+    savePlayerToFirebase();
+
+    showToast('تم الخروج');
+  } catch (err) {
+    console.error(err);
+    showToast('فشل تسجيل الخروج');
+  }
+}
+
+async function startAnonymousAuth() {
+  if (!window.auth || !window.signInAnonymously) {
+    setTimeout(startAnonymousAuth, 500);
+    return;
+  }
+
+  if (window.auth.currentUser) return;
+
+  try {
+    await window.signInAnonymously(window.auth);
+  } catch (err) {
+    console.error('anonymous auth error:', err);
+  }
+}
+
+function initAuthListener() {
+  if (!window.auth || !window.onAuthStateChanged) {
+    setTimeout(initAuthListener, 500);
+    return;
+  }
+
+  window.onAuthStateChanged(window.auth, async user => {
+    if (user && !user.isAnonymous) {
+      currentEmail = user.email || currentEmail || '';
+      localStorage.setItem(LAST_EMAIL_KEY, currentEmail);
+
+      await loadProfileByEmail(currentEmail);
+      await saveProfileToFirebase({ linkedUid: user.uid, email: currentEmail });
+    }
+
+    updateAuthUI();
+    savePlayerToFirebase();
+  });
+}
+
+/* =========================
+   Firebase world / players
+   ========================= */
+
+function saveCellToFirebase(cellKey) {
+  if (!firebaseReady()) return;
+
+  const cell = world[cellKey];
+  const hasItems = cell && Array.isArray(cell.items) && cell.items.length > 0;
+
+  if (!hasItems) {
+    window.remove(window.ref(window.db, worldPath(cellKey)))
+      .catch(err => console.error('Firebase cell remove error:', err));
+    return;
+  }
+
+  window.set(window.ref(window.db, worldPath(cellKey)), cell)
+    .catch(err => {
+      console.error('Firebase cell save error:', err);
+      showToast('فشل حفظ الخلية');
+    });
+}
+
+function saveWorldToFirebase() {
+  for (const key in world) {
+    if (canEditCell(key)) {
+      saveCellToFirebase(key);
+    }
+  }
 }
 
 function listenWorldFromFirebase() {
-  if (!window.db || !window.ref || !window.onValue) {
+  if (!firebaseReady()) {
     setTimeout(listenWorldFromFirebase, 500);
     return;
   }
 
-  window.onValue(window.ref(window.db, 'world'), (snapshot) => {
-    const data = snapshot.val();
-    if (!data) return;
-
-    world = data;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-    centerStartOnce();
-  }, () => {
-    showToast('فشل الاتصال بـ Firebase');
-  });
+  window.onValue(
+    window.ref(window.db, 'world'),
+    snapshot => {
+      world = snapshot.val() || {};
+      saveWorldCache();
+      centerStartOnce();
+    },
+    err => {
+      console.error(err);
+      showToast('فشل الاتصال بالعالم');
+    }
+  );
 }
 
 function savePlayerToFirebase() {
-  if (!window.db || !window.ref || !window.set) return;
+  if (!firebaseReady()) return;
 
-  const id = getCurrentPlayerId();
-  if (!id) return;
+  const id = currentPlayerId();
 
-  const name = displayName || 'لاعب';
-  window.set(window.ref(window.db, 'players/' + id), {
-    id: id,
-    name: name,
+  const data = {
+    id,
+    name: displayName || 'لاعب',
     x: player.x,
     y: player.y,
     dir: player.dir,
     moving: playerMoving,
     walkMode: walkMode,
-    character: myCharacterId || 'female_01',
+    character: normalizeCharacterId(myCharacterId) || 'woman-1',
     updatedAt: Date.now()
-  }).catch(err => console.error('Firebase player save error:', err));
+  };
+
+  window.set(window.ref(window.db, playerPath(id)), data)
+    .catch(err => console.error('Firebase player save error:', err));
 }
 
 function listenPlayersFromFirebase() {
-  if (!window.db || !window.ref || !window.onValue) {
+  if (!firebaseReady()) {
     setTimeout(listenPlayersFromFirebase, 500);
     return;
   }
 
-  window.onValue(window.ref(window.db, 'players'), (snapshot) => {
+  window.onValue(window.ref(window.db, 'players'), snapshot => {
     onlinePlayers = snapshot.val() || {};
   });
 }
 
-function pushUndo() {
-  undoStack.push(JSON.stringify(world));
-  if (undoStack.length > 80) undoStack.shift();
-}
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.style.display = 'block';
-  clearTimeout(showToast.t);
-  showToast.t = setTimeout(() => toast.style.display = 'none', 1800);
-}
-
-function resize() {
-  const r = canvas.getBoundingClientRect();
-  canvas.width = Math.max(300, r.width * devicePixelRatio);
-  canvas.height = Math.max(300, r.height * devicePixelRatio);
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-}
-window.addEventListener('resize', resize);
-resize();
+/* =========================
+   الخلايا والإحداثيات
+   ========================= */
 
 function colName(n) {
   let s = '';
+
   while (n > 0) {
-    let m = (n - 1) % 26;
+    const m = (n - 1) % 26;
     s = String.fromCharCode(65 + m) + s;
     n = Math.floor((n - 1) / 26);
   }
+
   return s;
 }
 
-function parseCell(ref) {
-  const m = String(ref).trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
+function parseCell(refText) {
+  const m = String(refText || '').trim().toUpperCase().match(/^([A-Z]+)(\d+)$/);
+
   if (!m) return null;
+
   let col = 0;
-  for (const ch of m[1]) col = col * 26 + ch.charCodeAt(0) - 64;
+
+  for (const ch of m[1]) {
+    col = col * 26 + ch.charCodeAt(0) - 64;
+  }
+
   const row = Number(m[2]);
-  if (col < 1 || col > WORLD_COLS || row < 1 || row > WORLD_ROWS) return null;
-  return { col, row, key: `${colName(col)}${row}` };
+
+  if (col < 1 || col > WORLD_COLS || row < 1 || row > WORLD_ROWS) {
+    return null;
+  }
+
+  return {
+    col,
+    row,
+    key: `${colName(col)}${row}`,
+    x: (col - 1) * CELL,
+    y: (row - 1) * CELL
+  };
 }
 
-function worldToScreen(x,y){ return { x:(x-camX)*zoom, y:(y-camY)*zoom }; }
-function screenToWorld(x,y){ return { x:x/zoom+camX, y:y/zoom+camY }; }
+function worldToScreen(x, y) {
+  return {
+    x: (x - camX) * zoom,
+    y: (y - camY) * zoom
+  };
+}
 
-function cellFromWorld(x,y){
+function screenToWorld(x, y) {
+  return {
+    x: x / zoom + camX,
+    y: y / zoom + camY
+  };
+}
+
+function cellFromWorld(x, y) {
   const col = Math.floor(x / CELL) + 1;
   const row = Math.floor(y / CELL) + 1;
-  if (col < 1 || row < 1 || col > WORLD_COLS || row > WORLD_ROWS) return null;
-  return { col, row, key: `${colName(col)}${row}`, x: (col-1)*CELL, y: (row-1)*CELL };
+
+  if (col < 1 || row < 1 || col > WORLD_COLS || row > WORLD_ROWS) {
+    return null;
+  }
+
+  return {
+    col,
+    row,
+    key: `${colName(col)}${row}`,
+    x: (col - 1) * CELL,
+    y: (row - 1) * CELL
+  };
 }
 
 function getItems() {
-  return Object.values(world).flatMap(c => c.items || []);
+  return Object.values(world).flatMap(cell => cell.items || []);
 }
 
 function itemRect(item) {
   const cell = parseCell(item.cell);
-  return { x:(cell.col-1)*CELL+item.x, y:(cell.row-1)*CELL+item.y, w:item.w, h:item.h };
-}
 
-function currentOwner(){
-  return getCurrentPlayerId();
-}
+  if (!cell) {
+    return { x: item.x, y: item.y, w: item.w, h: item.h };
+  }
 
+  return {
+    x: cell.x + item.x,
+    y: cell.y + item.y,
+    w: item.w,
+    h: item.h
+  };
+}
 
 function canEditCell(key) {
-  const owner = currentOwner();
-  if (!owner) return false;
-  const c = world[key];
-  return !c || !c.owner || c.owner === owner;
+  const cell = world[key];
+  return !cell || !cell.owner || cell.owner === currentOwner();
 }
 
 function ensureCell(key) {
-  const owner = currentOwner();
-  if (!owner) return null;
-  world[key] ||= { owner: owner, items: [] };
-  world[key].owner ||= owner;
+  world[key] ||= {
+    owner: currentOwner(),
+    items: []
+  };
+
+  world[key].owner ||= currentOwner();
+
   return world[key];
 }
 
-function draw() {
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle = '#0b1120';
-  ctx.fillRect(0,0,w,h);
-  drawFloorBackground(w, h);
+/* =========================
+   الرسم
+   ========================= */
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+
+  canvas.width = Math.max(300, Math.floor(rect.width * ratio));
+  canvas.height = Math.max(300, Math.floor(rect.height * ratio));
+
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+function drawFloorBackground(w, h) {
+  if (!floorImage.complete || !floorImage.naturalWidth) return;
 
   const startCol = Math.max(1, Math.floor(camX / CELL) + 1);
-  const endCol = Math.min(WORLD_COLS, Math.ceil((camX + w/zoom) / CELL) + 1);
+  const endCol = Math.min(WORLD_COLS, Math.ceil((camX + w / zoom) / CELL) + 1);
   const startRow = Math.max(1, Math.floor(camY / CELL) + 1);
-  const endRow = Math.min(WORLD_ROWS, Math.ceil((camY + h/zoom) / CELL) + 1);
+  const endRow = Math.min(WORLD_ROWS, Math.ceil((camY + h / zoom) / CELL) + 1);
+
+  for (let c = startCol; c <= endCol; c++) {
+    for (let r = startRow; r <= endRow; r++) {
+      const sx = ((c - 1) * CELL - camX) * zoom;
+      const sy = ((r - 1) * CELL - camY) * zoom;
+      const size = CELL * zoom;
+
+      ctx.drawImage(floorImage, sx, sy, size, size);
+    }
+  }
+}
+
+function drawGrid(w, h) {
+  if (walkMode || gridOpacity <= 0) return;
+
+  const startCol = Math.max(1, Math.floor(camX / CELL) + 1);
+  const endCol = Math.min(WORLD_COLS, Math.ceil((camX + w / zoom) / CELL) + 1);
+  const startRow = Math.max(1, Math.floor(camY / CELL) + 1);
+  const endRow = Math.min(WORLD_ROWS, Math.ceil((camY + h / zoom) / CELL) + 1);
 
   ctx.lineWidth = 1;
 
-  for (let c=startCol; c<=endCol; c++) {
-    for (let r=startRow; r<=endRow; r++) {
-      const sx = ((c-1)*CELL - camX) * zoom;
-      const sy = ((r-1)*CELL - camY) * zoom;
+  for (let c = startCol; c <= endCol; c++) {
+    for (let r = startRow; r <= endRow; r++) {
+      const sx = ((c - 1) * CELL - camX) * zoom;
+      const sy = ((r - 1) * CELL - camY) * zoom;
       const size = CELL * zoom;
 
       ctx.strokeStyle = `rgba(147,197,253,${gridOpacity})`;
       ctx.strokeRect(sx, sy, size, size);
 
       ctx.fillStyle = `rgba(255,255,255,${gridOpacity})`;
-      ctx.font = `${Math.max(10, 13*zoom)}px Arial`;
+      ctx.font = `${Math.max(10, 13 * zoom)}px Arial`;
       ctx.fillText(`${colName(c)}${r}`, sx + 6, sy + 16);
-
-      ctx.strokeStyle = `rgba(255,255,255,${gridOpacity * 0.28})`;
-      for (let i=1; i<MINI; i++) {
-        ctx.beginPath();
-        ctx.moveTo(sx+i*size/MINI, sy);
-        ctx.lineTo(sx+i*size/MINI, sy+size);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(sx, sy+i*size/MINI);
-        ctx.lineTo(sx+size, sy+i*size/MINI);
-        ctx.stroke();
-      }
     }
   }
+}
 
-  const visibleItems = getItems().sort((a,b) => a.layer - b.layer);
+function drawItems() {
+  const visibleItems = getItems().sort((a, b) => a.layer - b.layer);
 
   for (const item of visibleItems) {
-    const r = itemRect(item);
-    const p = worldToScreen(r.x, r.y);
-    const t = tileMap[item.tileId] || {};
+    const rect = itemRect(item);
+    const pos = worldToScreen(rect.x, rect.y);
+    const tile = tileMap[item.tileId] || {};
+    const img = getTileImage(tile.image);
 
-    const img = getTileImage(t.image);
     ctx.save();
+
     if (item.flipX) {
-      ctx.translate(p.x + r.w * zoom, p.y);
+      ctx.translate(pos.x + rect.w * zoom, pos.y);
       ctx.scale(-1, 1);
-      if (img && img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, r.w * zoom, r.h * zoom);
-      else { ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, 0, r.w * zoom, r.h * zoom); }
+
+      if (img && img.complete && img.naturalWidth) {
+        ctx.drawImage(img, 0, 0, rect.w * zoom, rect.h * zoom);
+      } else {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(0, 0, rect.w * zoom, rect.h * zoom);
+      }
     } else {
-      if (img && img.complete && img.naturalWidth) ctx.drawImage(img, p.x, p.y, r.w * zoom, r.h * zoom);
-      else { ctx.fillStyle = '#94a3b8'; ctx.fillRect(p.x, p.y, r.w * zoom, r.h * zoom); }
+      if (img && img.complete && img.naturalWidth) {
+        ctx.drawImage(img, pos.x, pos.y, rect.w * zoom, rect.h * zoom);
+      } else {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(pos.x, pos.y, rect.w * zoom, rect.h * zoom);
+      }
     }
+
     ctx.restore();
 
-    if (item.blocking || selectedIds.has(item.uid)) {
-      ctx.strokeStyle = item.blocking ? '#ef4444' : '#e5e7eb';
-      ctx.strokeRect(p.x, p.y, r.w*zoom, r.h*zoom);
+    if (!walkMode && item.blocking) {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pos.x, pos.y, rect.w * zoom, rect.h * zoom);
     }
 
-    if (selectedIds.has(item.uid)) {
+    if (!walkMode && selectedIds.has(item.uid)) {
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2;
-      ctx.strokeRect(p.x-3, p.y-3, r.w*zoom+6, r.h*zoom+6);
+      ctx.strokeRect(pos.x - 3, pos.y - 3, rect.w * zoom + 6, rect.h * zoom + 6);
       ctx.lineWidth = 1;
     }
   }
-
-  ctx.textAlign = 'start';
-  ctx.textBaseline = 'alphabetic';
-
-  if (selectionBox) {
-    ctx.strokeStyle = '#22c55e';
-    ctx.setLineDash([5,5]);
-    ctx.strokeRect(selectionBox.x, selectionBox.y, selectionBox.w, selectionBox.h);
-    ctx.setLineDash([]);
-  }
-
-  drawOnlinePlayers();
-
-  if (walkMode) drawPlayer();
-
-  requestAnimationFrame(draw);
 }
 
 function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
@@ -463,247 +1070,409 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
   const drawW = PLAYER_DRAW_W * zoom;
   const drawH = PLAYER_DRAW_H * zoom;
 
+  const rowMap = {
+    down: 0,
+    right: 1,
+    up: 2,
+    left: 3
+  };
+
+  const row = rowMap[dir] ?? 0;
+  const frame = moving ? Math.floor(Date.now() / 150) % SPRITE_COLS : 0;
+
+  const img = getCharacterImage(characterId || myCharacterId || 'woman-1');
+
   ctx.save();
   ctx.imageSmoothingEnabled = false;
 
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
   ctx.beginPath();
   ctx.ellipse(p.x, p.y + 10 * zoom, 24 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const img = getCharacterImage(characterId || 'female_01');
-  const dx = p.x - drawW / 2;
-  const dy = p.y - drawH + 22 * zoom;
-
   if (img.complete && img.naturalWidth) {
-    ctx.drawImage(img, dx, dy, drawW, drawH);
+    const frameW = img.naturalWidth / SPRITE_COLS;
+    const frameH = img.naturalHeight / SPRITE_ROWS;
+
+    const sx = frame * frameW;
+    const sy = row * frameH;
+
+    const dx = p.x - drawW / 2;
+    const dy = p.y - drawH + 22 * zoom;
+
+    ctx.drawImage(img, sx, sy, frameW, frameH, dx, dy, drawW, drawH);
   } else {
     ctx.fillStyle = isMe ? '#22c55e' : '#f97316';
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 15*zoom, 0, Math.PI*2);
+    ctx.arc(p.x, p.y, 15 * zoom, 0, Math.PI * 2);
     ctx.fill();
   }
 
   const label = isMe ? (displayName || 'أنا') : (name || 'لاعب');
+
   ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,.7)';
+  ctx.lineWidth = 3;
   ctx.font = `${Math.max(10, 13 * zoom)}px Arial`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+
   ctx.strokeText(label, p.x, p.y - drawH + 18 * zoom);
   ctx.fillText(label, p.x, p.y - drawH + 18 * zoom);
-  ctx.textAlign = 'start';
 
   ctx.restore();
 }
 
-function drawPlayer(){
-  drawSpriteCharacter(player.x, player.y, player.dir, playerMoving, 'أنا', myCharacterId || 'female_01', true);
+function drawPlayer() {
+  if (!walkMode) return;
+
+  drawSpriteCharacter(
+    player.x,
+    player.y,
+    player.dir,
+    playerMoving,
+    displayName || 'أنا',
+    myCharacterId || 'woman-1',
+    true
+  );
 }
 
-function drawOnlinePlayers(){
+function drawOnlinePlayers() {
   const now = Date.now();
+  const myId = currentPlayerId();
 
   for (const id in onlinePlayers) {
-    if (id === getCurrentPlayerId()) continue;
+    if (id === myId) continue;
 
-    const pData = onlinePlayers[id];
-    if (!pData) continue;
+    const data = onlinePlayers[id];
 
-    if (now - (pData.updatedAt || 0) > 20000) continue;
+    if (!data) continue;
+    if (!data.walkMode) continue;
+    if (now - (data.updatedAt || 0) > 20000) continue;
 
     drawSpriteCharacter(
-      pData.x || 0,
-      pData.y || 0,
-      pData.dir || 'down',
-      !!pData.moving,
-      pData.name || 'لاعب',
-      pData.character || 'female_01',
+      data.x || 0,
+      data.y || 0,
+      data.dir || 'down',
+      !!data.moving,
+      data.name || 'لاعب',
+      data.character || 'woman-1',
       false
     );
   }
 }
 
+function drawSelectionBox() {
+  if (!selectionBox || walkMode) return;
+
+  ctx.strokeStyle = '#22c55e';
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(selectionBox.x, selectionBox.y, selectionBox.w, selectionBox.h);
+  ctx.setLineDash([]);
+}
+
+function draw() {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = '#0b1120';
+  ctx.fillRect(0, 0, w, h);
+
+ if (floorImage.complete && floorImage.naturalWidth) {
+  drawFloorBackground(w, h);
+} else {
+  ctx.fillStyle = '#d6b36a';
+  ctx.fillRect(0, 0, w, h);
+}
+
+drawGrid(w, h);
+
+  drawItems();
+  drawSelectionBox();
+  drawOnlinePlayers();
+  drawPlayer();
+
+  requestAnimationFrame(draw);
+}
+
 requestAnimationFrame(draw);
 
-function initUI(){
-  document.getElementById('displayNameInput').value = displayName;
-  document.getElementById('displayNameInput').onchange = saveDisplayName;
-  document.getElementById('aboutBtn').onclick = () => showInfo('من نحن', 'انا مصمم مبتدئ في الالعاب.');
-  document.getElementById('shortcutsBtn').onclick = showShortcuts;
-  document.getElementById('flipBtn').onclick = toggleFlip;
-  document.getElementById('deleteAllBtn').onclick = deleteMyItems;
-  document.getElementById('itemScale').oninput = updateItemScale;
-  document.getElementById('stopWalkBtn').onclick = () => { if (walkMode) toggleWalk(); };
-  document.getElementById('infoCloseBtn').onclick = () => document.getElementById('infoModal').classList.add('hidden');
-  document.getElementById('changeCharacterBtn').onclick = () => showCharacterModal(true);
-  document.getElementById('mobileGearBtn').onclick = () => panel.classList.toggle('closed');
-  document.getElementById('zoomInBtn').onclick = () => { zoom = Math.min(3, zoom * 1.15); };
-  document.getElementById('zoomOutBtn').onclick = () => { zoom = Math.max(0.2, zoom * 0.85); };
-  const cat = document.getElementById('categorySelect');
-  cat.innerHTML = Object.entries(categories).map(([id,c]) => `<option value="${id}">${c.name}</option>`).join('');
-  cat.onchange = () => { updateSizeFilter(); renderTiles(); };
-  document.getElementById('sizeFilter').onchange = renderTiles;
-  updateSizeFilter();
-  renderTiles();
+/* =========================
+   التفاعل مع العناصر
+   ========================= */
 
-  document.getElementById('gridOpacity').oninput = e => gridOpacity = Number(e.target.value);
-  document.getElementById('brushSize').oninput = e => brushSize = Number(e.target.value);
-  document.getElementById('layerInput').oninput = e => activeLayer = Number(e.target.value || 1);
-  document.getElementById('elementsTab').onclick = () => switchTab('elements');
-  document.getElementById('layersTab').onclick = () => switchTab('layers');
+function getMouse(e) {
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
 
-  document.getElementById('eraseBtn').onclick = () => {
-    eraser = !eraser;
-    document.getElementById('eraseBtn').textContent = `ممحاة: ${eraser?'تشغيل':'إيقاف'}`;
+  return {
+    x,
+    y,
+    world: screenToWorld(x, y)
   };
-
-  document.getElementById('blockBtn').onclick = () => {
-    blockingMode = !blockingMode;
-    document.getElementById('blockBtn').textContent = `جعل العنصر عائق: ${blockingMode?'تشغيل':'إيقاف'}`;
-  };
-
-  document.getElementById('undoBtn').onclick = undo;
-  document.getElementById('jumpBtn').onclick = jump;
-  document.getElementById('walkBtn').onclick = toggleWalk;
-  document.getElementById('exportBtn').onclick = exportData;
-  document.getElementById('importBtn').onclick = importData;
-  document.getElementById('togglePanel').onclick = () => panel.classList.toggle('closed');
-  document.getElementById('signupBtn').onclick = signup;
-  document.getElementById('loginBtn').onclick = login;
-  document.getElementById('logoutBtn').onclick = logout;
-
-  updateAuthUI();
 }
 
-function updateSizeFilter(){
-  const catId = document.getElementById('categorySelect').value;
-  const sizeSelect = document.getElementById('sizeFilter');
-  const sizes = [...new Set(categories[catId].tiles.map(t => t.size))];
-  const old = sizeSelect.value;
-  sizeSelect.innerHTML = '<option value="all">الكل</option>' + sizes.map(size => `<option value="${size}">${SIZE_DATA[size]?.label || size}</option>`).join('');
-  sizeSelect.value = sizes.includes(old) ? old : 'all';
+function hitItem(x, y) {
+  return getItems()
+    .sort((a, b) => b.layer - a.layer)
+    .find(item => {
+      const r = itemRect(item);
+      return x >= r.x && y >= r.y && x <= r.x + r.w && y <= r.y + r.h;
+    });
 }
 
-function renderTiles(){
-  const id = document.getElementById('categorySelect').value;
-  const selectedSize = document.getElementById('sizeFilter').value;
-  const tiles = categories[id].tiles.filter(t => selectedSize === 'all' || t.size === selectedSize);
-  document.getElementById('tileset').innerHTML = tiles.map(t => `
-    <div class="tile" data-id="${t.id}" title="${t.name}">
-      <img class="tileImg" src="${t.image}" alt="${t.name}" loading="lazy">
-      <span>${t.name}</span>
-    </div>
-  `).join('');
+function paintAt(x, y) {
+  const cell = cellFromWorld(x, y);
+  if (!cell) return;
 
-  document.querySelectorAll('.tile').forEach(el => el.onclick = () => {
-    document.querySelectorAll('.tile').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
-    selectedTile = tileMap[el.dataset.id];
-    eraser = false;
-    document.getElementById('eraseBtn').textContent = 'ممحاة: إيقاف';
-  });
-}
+  if (!canEditCell(cell.key)) {
+    return showToast('ممنوع البناء في أرض لاعب آخر');
+  }
 
-function switchTab(tab){
-  document.getElementById('elementsPanel').classList.toggle('hidden', tab !== 'elements');
-  document.getElementById('layersPanel').classList.toggle('hidden', tab !== 'layers');
-  document.getElementById('elementsTab').classList.toggle('active', tab === 'elements');
-  document.getElementById('layersTab').classList.toggle('active', tab === 'layers');
-}
+  const localX = Math.max(2, Math.min(CELL - 2, x - cell.x));
+  const localY = Math.max(2, Math.min(CELL - 2, y - cell.y));
 
-function updateAuthUI(){
-  const idText = shortUid();
-  document.getElementById('statusText').textContent =
-    walkMode ? `وضع التجول - معرفك: ${idText}` : `وضع البناء - معرفك: ${idText}`;
+  const snapX = Math.floor(localX / (CELL / MINI));
+  const snapY = Math.floor(localY / (CELL / MINI));
 
-  const nameInput = document.getElementById('displayNameInput');
-  if (nameInput && nameInput.value !== displayName) nameInput.value = displayName;
+  const key = `${cell.key}-${snapX}-${snapY}-${activeLayer}-${selectedTile?.id}-${eraser}-${itemScale}-${flipMode}`;
 
-  const box = document.getElementById('guestIdBox');
-  if (box) box.textContent = currentUser ? ' | حساب مسجل' : ' | زائر آمن';
-}
+  if (key === lastPaintKey) return;
 
+  lastPaintKey = key;
 
-
-function signup(){
-  const email = document.getElementById('emailInput').value.trim().toLowerCase();
-  const pass = document.getElementById('passInput').value;
-
-  if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
-  if (!window.auth) return showToast('Firebase Auth غير جاهز');
-
-  const finishSignup = () => {
-    currentUser = email;
-    saveDisplayName(false);
-    localStorage.setItem(USER_KEY, email);
-    updateAuthUI();
-    savePlayerToFirebase();
-    showToast('تم إنشاء الحساب وربطه بنفس المعرف');
-  };
-
-  const current = window.auth.currentUser;
-  if (current && current.isAnonymous && window.EmailAuthProvider && window.linkWithCredential) {
-    const credential = window.EmailAuthProvider.credential(email, pass);
-    window.linkWithCredential(current, credential)
-      .then(finishSignup)
-      .catch(err => {
-        console.error(err);
-        showToast('فشل الربط، جرّب تسجيل الدخول');
-      });
+  if (eraser) {
+    eraseAt(x, y);
     return;
   }
 
-  window.createUserWithEmailAndPassword(window.auth, email, pass)
-    .then(finishSignup)
-    .catch(err => {
-      showToast('فشل إنشاء الحساب');
-      console.error(err);
-    });
+  if (!selectedTile) return;
+
+  const brush = Math.max(1, Math.min(4, Number(brushSize) || 1));
+
+  for (let bx = 0; bx < brush; bx++) {
+    for (let by = 0; by < brush; by++) {
+      const px = localX + bx * 12;
+      const py = localY + by * 12;
+
+      const scaledW = Math.max(12, Math.min(CELL, Math.round(selectedTile.w * itemScale)));
+      const scaledH = Math.max(12, Math.min(CELL, Math.round(selectedTile.h * itemScale)));
+
+      const item = {
+        uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        tileId: selectedTile.id,
+        cell: cell.key,
+        x: Math.max(0, Math.min(CELL - scaledW, px - scaledW / 2)),
+        y: Math.max(0, Math.min(CELL - scaledH, py - scaledH / 2)),
+        w: scaledW,
+        h: scaledH,
+        layer: activeLayer,
+        flipX: flipMode,
+        blocking: blockingMode || !!selectedTile.blocking
+      };
+
+      ensureCell(cell.key).items.push(item);
+    }
+  }
+
+  saveWorldCache();
+  saveCellToFirebase(cell.key);
 }
 
+function eraseAt(x, y) {
+  const hit = hitItem(x, y);
 
+  if (!hit) return;
 
-function login(){
-  const email = document.getElementById('emailInput').value.trim().toLowerCase();
-  const pass = document.getElementById('passInput').value;
+  if (!canEditCell(hit.cell)) {
+    return showToast('ممنوع تعديل أرض لاعب آخر');
+  }
 
-  if (!email || !pass) return showToast('اكتب الإيميل والرقم السري');
-  if (!window.auth) return showToast('Firebase Auth غير جاهز');
+  world[hit.cell].items = world[hit.cell].items.filter(item => item.uid !== hit.uid);
 
-  window.signInWithEmailAndPassword(window.auth, email, pass)
-    .then(() => {
-      currentUser = email;
-      saveDisplayName(false);
-      localStorage.setItem(USER_KEY, email);
-      updateAuthUI();
-      savePlayerToFirebase();
-      showToast('تم تسجيل الدخول');
-    })
-    .catch(err => {
-      showToast('بيانات الدخول غير صحيحة');
-      console.error(err);
-    });
+  if (!world[hit.cell].items.length) {
+    delete world[hit.cell];
+  }
+
+  saveWorldCache();
+  saveCellToFirebase(hit.cell);
 }
 
+function selectInBox(box) {
+  selectedIds.clear();
 
+  for (const item of getItems()) {
+    const rect = itemRect(item);
+    const p = worldToScreen(rect.x, rect.y);
 
-function logout(){
-  const finishLogout = () => {
-    currentUser = '';
-    localStorage.removeItem(USER_KEY);
-    updateAuthUI();
-    startAnonymousAuth();
-    showToast('تم الخروج');
-  };
+    const iw = rect.w * zoom;
+    const ih = rect.h * zoom;
 
-  if (!window.auth) return finishLogout();
-  window.signOut(window.auth).then(finishLogout);
+    if (
+      p.x < box.x + box.w &&
+      p.x + iw > box.x &&
+      p.y < box.y + box.h &&
+      p.y + ih > box.y
+    ) {
+      selectedIds.add(item.uid);
+    }
+  }
 }
 
+function moveSelected(dx, dy) {
+  if (!selectedIds.size) return;
 
+  const changedCells = new Set();
 
+  for (const item of getItems()) {
+    if (!selectedIds.has(item.uid)) continue;
+    if (!canEditCell(item.cell)) continue;
+
+    item.x = Math.max(0, Math.min(CELL - item.w, item.x + dx));
+    item.y = Math.max(0, Math.min(CELL - item.h, item.y + dy));
+
+    changedCells.add(item.cell);
+  }
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+}
+
+function deleteSelectedItems() {
+  if (!selectedIds.size) return showToast('لا يوجد عنصر محدد');
+
+  pushUndo();
+
+  const changedCells = new Set();
+
+  for (const key in world) {
+    if (!canEditCell(key)) continue;
+
+    const before = world[key].items.length;
+    world[key].items = world[key].items.filter(item => !selectedIds.has(item.uid));
+
+    if (world[key].items.length !== before) {
+      changedCells.add(key);
+    }
+
+    if (!world[key].items.length) {
+      delete world[key];
+    }
+  }
+
+  selectedIds.clear();
+  resetPointerState();
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
+  showToast('تم حذف العنصر المحدد');
+}
+
+function deleteMyItems() {
+  pushUndo();
+
+  const changedCells = [];
+
+  for (const key in world) {
+    if (canEditCell(key)) {
+      changedCells.push(key);
+      delete world[key];
+    }
+  }
+
+  selectedIds.clear();
+  resetPointerState();
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
+  showToast('تم حذف جميع عناصرك');
+}
+
+function toggleSelectedBlocking() {
+  if (!selectedIds.size) {
+    blockingMode = !blockingMode;
+    document.getElementById('blockBtn').textContent = `جعل العنصر عائق: ${blockingMode ? 'تشغيل' : 'إيقاف'}`;
+    return;
+  }
+
+  pushUndo();
+
+  const changedCells = new Set();
+
+  for (const item of getItems()) {
+    if (!selectedIds.has(item.uid)) continue;
+    if (!canEditCell(item.cell)) continue;
+
+    item.blocking = !item.blocking;
+    changedCells.add(item.cell);
+  }
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
+  showToast('تم تعديل العائق');
+}
+
+function toggleFlip() {
+  if (!selectedIds.size) {
+    flipMode = !flipMode;
+    document.getElementById('flipBtn').textContent = `عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
+    return;
+  }
+
+  pushUndo();
+
+  const changedCells = new Set();
+
+  for (const item of getItems()) {
+    if (!selectedIds.has(item.uid)) continue;
+    if (!canEditCell(item.cell)) continue;
+
+    item.flipX = !item.flipX;
+    changedCells.add(item.cell);
+  }
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
+  showToast('تم عكس العنصر');
+}
+
+function updateItemScale(e) {
+  itemScale = Number(e.target.value || 1);
+
+  if (!selectedIds.size) return;
+
+  pushUndo();
+
+  const changedCells = new Set();
+
+  for (const item of getItems()) {
+    if (!selectedIds.has(item.uid)) continue;
+    if (!canEditCell(item.cell)) continue;
+
+    const base = tileMap[item.tileId] || { w: item.w, h: item.h };
+
+    item.w = Math.max(12, Math.min(CELL, Math.round(base.w * itemScale)));
+    item.h = Math.max(12, Math.min(CELL, Math.round(base.h * itemScale)));
+
+    item.x = Math.max(0, Math.min(CELL - item.w, item.x));
+    item.y = Math.max(0, Math.min(CELL - item.h, item.y));
+
+    changedCells.add(item.cell);
+  }
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+}
+
+/* =========================
+   التحكم بالكانفاس
+   ========================= */
 
 canvas.addEventListener('mousedown', e => {
   if (walkMode) return;
@@ -713,18 +1482,18 @@ canvas.addEventListener('mousedown', e => {
 
   const pos = getMouse(e);
   dragStart = pos;
+
   const hit = hitItem(pos.world.x, pos.world.y);
 
-  if (e.button === 1 || e.altKey) dragMode = 'pan';
-  else if (hit && !eraser) {
+  if (e.button === 1 || e.altKey) {
+    dragMode = 'pan';
+  } else if (hit && !eraser) {
     dragMode = 'move';
     selectedIds = new Set([hit.uid]);
-  }
-  else if (!selectedTile && !eraser) {
+  } else if (!selectedTile && !eraser) {
     dragMode = 'select';
     selectionBox = { x: pos.x, y: pos.y, w: 0, h: 0 };
-  }
-  else {
+  } else {
     dragMode = 'paint';
     pushUndo();
     paintAt(pos.world.x, pos.world.y);
@@ -736,237 +1505,247 @@ canvas.addEventListener('mousemove', e => {
 
   const pos = getMouse(e);
 
-  if (dragMode === 'paint') paintAt(pos.world.x, pos.world.y);
+  if (dragMode === 'paint') {
+    paintAt(pos.world.x, pos.world.y);
+  }
+
   if (dragMode === 'pan') {
     camX -= e.movementX / zoom;
     camY -= e.movementY / zoom;
     clampCam();
   }
+
   if (dragMode === 'select') {
     selectionBox = {
-      x: Math.min(dragStart.x,pos.x),
-      y: Math.min(dragStart.y,pos.y),
-      w: Math.abs(pos.x-dragStart.x),
-      h: Math.abs(pos.y-dragStart.y)
+      x: Math.min(dragStart.x, pos.x),
+      y: Math.min(dragStart.y, pos.y),
+      w: Math.abs(pos.x - dragStart.x),
+      h: Math.abs(pos.y - dragStart.y)
     };
   }
-  if (dragMode === 'move') moveSelected(e.movementX/zoom, e.movementY/zoom);
+
+  if (dragMode === 'move') {
+    moveSelected(e.movementX / zoom, e.movementY / zoom);
+  }
 });
 
 window.addEventListener('mouseup', () => {
-  if (dragMode === 'select' && selectionBox) selectInBox(selectionBox);
-  if (dragMode === 'move') saveWorld();
+  if (dragMode === 'select' && selectionBox) {
+    selectInBox(selectionBox);
+  }
 
-  isDown = false;
-  dragMode = null;
-  selectionBox = null;
+  resetPointerState();
 });
 
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
+canvas.addEventListener(
+  'wheel',
+  e => {
+    e.preventDefault();
 
-  if (e.ctrlKey) {
-    zoom *= e.deltaY < 0 ? 1.1 : 0.9;
-    zoom = Math.max(0.2, Math.min(3, zoom));
-    const m = getMouse(e);
-    camX = m.world.x - (m.x / zoom);
-    camY = m.world.y - (m.y / zoom);
-  } else if (e.shiftKey) {
-    camX += e.deltaY / zoom;
-  } else {
-    camY += e.deltaY / zoom;
-  }
+    if (e.ctrlKey) {
+      zoom *= e.deltaY < 0 ? 1.1 : 0.9;
+      zoom = Math.max(0.25, Math.min(3, zoom));
+
+      const m = getMouse(e);
+
+      camX = m.world.x - m.x / zoom;
+      camY = m.world.y - m.y / zoom;
+    } else if (e.shiftKey) {
+      camX += e.deltaY / zoom;
+    } else {
+      camY += e.deltaY / zoom;
+    }
+
+    clampCam();
+  },
+  { passive: false }
+);
+
+canvas.addEventListener('touchstart', e => {
+  if (walkMode) return;
+  if (!e.touches.length) return;
+
+  isTouchPanning = true;
+  lastTouch = {
+    x: e.touches[0].clientX,
+    y: e.touches[0].clientY
+  };
+}, { passive: true });
+
+canvas.addEventListener('touchmove', e => {
+  if (walkMode) return;
+  if (!isTouchPanning || !lastTouch || !e.touches.length) return;
+
+  const t = e.touches[0];
+  const dx = t.clientX - lastTouch.x;
+  const dy = t.clientY - lastTouch.y;
+
+  camX -= dx / zoom;
+  camY -= dy / zoom;
 
   clampCam();
-}, { passive:false });
 
-function getMouse(e){
-  const r = canvas.getBoundingClientRect();
-  const x = e.clientX - r.left;
-  const y = e.clientY - r.top;
-  return { x, y, world: screenToWorld(x,y) };
-}
+  lastTouch = {
+    x: t.clientX,
+    y: t.clientY
+  };
+}, { passive: true });
 
-function paintAt(x,y){
-  const cell = cellFromWorld(x,y);
-  if (!cell) return;
+canvas.addEventListener('touchend', () => {
+  isTouchPanning = false;
+  lastTouch = null;
+});
 
-  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
-  if (!canEditCell(cell.key)) return showToast('ممنوع البناء في أرض لاعب آخر');
-
-  const localX = Math.max(2, Math.min(CELL-2, x - cell.x));
-  const localY = Math.max(2, Math.min(CELL-2, y - cell.y));
-  const snapX = Math.floor(localX / (CELL/MINI));
-  const snapY = Math.floor(localY / (CELL/MINI));
-  const key = `${cell.key}-${snapX}-${snapY}-${activeLayer}-${selectedTile?.id}-${eraser}`;
-
-  if (key === lastPaintKey) return;
-  lastPaintKey = key;
-
-  if (eraser) return eraseAt(x,y);
-  if (!selectedTile) return;
-
-  const c = ensureCell(cell.key);
-  const scaledW = Math.max(12, Math.min(CELL, Math.round(selectedTile.w * itemScale)));
-  const scaledH = Math.max(12, Math.min(CELL, Math.round(selectedTile.h * itemScale)));
-
-  c.items.push({
-    uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
-    tileId: selectedTile.id,
-    cell: cell.key,
-    x: Math.max(0, Math.min(CELL-scaledW, localX - scaledW/2)),
-    y: Math.max(0, Math.min(CELL-scaledH, localY - scaledH/2)),
-    w: scaledW,
-    h: scaledH,
-    flipX: flipMode,
-    layer: activeLayer,
-    blocking: blockingMode || !!selectedTile.blocking
-  });
-
-localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-saveCellToFirebase(cell.key);  
-  
-  
-}
-
-function eraseAt(x,y){
-  const hit = hitItem(x,y);
-  if (!hit) return;
-
-  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
-  if (!canEditCell(hit.cell)) return showToast('ممنوع تعديل أرض لاعب آخر');
-
-  world[hit.cell].items = world[hit.cell].items.filter(i => i.uid !== hit.uid);
-  
-localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-saveCellToFirebase(hit.cell);
-
-}
-
-function hitItem(x,y){
-  return getItems().sort((a,b)=>b.layer-a.layer).find(i => {
-    const r = itemRect(i);
-    return x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h;
-  });
-}
-
-function selectInBox(box){
-  selectedIds.clear();
-
-  for (const item of getItems()) {
-    const r = itemRect(item);
-    const p = worldToScreen(r.x,r.y);
-    const iw = r.w*zoom;
-    const ih = r.h*zoom;
-
-    if (p.x < box.x+box.w && p.x+iw > box.x && p.y < box.y+box.h && p.y+ih > box.y) {
-      selectedIds.add(item.uid);
-    }
-  }
-}
-
-function moveSelected(dx,dy){
-  if (!selectedIds.size) return;
-
-  for (const item of getItems()) {
-    if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
-      item.x = Math.max(0, Math.min(CELL-item.w, item.x + dx));
-      item.y = Math.max(0, Math.min(CELL-item.h, item.y + dy));
-    }
-  }
-}
+/* =========================
+   الكيبورد
+   ========================= */
 
 window.addEventListener('keydown', e => {
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   keys[e.key] = true;
+
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+    e.preventDefault();
+  }
+
+  if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
   if (walkMode) return;
 
+  if (e.key === 'Delete') {
+    deleteSelectedItems();
+    return;
+  }
+
   if (e.ctrlKey && e.key.toLowerCase() === 'c') {
-    copyBuffer = getItems().filter(i => selectedIds.has(i.uid)).map(i => ({...i}));
+    copyBuffer = getItems().filter(item => selectedIds.has(item.uid)).map(item => ({ ...item }));
     showToast('تم النسخ');
   }
 
-  if (e.ctrlKey && e.key.toLowerCase() === 'v') pasteItems();
+  if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+    pasteItems();
+  }
 
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key) && selectedIds.size) {
-    e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && selectedIds.size) {
     pushUndo();
 
     const d = {
-      ArrowUp:[0,-1],
-      ArrowDown:[0,1],
-      ArrowLeft:[-1,0],
-      ArrowRight:[1,0]
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0]
     }[e.key];
 
     moveSelected(d[0], d[1]);
-    saveWorld();
   }
 });
 
-window.addEventListener('keyup', e => keys[e.key] = false);
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+});
 
-function pasteItems(){
+/* =========================
+   النسخ واللصق والاستعادة
+   ========================= */
+
+function pasteItems() {
   if (!copyBuffer.length) return;
-  if (!currentOwner()) return showToast('جار تجهيز حساب الزائر');
 
   pushUndo();
   selectedIds.clear();
+
+  const changedCells = new Set();
 
   for (const old of copyBuffer) {
     if (!canEditCell(old.cell)) continue;
 
     const item = {
       ...old,
-      uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()),
-      x: Math.min(CELL-old.w, old.x+10),
-      y: Math.min(CELL-old.h, old.y+10)
+      uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+      x: Math.min(CELL - old.w, old.x + 15),
+      y: Math.min(CELL - old.h, old.y + 15)
     };
 
     ensureCell(item.cell).items.push(item);
     selectedIds.add(item.uid);
+    changedCells.add(item.cell);
   }
 
-  saveWorld();
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
   showToast('تم اللصق');
 }
 
-function undo(){
+function undo() {
   const last = undoStack.pop();
-  if (!last) return showToast('لا توجد خطوة سابقة');
 
+  if (!last) {
+    return showToast('لا توجد خطوة سابقة');
+  }
+
+  const oldWorld = world;
   world = JSON.parse(last);
-  saveWorld();
+
+  const changedCells = new Set([...Object.keys(oldWorld), ...Object.keys(world)]);
+
+  saveWorldCache();
+  changedCells.forEach(saveCellToFirebase);
+
+  resetPointerState();
+
   showToast('تم الرجوع خطوة');
 }
 
-function jump(){
-  const c = parseCell(document.getElementById('jumpInput').value);
-  if (!c) return showToast('اكتب خلية صحيحة مثل K90');
+/* =========================
+   التجول والكاميرا
+   ========================= */
 
-  camX = (c.col-1)*CELL - 80;
-  camY = (c.row-1)*CELL - 80;
-  clampCam();
-
-  if (isBlocked(player.x, player.y)) showToast('أنت فوق عائق، يجب أن تغير الخلية');
+function clampPlayer() {
+  player.x = Math.max(20, Math.min(WORLD_COLS * CELL - 20, player.x));
+  player.y = Math.max(20, Math.min(WORLD_ROWS * CELL - 20, player.y));
 }
 
-function clampCam(){
-  camX = Math.max(0, Math.min(WORLD_COLS*CELL - canvas.clientWidth/zoom, camX));
-  camY = Math.max(0, Math.min(WORLD_ROWS*CELL - canvas.clientHeight/zoom, camY));
+function clampCam() {
+  camX = Math.max(0, Math.min(WORLD_COLS * CELL - canvas.clientWidth / zoom, camX));
+  camY = Math.max(0, Math.min(WORLD_ROWS * CELL - canvas.clientHeight / zoom, camY));
 }
 
-function toggleWalk(){
-  const nextMode = !walkMode;
+function isBlocked(x, y) {
+  return getItems().some(item => {
+    if (!item.blocking) return false;
 
-  if (nextMode) {
+    const r = itemRect(item);
+
+    return x >= r.x && y >= r.y && x <= r.x + r.w && y <= r.y + r.h;
+  });
+}
+
+function toggleWalk() {
+  const next = !walkMode;
+
+  if (next) {
+    previousBuildZoom = zoom;
+
     const center = screenToWorld(canvas.clientWidth / 2, canvas.clientHeight / 2);
     player.x = center.x;
     player.y = center.y;
+
+    clampPlayer();
+
+    zoom = WALK_ZOOM_DEFAULT;
+  } else {
+    zoom = previousBuildZoom || BUILD_ZOOM_DEFAULT;
+    playerMoving = false;
   }
 
-  walkMode = nextMode;
+  walkMode = next;
+
   selectedIds.clear();
+  resetPointerState();
 
   document.body.classList.toggle('walking', walkMode);
   document.getElementById('joystick').classList.toggle('hidden', !walkMode);
@@ -977,14 +1756,7 @@ function toggleWalk(){
   savePlayerToFirebase();
 }
 
-function isBlocked(x,y){
-  return getItems().some(i => i.blocking && (() => {
-    const r=itemRect(i);
-    return x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h;
-  })());
-}
-
-function walkLoop(){
+function walkLoop() {
   if (walkMode) {
     let dx = 0;
     let dy = 0;
@@ -994,29 +1766,33 @@ function walkLoop(){
     if (keys.ArrowLeft) dx -= player.speed;
     if (keys.ArrowRight) dx += player.speed;
 
-    if (Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : player.dir;
-    else if (dy !== 0) player.dir = dy > 0 ? 'down' : 'up';
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) player.dir = 'right';
+      if (dx < 0) player.dir = 'left';
+    } else if (dy !== 0) {
+      player.dir = dy > 0 ? 'down' : 'up';
+    }
 
     playerMoving = !!(dx || dy);
 
-    const nx = player.x + dx;
-    const ny = player.y + dy;
+    const nx = Math.max(20, Math.min(WORLD_COLS * CELL - 20, player.x + dx));
+    const ny = Math.max(20, Math.min(WORLD_ROWS * CELL - 20, player.y + dy));
 
     if (!isBlocked(nx, ny)) {
       player.x = nx;
       player.y = ny;
-
-      if (dx || dy) {
-        savePlayerToFirebase();
-      }
-    } else if (dx || dy) {
+    } else {
       playerMoving = false;
-      savePlayerToFirebase();
     }
 
-    camX = player.x - canvas.clientWidth/(2*zoom);
-    camY = player.y - canvas.clientHeight/(2*zoom);
+    camX = player.x - canvas.clientWidth / (2 * zoom);
+    camY = player.y - canvas.clientHeight / (2 * zoom);
+
     clampCam();
+
+    if (playerMoving) {
+      savePlayerToFirebase();
+    }
   } else if (playerMoving) {
     playerMoving = false;
     savePlayerToFirebase();
@@ -1025,93 +1801,194 @@ function walkLoop(){
   requestAnimationFrame(walkLoop);
 }
 
-walkLoop();
+requestAnimationFrame(walkLoop);
 
-function exportData(){
-  document.getElementById('sheetData').value = JSON.stringify(world, null, 2);
-  showToast('تم تجهيز البيانات للتصدير');
+/* =========================
+   واجهة التحكم
+   ========================= */
+
+function initUI() {
+  document.getElementById('displayNameInput').value = displayName;
+
+  document.getElementById('displayNameInput').onchange = () => saveDisplayName(true);
+
+  document.getElementById('signupBtn').onclick = signup;
+  document.getElementById('loginBtn').onclick = login;
+  document.getElementById('logoutBtn').onclick = logout;
+
+  document.getElementById('profileCreateBtn').onclick = saveProfilePassword;
+  document.getElementById('profileLoginBtn').onclick = loginWithProfile;
+  document.getElementById('profileLinkEmailBtn').onclick = linkProfileWithEmail;
+
+  document.getElementById('walkBtn').onclick = toggleWalk;
+  document.getElementById('stopWalkBtn').onclick = () => {
+    if (walkMode) toggleWalk();
+  };
+
+  document.getElementById('changeCharacterBtn').onclick = () => showCharacterModal(true);
+
+  document.getElementById('toggleTilesBtn').onclick = () => {
+    document.getElementById('tilesControls').classList.toggle('hidden');
+  };
+
+  document.getElementById('mobileGearBtn').onclick = () => {
+    panel.classList.toggle('closed');
+  };
+
+  document.getElementById('togglePanel').onclick = () => {
+    panel.classList.toggle('closed');
+  };
+
+  document.getElementById('gridOpacity').oninput = e => {
+    gridOpacity = Number(e.target.value);
+  };
+
+  document.getElementById('brushSize').oninput = e => {
+    brushSize = Number(e.target.value);
+  };
+
+  document.getElementById('itemScale').oninput = updateItemScale;
+
+  document.getElementById('eraseBtn').onclick = () => {
+    eraser = !eraser;
+    document.getElementById('eraseBtn').textContent = `ممحاة: ${eraser ? 'تشغيل' : 'إيقاف'}`;
+  };
+
+  document.getElementById('blockBtn').onclick = toggleSelectedBlocking;
+  document.getElementById('flipBtn').onclick = toggleFlip;
+  document.getElementById('deleteSelectedBtn').onclick = deleteSelectedItems;
+  document.getElementById('deleteAllBtn').onclick = deleteMyItems;
+  document.getElementById('undoBtn').onclick = undo;
+  document.getElementById('jumpBtn').onclick = jump;
+
+  document.getElementById('aboutBtn').onclick = () => {
+    showInfo('من نحن', 'أنا مصمم مبتدئ في الألعاب.');
+  };
+
+  document.getElementById('shortcutsBtn').onclick = () => {
+    showInfo(
+      'شرح الاختصارات',
+      'Ctrl + عجلة: تقريب / إبعاد\nShift + عجلة: تحريك يمين ويسار\nCtrl + C: نسخ العناصر المحددة\nCtrl + V: لصق العناصر\nCtrl + Z: استعادة\nDelete: حذف العنصر المحدد\nالأسهم: تحريك العنصر المحدد أو تحريك الشخصية في وضع التجول'
+    );
+  };
+
+  document.getElementById('infoCloseBtn').onclick = () => {
+    document.getElementById('infoModal').classList.add('hidden');
+  };
+
+  document.getElementById('zoomInBtn').onclick = () => {
+    zoom = Math.min(3, zoom * 1.15);
+    clampCam();
+  };
+
+  document.getElementById('zoomOutBtn').onclick = () => {
+    zoom = Math.max(0.25, zoom * 0.85);
+    clampCam();
+  };
+
+  initCategories();
+  initLayers();
+
+  updateProfileBox();
+  updateAuthUI();
 }
 
-function importData(){
-  try {
-    const data = JSON.parse(document.getElementById('sheetData').value);
-    pushUndo();
-    world = data || {};
-    saveWorld();
-    showToast('تم الاستيراد');
-  } catch {
-    showToast('بيانات غير صحيحة');
-  }
+function initCategories() {
+  const cat = document.getElementById('categorySelect');
+
+  cat.innerHTML = Object.entries(categories)
+    .map(([id, c]) => `<option value="${id}">${c.name}</option>`)
+    .join('');
+
+  cat.onchange = () => {
+    updateSizeFilter();
+    renderTiles();
+  };
+
+  document.getElementById('sizeFilter').onchange = renderTiles;
+
+  updateSizeFilter();
+  renderTiles();
 }
 
-function setupJoystick(){
-  const joy = document.getElementById('joystick');
-  const stick = document.getElementById('stick');
-  let active = false;
+function updateSizeFilter() {
+  const catId = document.getElementById('categorySelect').value;
+  const sizeSelect = document.getElementById('sizeFilter');
 
-  joy.addEventListener('pointerdown', e => {
-    active = true;
-    joy.setPointerCapture(e.pointerId);
-  });
+  const sizes = [...new Set(categories[catId].tiles.map(t => t.size))];
+  const old = sizeSelect.value;
 
-  joy.addEventListener('pointerup', () => {
-    active=false;
-    stick.style.left='36px';
-    stick.style.top='36px';
-    keys.ArrowUp=keys.ArrowDown=keys.ArrowLeft=keys.ArrowRight=false;
-  });
+  sizeSelect.innerHTML =
+    '<option value="all">الكل</option>' +
+    sizes.map(size => `<option value="${size}">${SIZE_DATA[size]?.label || size}</option>`).join('');
 
-  joy.addEventListener('pointermove', e => {
-    if (!active) return;
+  sizeSelect.value = sizes.includes(old) ? old : 'all';
+}
 
-    const r = joy.getBoundingClientRect();
-    const x = e.clientX - r.left - 60;
-    const y = e.clientY - r.top - 60;
-    const len = Math.min(42, Math.hypot(x,y));
-    const a = Math.atan2(y,x);
-    const sx = Math.cos(a)*len;
-    const sy = Math.sin(a)*len;
+function renderTiles() {
+  const catId = document.getElementById('categorySelect').value;
+  const size = document.getElementById('sizeFilter').value;
 
-    stick.style.left = `${36+sx}px`;
-    stick.style.top = `${36+sy}px`;
+  const tiles = categories[catId].tiles.filter(tile => size === 'all' || tile.size === size);
 
-    keys.ArrowRight = sx > 15;
-    keys.ArrowLeft = sx < -15;
-    keys.ArrowDown = sy > 15;
-    keys.ArrowUp = sy < -15;
+  document.getElementById('tileset').innerHTML = tiles.map(tile => `
+    <div class="tile" data-id="${tile.id}" title="${tile.name}">
+      <img class="tileImg" src="${tile.image}" alt="${tile.name}" loading="lazy">
+      <span>${tile.name}</span>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.tile').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('.tile').forEach(x => x.classList.remove('active'));
+
+      el.classList.add('active');
+      selectedTile = tileMap[el.dataset.id];
+
+      eraser = false;
+      document.getElementById('eraseBtn').textContent = 'ممحاة: إيقاف';
+    };
   });
 }
 
-window.addEventListener('beforeunload', () => {
-  savePlayerToFirebase();
-});
+function initLayers() {
+  document.querySelectorAll('#layerButtons button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#layerButtons button').forEach(x => x.classList.remove('active'));
 
+      btn.classList.add('active');
 
+      activeLayer = Number(btn.dataset.layer);
+      document.getElementById('layerInput').value = activeLayer;
+    };
+  });
+}
 
+function updateAuthUI() {
+  const user = window.auth?.currentUser;
+  const isEmailUser = !!(user && !user.isAnonymous);
 
-function drawFloorBackground(w, h) {
-  if (!floorImage.complete || !floorImage.naturalWidth) return;
+  setAuthBadge(isEmailUser, isEmailUser ? 'أنت مسجل دخول' : 'أنت لم تسجل دخول');
 
-  const startCol = Math.max(1, Math.floor(camX / CELL) + 1);
-  const endCol = Math.min(WORLD_COLS, Math.ceil((camX + w/zoom) / CELL) + 1);
-  const startRow = Math.max(1, Math.floor(camY / CELL) + 1);
-  const endRow = Math.min(WORLD_ROWS, Math.ceil((camY + h/zoom) / CELL) + 1);
+  document.getElementById('statusText').textContent = walkMode ? 'وضع التجول' : 'وضع البناء';
 
-  for (let c=startCol; c<=endCol; c++) {
-    for (let r=startRow; r<=endRow; r++) {
-      const sx = ((c-1)*CELL - camX) * zoom;
-      const sy = ((r-1)*CELL - camY) * zoom;
-      const size = CELL * zoom;
-      ctx.drawImage(floorImage, sx, sy, size, size);
-    }
+  updateProfileBox();
+
+  const nameInput = document.getElementById('displayNameInput');
+
+  if (nameInput && nameInput.value !== displayName) {
+    nameInput.value = displayName;
   }
 }
 
 function saveDisplayName(showMsg = true) {
-  const input = document.getElementById('displayNameInput');
-  displayName = (input?.value || '').trim().slice(0, 20);
+  displayName = String(document.getElementById('displayNameInput')?.value || '').trim().slice(0, 20);
+
   localStorage.setItem(DISPLAY_NAME_KEY, displayName);
+
+  saveProfileToFirebase();
   savePlayerToFirebase();
+
   if (showMsg) showToast('تم حفظ الاسم');
 }
 
@@ -1121,126 +1998,150 @@ function showInfo(title, text) {
   document.getElementById('infoModal').classList.remove('hidden');
 }
 
-function showShortcuts() {
-  showInfo('شرح الاختصارات', 'Ctrl + عجلة: تقريب / إبعاد\nShift + عجلة: تحريك يمين ويسار\nCtrl + C: نسخ العناصر المحددة\nCtrl + V: لصق العناصر\nالأسهم: تحريك العنصر المحدد بكسل واحد\nزر تجول: تحريك الشخصية بالأسهم أو عصا الجوال');
-}
+function jump() {
+  const cell = parseCell(document.getElementById('jumpInput').value);
 
-function toggleFlip() {
-  flipMode = !flipMode;
-  document.getElementById('flipBtn').textContent = `عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
-
-  if (selectedIds.size) {
-    pushUndo();
-    const changedCells = new Set();
-    for (const item of getItems()) {
-      if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
-        item.flipX = !item.flipX;
-        changedCells.add(item.cell);
-      }
-    }
-    localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-    changedCells.forEach(saveCellToFirebase);
+  if (!cell) {
+    return showToast('اكتب خلية صحيحة مثل IP100');
   }
-}
 
-function updateItemScale(e) {
-  itemScale = Number(e.target.value || 1);
-  if (!selectedIds.size) return;
+  camX = cell.x - canvas.clientWidth / (2 * zoom) + CELL / 2;
+  camY = cell.y - canvas.clientHeight / (2 * zoom) + CELL / 2;
 
-  pushUndo();
-  const changedCells = new Set();
-  for (const item of getItems()) {
-    if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
-      const base = tileMap[item.tileId] || { w:item.w, h:item.h };
-      item.w = Math.max(12, Math.min(CELL, Math.round(base.w * itemScale)));
-      item.h = Math.max(12, Math.min(CELL, Math.round(base.h * itemScale)));
-      item.x = Math.max(0, Math.min(CELL - item.w, item.x));
-      item.y = Math.max(0, Math.min(CELL - item.h, item.y));
-      changedCells.add(item.cell);
-    }
-  }
-  localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-  changedCells.forEach(saveCellToFirebase);
-}
-
-function deleteMyItems() {
-  pushUndo();
-  let changed = false;
-  for (const key in world) {
-    if (canEditCell(key)) {
-      world[key].items = [];
-      changed = true;
-      saveCellToFirebase(key);
-    }
-  }
-  if (changed) {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(world));
-    showToast('تم حذف جميع عناصرك');
-  }
+  clampCam();
 }
 
 function centerStartOnce() {
   if (didInitialCenter) return;
+
   didInitialCenter = true;
 
   const occupied = Object.keys(world).filter(key => world[key]?.items?.length);
   let target = null;
 
   if (occupied.length) {
-    const baseCell = parseCell(occupied[Math.floor(Math.random() * occupied.length)]);
-    if (baseCell) {
+    const base = parseCell(occupied[Math.floor(Math.random() * occupied.length)]);
+
+    if (base) {
       for (let radius = 1; radius <= 6 && !target; radius++) {
         for (let dc = -radius; dc <= radius && !target; dc++) {
           for (let dr = -radius; dr <= radius && !target; dr++) {
-            const col = baseCell.col + dc;
-            const row = baseCell.row + dr;
+            const col = base.col + dc;
+            const row = base.row + dr;
+
             if (col < 1 || row < 1 || col > WORLD_COLS || row > WORLD_ROWS) continue;
+
             const key = `${colName(col)}${row}`;
-            if (!world[key] || !(world[key].items || []).length) target = { col, row, key };
+
+            if (!world[key] || !(world[key].items || []).length) {
+              target = { col, row, key };
+            }
           }
         }
       }
     }
   }
 
-  if (!target) target = parseCell('IP250') || { col:250, row:250 };
-  camX = Math.max(0, (target.col - 1) * CELL - canvas.clientWidth / (2 * zoom) + CELL / 2);
-  camY = Math.max(0, (target.row - 1) * CELL - canvas.clientHeight / (2 * zoom) + CELL / 2);
+  if (!target) {
+    target = {
+      col: Math.ceil(WORLD_COLS / 2),
+      row: Math.ceil(WORLD_ROWS / 2)
+    };
+  }
+
+  camX = (target.col - 1) * CELL - canvas.clientWidth / (2 * zoom) + CELL / 2;
+  camY = (target.row - 1) * CELL - canvas.clientHeight / (2 * zoom) + CELL / 2;
+
   player.x = (target.col - 0.5) * CELL;
   player.y = (target.row - 0.5) * CELL;
+
+  clampPlayer();
   clampCam();
 }
 
-setTimeout(() => document.body.classList.add('loaded'), 3000);
+/* =========================
+   عصا الجوال
+   ========================= */
 
-function startAnonymousAuth() {
-  if (!window.auth || !window.signInAnonymously) {
-    setTimeout(startAnonymousAuth, 500);
-    return;
-  }
+function setupJoystick() {
+  const joy = document.getElementById('joystick');
+  const stick = document.getElementById('stick');
 
-  if (window.auth.currentUser) {
-    updateAuthUI();
-    savePlayerToFirebase();
-    return;
-  }
+  let active = false;
 
-  window.signInAnonymously(window.auth)
-    .then(() => {
-      updateAuthUI();
-      savePlayerToFirebase();
-    })
-    .catch(err => console.error('Anonymous login error:', err));
+  joy.addEventListener('pointerdown', e => {
+    active = true;
+    joy.setPointerCapture(e.pointerId);
+  });
+
+  joy.addEventListener('pointerup', () => {
+    active = false;
+
+    stick.style.left = '36px';
+    stick.style.top = '36px';
+
+    keys.ArrowUp = false;
+    keys.ArrowDown = false;
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
+  });
+
+  joy.addEventListener('pointermove', e => {
+    if (!active) return;
+
+    const r = joy.getBoundingClientRect();
+
+    const x = e.clientX - r.left - 60;
+    const y = e.clientY - r.top - 60;
+
+    const len = Math.min(42, Math.hypot(x, y));
+    const a = Math.atan2(y, x);
+
+    const sx = Math.cos(a) * len;
+    const sy = Math.sin(a) * len;
+
+    stick.style.left = `${36 + sx}px`;
+    stick.style.top = `${36 + sy}px`;
+
+    keys.ArrowRight = sx > 15;
+    keys.ArrowLeft = sx < -15;
+    keys.ArrowDown = sy > 15;
+    keys.ArrowUp = sy < -15;
+  });
 }
 
+/* =========================
+   بدء التشغيل
+   ========================= */
 
-startAnonymousAuth();
+window.addEventListener('beforeunload', () => {
+  savePlayerToFirebase();
+});
 
-initUI();
-showCharacterModal(false);
-setupJoystick();
-listenWorldFromFirebase();
-setTimeout(centerStartOnce, 900);
-listenPlayersFromFirebase();
-savePlayerToFirebase();
+setTimeout(() => {
+  document.body.classList.add('loaded');
+}, 3000);
 
+function startGame() {
+  initUI();
+  setupJoystick();
+
+  myCharacterId = normalizeCharacterId(myCharacterId);
+
+  if (myCharacterId) {
+    localStorage.setItem(CHARACTER_KEY, myCharacterId);
+  }
+
+  startAnonymousAuth();
+  initAuthListener();
+
+  showCharacterModal(false);
+
+  listenWorldFromFirebase();
+  listenPlayersFromFirebase();
+
+  setTimeout(centerStartOnce, 900);
+  setTimeout(savePlayerToFirebase, 1200);
+}
+
+startGame();
