@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v10.5</title>
+  <title>GameNjd v12.1</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="https://n4anime.github.io/bon/icon/cover2.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v10.5" />
+  <meta property="og:title" content="GameNjd v12.1" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
   <meta property="og:url" content="https://i4kun.github.io/G/" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v10.5" />
+  <meta name="twitter:title" content="GameNjd v12.1" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
 
@@ -28,7 +28,10 @@
 <body>
   <div id="loadingScreen">
     <div class="loaderBox">
-      <div class="loaderText">انتظر التحميل</div>
+      <div class="loaderText">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        انتظر التحميل
+      </div>
       <div class="loaderBar"><span></span></div>
     </div>
   </div>
@@ -37,28 +40,24 @@
     <header class="topbar">
       <div class="brandBox">
         <img class="topLogo" src="https://n4anime.github.io/bon/icon/cover2.png" alt="GameNjd" />
-        <strong>GameNjd v10.5</strong>
         <span id="statusText">وضع البناء</span>
-        <span id="guestIdBox"></span>
       </div>
 
       <div class="authBox">
-        <input id="emailInput" type="email" placeholder="الإيميل" autocomplete="email" />
-        <input id="passInput" type="password" placeholder="الرقم السري" autocomplete="current-password" />
-        <input id="displayNameInput" type="text" placeholder="الاسم الظاهر" maxlength="20" />
+        <span id="authState" class="authState offline">
+          <i class="fa-solid fa-circle-xmark"></i>
+          أنت لم تسجل دخول
+        </span>
 
-        <input id="guestCodeInput" type="text" placeholder="المعرف مثل GNJ8F3" maxlength="16" />
-        <input id="guestPassInput" type="password" placeholder="رقم المعرف" autocomplete="new-password" />
+        <button id="openAuthBtn" class="authMainBtn" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          تسجيل دخول / تسجيل جديد
+        </button>
 
-        <button id="guestCodeBtn" type="button">دخول بالمعرف</button>
-        <button id="saveGuestCodeBtn" type="button">حفظ رقم المعرف</button>
-        <button id="linkGuestEmailBtn" type="button">ربط بالإيميل</button>
-
-        <button id="signupBtn" type="button">إنشاء حساب</button>
-        <button id="loginBtn" type="button">دخول</button>
-        <button id="logoutBtn" type="button">خروج</button>
-
-        <span id="authState" class="authState offline">أنت لم تسجل دخول</span>
+        <button id="logoutBtn" class="logoutBtn hidden" type="button">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          خروج
+        </button>
       </div>
     </header>
 
@@ -72,123 +71,242 @@
           <div id="stick"></div>
         </div>
 
-        <button id="mobileGearBtn" class="floatingBtn gearBtn" type="button" title="الإعدادات">⚙</button>
+        <button id="mobileGearBtn" class="floatingBtn gearBtn" type="button" title="الإعدادات">
+          <i class="fa-solid fa-gear"></i>
+        </button>
 
         <div id="zoomControls" class="zoomControls">
-          <button id="zoomInBtn" type="button" title="تكبير">+</button>
-          <button id="zoomOutBtn" type="button" title="تصغير">−</button>
+          <button id="zoomInBtn" type="button" title="تكبير">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <button id="zoomOutBtn" type="button" title="تصغير">
+            <i class="fa-solid fa-minus"></i>
+          </button>
         </div>
 
-        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">إيقاف التجول</button>
+        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">
+          <i class="fa-solid fa-person-walking-arrow-right"></i>
+          إيقاف التجول
+        </button>
       </section>
 
       <aside id="panel" class="panel">
-        <button id="togglePanel" class="mobileOnly" type="button">إخفاء / إظهار الإعدادات</button>
+        <button id="togglePanel" class="mobileOnly" type="button">
+          <i class="fa-solid fa-sliders"></i>
+          إخفاء / إظهار الإعدادات
+        </button>
 
-        <p id="loginHint">عليك تسجيل حساب لحفظ بنائك وتعديلاتك أو سوف تبقى محليًا فقط.</p>
+        <p id="loginHint">
+          <i class="fa-solid fa-circle-info"></i>
+          يجب تسجيل الدخول حتى تستطيع البناء أو التجول. الزائر يستطيع المشاهدة فقط.
+        </p>
 
         <div class="section">
-          <button id="walkBtn" class="mainBtn" type="button">تجول</button>
-          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">تغيير الشخصية</button>
+          <button id="walkBtn" class="mainBtn" type="button">
+            <i class="fa-solid fa-person-walking"></i>
+            تجول
+          </button>
+
+          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">
+            <i class="fa-solid fa-user-pen"></i>
+            تغيير الشخصية
+          </button>
         </div>
 
         <div class="section">
-          <button class="collapseBtn open" data-target="elementsPanel" type="button">العناصر</button>
+          <button class="collapseBtn open" data-target="elementsPanel" type="button">
+            <i class="fa-solid fa-couch"></i>
+            العناصر
+          </button>
 
           <div id="elementsPanel" class="collapseBody">
-            <button class="collapseBtn" data-target="categoryBox" type="button">القسم</button>
-            <div id="categoryBox" class="collapseBody hidden">
-              <select id="categorySelect"></select>
-            </div>
+            <label for="categorySelect">
+              <i class="fa-solid fa-layer-group"></i>
+              القسم
+            </label>
+            <select id="categorySelect"></select>
 
-            <button class="collapseBtn" data-target="sizeBox" type="button">المقاس</button>
-            <div id="sizeBox" class="collapseBody hidden">
-              <select id="sizeFilter">
-                <option value="all">الكل</option>
-              </select>
-            </div>
+            <label for="sizeFilter">
+              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+              المقاس
+            </label>
+            <select id="sizeFilter">
+              <option value="all">الكل</option>
+            </select>
 
-            <button class="collapseBtn open" data-target="tileset" type="button">عرض العناصر</button>
             <div id="tileset"></div>
           </div>
         </div>
 
         <div class="section">
-          <button class="collapseBtn" data-target="layersPanel" type="button">الطبقة</button>
+          <label>
+            <i class="fa-solid fa-layer-group"></i>
+            الطبقة
+          </label>
 
-          <div id="layersPanel" class="collapseBody hidden layerChoices">
-            <button data-layer="1" class="layerBtn active" type="button">1</button>
-            <button data-layer="2" class="layerBtn" type="button">2</button>
-            <button data-layer="3" class="layerBtn" type="button">3</button>
-            <button data-layer="4" class="layerBtn" type="button">4</button>
-            <button data-layer="5" class="layerBtn" type="button">5</button>
-            <input id="layerInput" type="number" min="1" max="99" value="1" />
+          <div id="layersPanel" class="layerChoices">
+            <button data-layer="0" class="layerBtn" type="button">
+              <i class="fa-solid fa-0"></i>
+            </button>
+            <button data-layer="1" class="layerBtn active" type="button">
+              <i class="fa-solid fa-1"></i>
+            </button>
+            <button data-layer="2" class="layerBtn" type="button">
+              <i class="fa-solid fa-2"></i>
+            </button>
+            <button data-layer="3" class="layerBtn" type="button">
+              <i class="fa-solid fa-3"></i>
+            </button>
+            <button data-layer="4" class="layerBtn" type="button">
+              <i class="fa-solid fa-4"></i>
+            </button>
+            <button data-layer="5" class="layerBtn" type="button">
+              <i class="fa-solid fa-5"></i>
+            </button>
+
+            <input id="layerInput" type="number" min="0" max="99" value="1" />
           </div>
         </div>
 
         <div class="section">
-          <button class="collapseBtn" data-target="gridBox" type="button">شفافية الجدول</button>
-          <div id="gridBox" class="collapseBody hidden">
-            <input id="gridOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
-          </div>
+          <label for="gridOpacity">
+            <i class="fa-solid fa-table-cells"></i>
+            شفافية الجدول
+          </label>
+          <input id="gridOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
         </div>
 
         <div class="section">
-          <button class="collapseBtn" data-target="brushBox" type="button">حجم ريشة الرسم</button>
-          <div id="brushBox" class="collapseBody hidden">
-            <input id="brushSize" type="range" min="1" max="4" step="1" value="1" />
-          </div>
+          <label for="brushSize">
+            <i class="fa-solid fa-paintbrush"></i>
+            حجم ريشة الرسم
+          </label>
+          <input id="brushSize" type="range" min="1" max="4" step="1" value="1" />
+        </div>
+
+        <div class="section">
+          <label for="itemScale">
+            <i class="fa-solid fa-maximize"></i>
+            حجم العنصر
+          </label>
+          <input id="itemScale" type="range" min="0.5" max="1.8" step="0.05" value="1" />
         </div>
 
         <div class="section two">
-          <button id="eraseBtn" type="button">ممحاة: إيقاف</button>
-          <button id="undoBtn" type="button">استعادة</button>
+          <button id="eraseBtn" type="button">
+            <i class="fa-solid fa-eraser"></i>
+            ممحاة: إيقاف
+          </button>
+
+          <button id="undoBtn" type="button">
+            <i class="fa-solid fa-rotate-left"></i>
+            استعادة
+          </button>
         </div>
 
         <div class="section">
-          <button id="blockBtn" type="button">جعل العنصر عائق: إيقاف</button>
+          <button id="blockBtn" type="button">
+            <i class="fa-solid fa-ban"></i>
+            جعل العنصر عائق: إيقاف
+          </button>
         </div>
 
         <div class="section two">
-          <button id="flipBtn" type="button">عكس العنصر: إيقاف</button>
-          <button id="deleteSelectedBtn" type="button">حذف العنصر المحدد</button>
+          <button id="flipBtn" type="button">
+            <i class="fa-solid fa-left-right"></i>
+            عكس العنصر: إيقاف
+          </button>
+
+          <button id="deleteSelectedBtn" type="button">
+            <i class="fa-solid fa-trash"></i>
+            حذف العنصر المحدد
+          </button>
         </div>
 
         <div class="section">
-          <button id="deleteAllBtn" type="button">حذف جميع عناصري</button>
-        </div>
-
-        <div class="section">
-          <button class="collapseBtn" data-target="scaleBox" type="button">حجم العنصر</button>
-          <div id="scaleBox" class="collapseBody hidden">
-            <input id="itemScale" type="range" min="0.5" max="1.8" step="0.05" value="1" />
-          </div>
+          <button id="deleteAllBtn" class="dangerBtn" type="button">
+            <i class="fa-solid fa-trash-can"></i>
+            حذف جميع عناصري
+          </button>
         </div>
 
         <div class="section jumpBox">
-          <label for="jumpInput">انتقال إلى خلية</label>
+          <label for="jumpInput">
+            <i class="fa-solid fa-location-dot"></i>
+            انتقال إلى خلية
+          </label>
           <input id="jumpInput" type="text" placeholder="مثال K90" />
-          <button id="jumpBtn" type="button">سافر</button>
-        </div>
-
-        <div class="section">
-          <button id="exportBtn" type="button">تصدير بيانات</button>
-          <button id="importBtn" type="button">استيراد بيانات</button>
-          <textarea id="sheetData" placeholder="بيانات JSON للتصدير أو الاستيراد"></textarea>
+          <button id="jumpBtn" type="button">
+            <i class="fa-solid fa-paper-plane"></i>
+            سافر
+          </button>
         </div>
 
         <div class="section two">
-          <button id="shortcutsBtn" type="button">شرح الاختصارات</button>
-          <button id="aboutBtn" type="button">من نحن</button>
+          <button id="shortcutsBtn" type="button">
+            <i class="fa-solid fa-keyboard"></i>
+            شرح الاختصارات
+          </button>
+
+          <button id="aboutBtn" type="button">
+            <i class="fa-solid fa-circle-question"></i>
+            من نحن
+          </button>
         </div>
       </aside>
     </main>
   </div>
 
+  <div id="authModal" class="characterModal hidden">
+    <div class="characterBox smallBox authModalBox">
+      <button id="authCloseBtn" class="modalCloseBtn" type="button" title="إغلاق">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h2>
+        <i class="fa-solid fa-user"></i>
+        الحساب
+      </h2>
+
+      <p id="authModalHint">سجل دخولك أو أنشئ حسابًا جديدًا حتى تستطيع اللعب والبناء.</p>
+
+      <label for="authEmailInput">الإيميل</label>
+      <input id="authEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
+
+      <label for="authPassInput">كلمة المرور</label>
+      <input id="authPassInput" type="password" placeholder="كلمة المرور" autocomplete="current-password" />
+
+      <label for="displayNameInput">الاسم الظاهر</label>
+      <input id="displayNameInput" type="text" placeholder="اسمك داخل اللعبة" maxlength="20" />
+
+      <div class="authActions">
+        <button id="loginBtn" class="mainBtn" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          دخول
+        </button>
+
+        <button id="signupBtn" class="mainBtn secondaryBtn" type="button">
+          <i class="fa-solid fa-user-plus"></i>
+          تسجيل جديد
+        </button>
+      </div>
+
+      <button id="resetPasswordBtn" class="textBtn" type="button">
+        <i class="fa-solid fa-key"></i>
+        استعادة كلمة المرور
+      </button>
+
+      <p id="authMessage" class="authMessage"></p>
+    </div>
+  </div>
+
   <div id="characterModal" class="characterModal hidden">
     <div class="characterBox">
-      <h2>اختر شخصيتك</h2>
-      <p>اختر شخصية واحدة، وسيتم ربطها بحسابك أو معرفك.</p>
+      <h2>
+        <i class="fa-solid fa-user-astronaut"></i>
+        اختر شخصيتك
+      </h2>
+      <p>اختر شخصية واحدة، وسيتم ربطها بحسابك.</p>
       <div id="characterChoices"></div>
     </div>
   </div>
@@ -197,7 +315,10 @@
     <div class="characterBox smallBox">
       <h2 id="infoTitle">تنبيه</h2>
       <p id="infoText"></p>
-      <button id="infoCloseBtn" class="mainBtn" type="button">إغلاق</button>
+      <button id="infoCloseBtn" class="mainBtn" type="button">
+        <i class="fa-solid fa-check"></i>
+        إغلاق
+      </button>
     </div>
   </div>
 
@@ -205,14 +326,24 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+    import {
+      getDatabase,
+      ref,
+      set,
+      onValue,
+      remove,
+      get,
+      update
+    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
     import {
       getAuth,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
       signOut,
-      signInAnonymously,
-      onAuthStateChanged
+      onAuthStateChanged,
+      sendPasswordResetEmail
     } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -225,9 +356,9 @@
       appId: "1:1076362661145:web:4c171f17ec05854b324988"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getDatabase(firebaseApp);
+    const auth = getAuth(firebaseApp);
 
     window.db = db;
     window.auth = auth;
@@ -242,8 +373,8 @@
     window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
     window.signOut = signOut;
-    window.signInAnonymously = signInAnonymously;
     window.onAuthStateChanged = onAuthStateChanged;
+    window.sendPasswordResetEmail = sendPasswordResetEmail;
   </script>
 </body>
 </html>
