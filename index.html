@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v12.1</title>
+  <title>GameNjd v12.2</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="https://n4anime.github.io/bon/icon/cover2.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v12.1" />
+  <meta property="og:title" content="GameNjd v12.2" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
   <meta property="og:url" content="https://i4kun.github.io/G/" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v12.1" />
+  <meta name="twitter:title" content="GameNjd v12.2" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
 
@@ -43,6 +43,21 @@
         <span id="statusText">وضع البناء</span>
       </div>
 
+      <div class="topControls">
+        <button id="zoomInBtn" class="topIconBtn" type="button" title="تكبير">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <button id="zoomOutBtn" class="topIconBtn" type="button" title="تصغير">
+          <i class="fa-solid fa-minus"></i>
+        </button>
+
+        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">
+          <i class="fa-solid fa-person-walking-arrow-right"></i>
+          إيقاف التجول
+        </button>
+      </div>
+
       <div class="authBox">
         <span id="authState" class="authState offline">
           <i class="fa-solid fa-circle-xmark"></i>
@@ -67,26 +82,16 @@
 
         <div id="toast"></div>
 
+        <div id="bigTilePreview" class="bigTilePreview hidden">
+          <img id="bigTilePreviewImg" src="" alt="معاينة العنصر" />
+        </div>
+
         <div id="joystick" class="joystick hidden">
           <div id="stick"></div>
         </div>
 
         <button id="mobileGearBtn" class="floatingBtn gearBtn" type="button" title="الإعدادات">
           <i class="fa-solid fa-gear"></i>
-        </button>
-
-        <div id="zoomControls" class="zoomControls">
-          <button id="zoomInBtn" type="button" title="تكبير">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <button id="zoomOutBtn" type="button" title="تصغير">
-            <i class="fa-solid fa-minus"></i>
-          </button>
-        </div>
-
-        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">
-          <i class="fa-solid fa-person-walking-arrow-right"></i>
-          إيقاف التجول
         </button>
       </section>
 
@@ -98,8 +103,34 @@
 
         <p id="loginHint">
           <i class="fa-solid fa-circle-info"></i>
-          يجب تسجيل الدخول حتى تستطيع البناء أو التجول. الزائر يستطيع المشاهدة فقط.
+          يجب تسجيل الدخول حتى تستطيع البناء أو التجول، الزائر يستطيع المشاهدة فقط.
         </p>
+
+        <div class="section infoPanel">
+          <div class="infoRow">
+            <span>
+              <i class="fa-solid fa-cubes"></i>
+              عدد عناصرك
+            </span>
+            <b id="myItemsCount">0</b>
+          </div>
+
+          <div class="infoRow">
+            <span>
+              <i class="fa-solid fa-location-dot"></i>
+              موقعك الحالي
+            </span>
+            <b id="currentCellText">--</b>
+          </div>
+
+          <div class="selectedPreviewBox">
+            <span>
+              <i class="fa-solid fa-magnifying-glass"></i>
+              العنصر المحدد
+            </span>
+            <img id="selectedItemPreview" src="" alt="العنصر المحدد" />
+          </div>
+        </div>
 
         <div class="section">
           <button id="walkBtn" class="mainBtn" type="button">
@@ -120,19 +151,67 @@
           </button>
 
           <div id="elementsPanel" class="collapseBody">
-            <label for="categorySelect">
+            <label>
               <i class="fa-solid fa-layer-group"></i>
               القسم
             </label>
-            <select id="categorySelect"></select>
 
-            <label for="sizeFilter">
-              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
-              المقاس
-            </label>
-            <select id="sizeFilter">
-              <option value="all">الكل</option>
-            </select>
+            <div id="categoryButtons" class="categoryButtons">
+              <button data-category="furniture" class="categoryBtn active" type="button">
+                <i class="fa-solid fa-couch"></i>
+                أثاث
+              </button>
+
+              <button data-category="storage" class="categoryBtn" type="button">
+                <i class="fa-solid fa-box"></i>
+                تخزين
+              </button>
+
+              <button data-category="kitchenware" class="categoryBtn" type="button">
+                <i class="fa-solid fa-utensils"></i>
+                أدوات وأواني
+              </button>
+
+              <button data-category="floors" class="categoryBtn" type="button">
+                <i class="fa-solid fa-border-all"></i>
+                أرضيات
+              </button>
+
+              <button data-category="carpets" class="categoryBtn" type="button">
+                <i class="fa-solid fa-rug"></i>
+                سجاد ومنسوجات
+              </button>
+
+              <button data-category="plants" class="categoryBtn" type="button">
+                <i class="fa-solid fa-seedling"></i>
+                نباتات
+              </button>
+
+              <button data-category="walls" class="categoryBtn" type="button">
+                <i class="fa-solid fa-dungeon"></i>
+                جدران ومباني
+              </button>
+
+              <button data-category="doors" class="categoryBtn" type="button">
+                <i class="fa-solid fa-door-open"></i>
+                أبواب ونوافذ
+              </button>
+
+              <button data-category="decorations" class="categoryBtn" type="button">
+                <i class="fa-solid fa-star"></i>
+                ديكور
+              </button>
+            </div>
+
+            <input id="categorySelect" class="hidden" type="hidden" value="furniture" />
+            <input id="sizeFilter" class="hidden" type="hidden" value="all" />
+
+            <div class="previewToggleBox">
+              <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
+                <i class="fa-solid fa-eye"></i>
+                تكبير العناصر عند المرور: تشغيل
+              </button>
+            </div>
 
             <div id="tileset"></div>
           </div>
@@ -145,27 +224,28 @@
           </label>
 
           <div id="layersPanel" class="layerChoices">
-            <button data-layer="0" class="layerBtn" type="button">
-              <i class="fa-solid fa-0"></i>
-            </button>
             <button data-layer="1" class="layerBtn active" type="button">
               <i class="fa-solid fa-1"></i>
             </button>
+
             <button data-layer="2" class="layerBtn" type="button">
               <i class="fa-solid fa-2"></i>
             </button>
+
             <button data-layer="3" class="layerBtn" type="button">
               <i class="fa-solid fa-3"></i>
             </button>
+
             <button data-layer="4" class="layerBtn" type="button">
               <i class="fa-solid fa-4"></i>
             </button>
+
             <button data-layer="5" class="layerBtn" type="button">
               <i class="fa-solid fa-5"></i>
             </button>
-
-            <input id="layerInput" type="number" min="0" max="99" value="1" />
           </div>
+
+          <input id="layerInput" class="hidden" type="hidden" value="1" />
         </div>
 
         <div class="section">
@@ -189,7 +269,7 @@
             <i class="fa-solid fa-maximize"></i>
             حجم العنصر
           </label>
-          <input id="itemScale" type="range" min="0.5" max="1.8" step="0.05" value="1" />
+          <input id="itemScale" type="range" min="0.5" max="2.5" step="0.05" value="1" />
         </div>
 
         <div class="section two">
@@ -235,7 +315,9 @@
             <i class="fa-solid fa-location-dot"></i>
             انتقال إلى خلية
           </label>
+
           <input id="jumpInput" type="text" placeholder="مثال K90" />
+
           <button id="jumpBtn" type="button">
             <i class="fa-solid fa-paper-plane"></i>
             سافر
@@ -268,35 +350,72 @@
         الحساب
       </h2>
 
-      <p id="authModalHint">سجل دخولك أو أنشئ حسابًا جديدًا حتى تستطيع اللعب والبناء.</p>
+      <p id="authModalHint">
+        سجل دخولك أو أنشئ حسابًا جديدًا حتى تستطيع اللعب والبناء.
+      </p>
 
-      <label for="authEmailInput">الإيميل</label>
-      <input id="authEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
-
-      <label for="authPassInput">كلمة المرور</label>
-      <input id="authPassInput" type="password" placeholder="كلمة المرور" autocomplete="current-password" />
-
-      <label for="displayNameInput">الاسم الظاهر</label>
-      <input id="displayNameInput" type="text" placeholder="اسمك داخل اللعبة" maxlength="20" />
-
-      <div class="authActions">
-        <button id="loginBtn" class="mainBtn" type="button">
+      <div class="authTabs">
+        <button id="authLoginTab" class="authTab active" data-auth-tab="login" type="button">
           <i class="fa-solid fa-right-to-bracket"></i>
-          دخول
+          تسجيل الدخول
         </button>
 
-        <button id="signupBtn" class="mainBtn secondaryBtn" type="button">
+        <button id="authSignupTab" class="authTab" data-auth-tab="signup" type="button">
           <i class="fa-solid fa-user-plus"></i>
-          تسجيل جديد
+          إنشاء حساب
+        </button>
+
+        <button id="authResetTab" class="authTab" data-auth-tab="reset" type="button">
+          <i class="fa-solid fa-key"></i>
+          استعادة كلمة المرور
         </button>
       </div>
 
-      <button id="resetPasswordBtn" class="textBtn" type="button">
-        <i class="fa-solid fa-key"></i>
-        استعادة كلمة المرور
-      </button>
+      <div id="authLoginPanel" class="authPanel">
+        <label for="authEmailInput">الإيميل</label>
+        <input id="authEmailInput" type="email" placeholder="الإيميل" autocomplete="email" />
+
+        <label for="authPassInput">كلمة المرور</label>
+        <input id="authPassInput" type="password" placeholder="الرقم السري" autocomplete="current-password" />
+
+        <button id="loginBtn" class="mainBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          دخول
+        </button>
+      </div>
+
+      <div id="authSignupPanel" class="authPanel hidden">
+        <label for="signupEmailInput">الإيميل</label>
+        <input id="signupEmailInput" type="email" placeholder="الإيميل" autocomplete="email" />
+
+        <label for="signupPassInput">كلمة المرور</label>
+        <input id="signupPassInput" type="password" placeholder="الرقم السري (6 أحرف على الأقل)" autocomplete="new-password" />
+
+        <label for="displayNameInput">الاسم الظاهر</label>
+        <input id="displayNameInput" type="text" placeholder="الاسم الظاهر (اختياري)" maxlength="20" />
+
+        <button id="signupBtn" class="mainBtn secondaryBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-user-plus"></i>
+          إنشاء حساب
+        </button>
+      </div>
+
+      <div id="authResetPanel" class="authPanel hidden">
+        <label for="resetEmailInput">الإيميل</label>
+        <input id="resetEmailInput" type="email" placeholder="الإيميل" autocomplete="email" />
+
+        <button id="resetPasswordBtn" class="mainBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-envelope"></i>
+          إرسال رابط الاستعادة
+        </button>
+      </div>
 
       <p id="authMessage" class="authMessage"></p>
+
+      <button id="authBottomCloseBtn" class="closeFullBtn" type="button">
+        <i class="fa-solid fa-xmark"></i>
+        إغلاق
+      </button>
     </div>
   </div>
 
@@ -306,7 +425,9 @@
         <i class="fa-solid fa-user-astronaut"></i>
         اختر شخصيتك
       </h2>
+
       <p>اختر شخصية واحدة، وسيتم ربطها بحسابك.</p>
+
       <div id="characterChoices"></div>
     </div>
   </div>
@@ -315,6 +436,7 @@
     <div class="characterBox smallBox">
       <h2 id="infoTitle">تنبيه</h2>
       <p id="infoText"></p>
+
       <button id="infoCloseBtn" class="mainBtn" type="button">
         <i class="fa-solid fa-check"></i>
         إغلاق
