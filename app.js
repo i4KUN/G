@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v12.1
+// GameNjd v12.2
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -11,18 +11,19 @@ const WORLD_ROWS = 100;
 const CELL = 500;
 const MINI = 10;
 
-const SAVE_KEY = 'GameNjd_v121_world';
-const CHARACTER_KEY = 'GameNjd_v121_character';
-const DISPLAY_NAME_KEY = 'GameNjd_v121_display_name';
-const LAST_EMAIL_KEY = 'GameNjd_v121_last_email';
+const SAVE_KEY = 'GameNjd_v122_world';
+const CHARACTER_KEY = 'GameNjd_v122_character';
+const DISPLAY_NAME_KEY = 'GameNjd_v122_display_name';
+const LAST_EMAIL_KEY = 'GameNjd_v122_last_email';
+const LAST_PLAYER_KEY = 'GameNjd_v122_last_player';
 
 const CHARACTER_BASE = 'Characters';
 const ASSET_BASE = 'All-Pic-tiles';
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
-const PLAYER_DRAW_W = 120;
-const PLAYER_DRAW_H = 120;
+const PLAYER_DRAW_W = 92;
+const PLAYER_DRAW_H = 92;
 
 const DEFAULT_FLOOR_SRC = 'All-Pic-tiles/04-Floors/Big/Floors-big-36.png';
 
@@ -58,18 +59,7 @@ const fixedGroundTiles = [
   { cell: 'AH69', src: 'All-Pic-tiles/map-pic/10.png' },
   { cell: 'BP90', src: 'All-Pic-tiles/map-pic/10.png' },
   { cell: 'CD72', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CJ54', src: 'All-Pic-tiles/map-pic/10.png' },
-
-  { cell: 'P41', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'AB22', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'AV7', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'BL33', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CR45', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'L88', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'AN80', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'BD67', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'BX92', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CU61', src: 'All-Pic-tiles/map-pic/10.png' }
+  { cell: 'CJ54', src: 'All-Pic-tiles/map-pic/10.png' }
 ];
 
 const SIZE_DATA = {
@@ -80,15 +70,15 @@ const SIZE_DATA = {
 };
 
 const tileGroups = [
-  { key: 'furniture', name: '1) أثاث', folder: '05-Furniture', prefix: 'Furniture', sizes: { Medium: 55, Small: 143 } },
-  { key: 'storage', name: '2) تخزين', folder: '07-Storage', prefix: 'Storage', sizes: { Medium: 8, Small: 148 } },
-  { key: 'kitchenware', name: '3) أدوات وأواني', folder: '06-Kitchenware', prefix: 'Kitchenware', sizes: { Small: 266, Precise: 9 } },
-  { key: 'floors', name: '4) أرضيات', folder: '04-Floors', prefix: 'Floors', sizes: { Big: 196 } },
-  { key: 'carpets', name: '5) سجاد ومنسوجات', folder: '01-Carpets', prefix: 'Carpets', sizes: { Medium: 91, Small: 125 } },
-  { key: 'plants', name: '6) نباتات', folder: '09-Plants', prefix: 'Plants', sizes: { Big: 7, Small: 8, Precise: 7 } },
-  { key: 'walls', name: '7) جدران ومباني', folder: '08-Walls', prefix: 'Walls', sizes: { Big: 142, Medium: 43 } },
-  { key: 'doors', name: '8) أبواب ونوافذ', folder: '03-Doors', prefix: 'Doors', sizes: { Medium: 188, Precise: 5 } },
-  { key: 'decorations', name: '9) ديكور', folder: '02-Decorations', prefix: 'Decorations', sizes: { Small: 164 } }
+  { key: 'furniture', name: 'أثاث', folder: '05-Furniture', prefix: 'Furniture', sizes: { Medium: 55, Small: 143 } },
+  { key: 'storage', name: 'تخزين', folder: '07-Storage', prefix: 'Storage', sizes: { Medium: 8, Small: 148 } },
+  { key: 'kitchenware', name: 'أدوات وأواني', folder: '06-Kitchenware', prefix: 'Kitchenware', sizes: { Small: 266, Precise: 9 } },
+  { key: 'floors', name: 'أرضيات', folder: '04-Floors', prefix: 'Floors', sizes: { Big: 196 } },
+  { key: 'carpets', name: 'سجاد ومنسوجات', folder: '01-Carpets', prefix: 'Carpets', sizes: { Medium: 91, Small: 125 } },
+  { key: 'plants', name: 'نباتات', folder: '09-Plants', prefix: 'Plants', sizes: { Big: 7, Small: 8, Precise: 7 } },
+  { key: 'walls', name: 'جدران ومباني', folder: '08-Walls', prefix: 'Walls', sizes: { Big: 142, Medium: 43 } },
+  { key: 'doors', name: 'أبواب ونوافذ', folder: '03-Doors', prefix: 'Doors', sizes: { Medium: 188, Precise: 5 } },
+  { key: 'decorations', name: 'ديكور', folder: '02-Decorations', prefix: 'Decorations', sizes: { Small: 164 } }
 ];
 
 let zoom = 0.55;
@@ -96,6 +86,7 @@ let camX = 0;
 let camY = 0;
 let gridOpacity = 0.45;
 let selectedTile = null;
+let activeCategory = 'furniture';
 let activeLayer = 1;
 let brushSize = 1;
 let eraser = false;
@@ -120,18 +111,47 @@ let playerMoving = false;
 let onlinePlayers = {};
 let myCharacterId = localStorage.getItem(CHARACTER_KEY) || '';
 let world = loadWorld();
-let player = {
-  x: (50 - 0.5) * CELL,
-  y: (50 - 0.5) * CELL,
-  speed: 5,
-  dir: 'down'
-};
+let selectedResize = null;
+let tilePreviewEnabled = true;
+let lastUiUpdate = 0;
+
+let player = loadLastPlayer();
 
 const keys = {};
 const imageCache = {};
 const characterImageCache = {};
+const alphaBoxCache = {};
 const floorImage = new Image();
 floorImage.src = DEFAULT_FLOOR_SRC;
+
+function loadLastPlayer() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAST_PLAYER_KEY));
+    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+      return {
+        x: saved.x,
+        y: saved.y,
+        speed: 5,
+        dir: saved.dir || 'down'
+      };
+    }
+  } catch {}
+
+  return {
+    x: (50 - 0.5) * CELL,
+    y: (50 - 0.5) * CELL,
+    speed: 5,
+    dir: 'down'
+  };
+}
+
+function saveLastPlayer() {
+  localStorage.setItem(LAST_PLAYER_KEY, JSON.stringify({
+    x: player.x,
+    y: player.y,
+    dir: player.dir
+  }));
+}
 
 function getTileSize(groupKey, size) {
   if (groupKey === 'floors') return { w: 220, h: 220 };
@@ -168,7 +188,7 @@ function buildCategories() {
 
         tiles.push({
           id: `${group.key}_${size.toLowerCase()}_${i}`,
-          name: `${SIZE_DATA[size]?.label || size} ${i}`,
+          name: `${group.name} ${i}`,
           image: `${ASSET_BASE}/${group.folder}/${size}/${getImageName(group, size, i)}`,
           w: dims.w,
           h: dims.h,
@@ -186,6 +206,7 @@ function buildCategories() {
 }
 
 const categories = buildCategories();
+
 const tileMap = Object.fromEntries(
   Object.values(categories).flatMap(category => category.tiles.map(tile => [tile.id, tile]))
 );
@@ -229,6 +250,25 @@ function ensureCell(key) {
   return world[key];
 }
 
+function normalizeWorldData(data) {
+  const result = {};
+
+  for (const key in data || {}) {
+    const cell = data[key];
+
+    if (!cell || typeof cell !== 'object' || cell === true) continue;
+
+    const items = Array.isArray(cell.items) ? cell.items : Object.values(cell.items || {});
+
+    result[key] = {
+      owner: cell.owner || '',
+      items: items.filter(item => item && item.uid && item.tileId)
+    };
+  }
+
+  return result;
+}
+
 function saveCellToFirebase(cellKey) {
   if (!window.db || !window.ref || !window.set || !window.remove) return;
 
@@ -267,25 +307,6 @@ function saveWorld() {
   }
 }
 
-function normalizeWorldData(data) {
-  const result = data || {};
-
-  for (const key in result) {
-    if (!result[key]) {
-      delete result[key];
-      continue;
-    }
-
-    if (!Array.isArray(result[key].items)) {
-      result[key].items = Object.values(result[key].items || {});
-    }
-
-    result[key].items = result[key].items.filter(item => item && item.uid && item.tileId);
-  }
-
-  return result;
-}
-
 function listenWorldFromFirebase() {
   if (!window.db || !window.ref || !window.onValue) {
     setTimeout(listenWorldFromFirebase, 400);
@@ -296,6 +317,7 @@ function listenWorldFromFirebase() {
     world = normalizeWorldData(snapshot.val() || {});
     saveLocalWorld();
     centerStartOnce();
+    updateInfoPanel();
   }, error => {
     console.error(error);
     showToast('فشل الاتصال بالعالم');
@@ -344,9 +366,7 @@ function parseCell(ref) {
 
   let col = 0;
 
-  for (const ch of match[1]) {
-    col = col * 26 + ch.charCodeAt(0) - 64;
-  }
+  for (const ch of match[1]) col = col * 26 + ch.charCodeAt(0) - 64;
 
   const row = Number(match[2]);
 
@@ -388,6 +408,12 @@ function getItems() {
   return Object.values(world).flatMap(cell => Array.isArray(cell.items) ? cell.items : []);
 }
 
+function getMyItems() {
+  const owner = currentOwner();
+  if (!owner) return [];
+  return getItems().filter(item => item.owner === owner || world[item.cell]?.owner === owner);
+}
+
 function itemRect(item) {
   const cell = parseCell(item.cell);
 
@@ -401,9 +427,84 @@ function itemRect(item) {
   };
 }
 
-function collisionRect(item) {
+function getAlphaBox(item) {
+  const tile = tileMap[item.tileId];
+  if (!tile) return { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
+
+  const img = getTileImage(tile.image);
+
+  if (!img || !img.complete || !img.naturalWidth) {
+    return { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
+  }
+
+  if (alphaBoxCache[tile.image]) return alphaBoxCache[tile.image];
+
+  const small = document.createElement('canvas');
+  const sctx = small.getContext('2d', { willReadFrequently: true });
+  const w = 64;
+  const h = 64;
+
+  small.width = w;
+  small.height = h;
+
+  sctx.drawImage(img, 0, 0, w, h);
+
+  let minX = w;
+  let minY = h;
+  let maxX = 0;
+  let maxY = 0;
+  let found = false;
+
+  try {
+    const data = sctx.getImageData(0, 0, w, h).data;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const alpha = data[(y * w + x) * 4 + 3];
+
+        if (alpha > 20) {
+          found = true;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+  } catch {
+    found = false;
+  }
+
+  if (!found) {
+    alphaBoxCache[tile.image] = { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
+    return alphaBoxCache[tile.image];
+  }
+
+  alphaBoxCache[tile.image] = {
+    left: minX / w,
+    top: minY / h,
+    right: maxX / w,
+    bottom: maxY / h
+  };
+
+  return alphaBoxCache[tile.image];
+}
+
+function visualRect(item) {
   const rect = itemRect(item);
-  const shrink = 0.34;
+  const box = getAlphaBox(item);
+
+  return {
+    x: rect.x + rect.w * box.left,
+    y: rect.y + rect.h * box.top,
+    w: rect.w * (box.right - box.left),
+    h: rect.h * (box.bottom - box.top)
+  };
+}
+
+function collisionRect(item) {
+  const rect = visualRect(item);
+  const shrink = 0.05;
 
   return {
     x: rect.x + rect.w * shrink,
@@ -424,7 +525,6 @@ function rectsHit(a, b) {
 
 function pushUndo() {
   undoStack.push(JSON.stringify(world));
-
   if (undoStack.length > 80) undoStack.shift();
 }
 
@@ -433,6 +533,7 @@ function clearPaintState() {
   isDown = false;
   dragMode = null;
   selectionBox = null;
+  selectedResize = null;
 }
 
 function showToast(message) {
@@ -445,7 +546,7 @@ function showToast(message) {
 
   showToast.timer = setTimeout(() => {
     toast.style.display = 'none';
-  }, 2000);
+  }, 2200);
 }
 
 function showAuthMessage(message) {
@@ -487,10 +588,8 @@ resize();
 
 function normalizeCharacterId(id) {
   if (!id) return '';
-
   if (id.startsWith('male_')) return 'man-' + Number(id.split('_')[1] || 1);
   if (id.startsWith('female_')) return 'woman-' + Number(id.split('_')[1] || 1);
-
   return id;
 }
 
@@ -531,7 +630,6 @@ function setCharacter(id) {
 
 function buildCharacterChoices() {
   const box = document.getElementById('characterChoices');
-
   if (!box) return;
 
   let html = '<h3>رجال</h3><div class="characterGrid">';
@@ -642,6 +740,15 @@ function drawFixedGroundTiles() {
     const point = worldToScreen(x, y);
     const size = CELL * zoom;
 
+    if (
+      point.x + size < -100 ||
+      point.y + size < -100 ||
+      point.x > canvas.clientWidth + 100 ||
+      point.y > canvas.clientHeight + 100
+    ) {
+      continue;
+    }
+
     if (img && img.complete && img.naturalWidth) {
       ctx.drawImage(img, point.x, point.y, size, size);
     }
@@ -700,10 +807,10 @@ function drawItems() {
     const img = getTileImage(tile.image);
 
     if (
-      point.x + rect.w * zoom < -80 ||
-      point.y + rect.h * zoom < -80 ||
-      point.x > canvas.clientWidth + 80 ||
-      point.y > canvas.clientHeight + 80
+      point.x + rect.w * zoom < -100 ||
+      point.y + rect.h * zoom < -100 ||
+      point.x > canvas.clientWidth + 100 ||
+      point.y > canvas.clientHeight + 100
     ) {
       continue;
     }
@@ -735,17 +842,68 @@ function drawItems() {
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2;
       ctx.strokeRect(point.x - 3, point.y - 3, rect.w * zoom + 6, rect.h * zoom + 6);
+      drawResizeHandles(item);
       ctx.lineWidth = 1;
     }
 
     if (!walkMode && item.blocking && gridOpacity > 0) {
       const cr = collisionRect(item);
       const cp = worldToScreen(cr.x, cr.y);
+
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 1;
       ctx.strokeRect(cp.x, cp.y, cr.w * zoom, cr.h * zoom);
     }
   }
+}
+
+function getResizeHandles(item) {
+  const rect = itemRect(item);
+  const p = worldToScreen(rect.x, rect.y);
+  const w = rect.w * zoom;
+  const h = rect.h * zoom;
+  const s = 12;
+
+  return [
+    { name: 'tl', x: p.x - s / 2, y: p.y - s / 2, w: s, h: s },
+    { name: 'tr', x: p.x + w - s / 2, y: p.y - s / 2, w: s, h: s },
+    { name: 'bl', x: p.x - s / 2, y: p.y + h - s / 2, w: s, h: s },
+    { name: 'br', x: p.x + w - s / 2, y: p.y + h - s / 2, w: s, h: s }
+  ];
+}
+
+function drawResizeHandles(item) {
+  const handles = getResizeHandles(item);
+
+  for (const h of handles) {
+    ctx.fillStyle = '#22c55e';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(h.x + h.w / 2, h.y + h.h / 2, h.w / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function hitResizeHandle(screenX, screenY) {
+  if (selectedIds.size !== 1) return null;
+
+  const selected = getItems().find(item => selectedIds.has(item.uid));
+  if (!selected) return null;
+
+  for (const handle of getResizeHandles(selected)) {
+    if (
+      screenX >= handle.x &&
+      screenY >= handle.y &&
+      screenX <= handle.x + handle.w &&
+      screenY <= handle.y + handle.h
+    ) {
+      return { item: selected, handle: handle.name };
+    }
+  }
+
+  return null;
 }
 
 function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
@@ -755,9 +913,9 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
 
   const rowMap = {
     down: 0,
-    left: 1,
-    right: 2,
-    up: 3
+    right: 1,
+    up: 2,
+    left: 3
   };
 
   const row = rowMap[dir] ?? 0;
@@ -769,7 +927,7 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
 
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath();
-  ctx.ellipse(point.x, point.y + 10 * zoom, 24 * zoom, 7 * zoom, 0, 0, Math.PI * 2);
+  ctx.ellipse(point.x, point.y + 8 * zoom, 20 * zoom, 6 * zoom, 0, 0, Math.PI * 2);
   ctx.fill();
 
   if (img.complete && img.naturalWidth) {
@@ -785,14 +943,14 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
       frameW,
       frameH,
       point.x - drawW / 2,
-      point.y - drawH + 22 * zoom,
+      point.y - drawH + 18 * zoom,
       drawW,
       drawH
     );
   } else {
     ctx.fillStyle = isMe ? '#22c55e' : '#f97316';
     ctx.beginPath();
-    ctx.arc(point.x, point.y, 15 * zoom, 0, Math.PI * 2);
+    ctx.arc(point.x, point.y, 13 * zoom, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -803,8 +961,8 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
   ctx.textAlign = 'center';
   ctx.lineWidth = 3;
   ctx.strokeStyle = 'rgba(0,0,0,0.65)';
-  ctx.strokeText(label, point.x, point.y - drawH + 18 * zoom);
-  ctx.fillText(label, point.x, point.y - drawH + 18 * zoom);
+  ctx.strokeText(label, point.x, point.y - drawH + 14 * zoom);
+  ctx.fillText(label, point.x, point.y - drawH + 14 * zoom);
   ctx.textAlign = 'start';
 
   ctx.restore();
@@ -871,27 +1029,25 @@ function draw() {
 
   if (walkMode) drawPlayer();
 
+  if (Date.now() - lastUiUpdate > 300) {
+    updateInfoPanel();
+    lastUiUpdate = Date.now();
+  }
+
   requestAnimationFrame(draw);
 }
 
 requestAnimationFrame(draw);
 
+function bind(id, event, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, fn);
+}
+
 function initUI() {
-  const cat = document.getElementById('categorySelect');
-
-  if (cat) {
-    cat.innerHTML = Object.entries(categories)
-      .map(([id, category]) => `<option value="${id}">${category.name}</option>`)
-      .join('');
-
-    cat.onchange = () => {
-      updateSizeFilter();
-      renderTiles();
-    };
-  }
-
   bind('openAuthBtn', 'click', openAuthModal);
   bind('authCloseBtn', 'click', closeAuthModal);
+  bind('authBottomCloseBtn', 'click', closeAuthModal);
   bind('loginBtn', 'click', login);
   bind('signupBtn', 'click', signup);
   bind('logoutBtn', 'click', logout);
@@ -932,6 +1088,29 @@ function initUI() {
   bind('jumpBtn', 'click', jump);
   bind('walkBtn', 'click', toggleWalk);
 
+  bind('tilePreviewToggle', 'click', () => {
+    tilePreviewEnabled = !tilePreviewEnabled;
+    updatePreviewToggle();
+    hideBigTilePreview();
+  });
+
+  document.querySelectorAll('.authTab').forEach(button => {
+    button.onclick = () => setAuthTab(button.dataset.authTab);
+  });
+
+  document.querySelectorAll('.categoryBtn').forEach(button => {
+    button.onclick = () => {
+      activeCategory = button.dataset.category;
+      document.querySelectorAll('.categoryBtn').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+
+      const hidden = document.getElementById('categorySelect');
+      if (hidden) hidden.value = activeCategory;
+
+      renderTiles();
+    };
+  });
+
   const displayNameInput = document.getElementById('displayNameInput');
   if (displayNameInput) {
     displayNameInput.value = displayName;
@@ -940,10 +1119,14 @@ function initUI() {
 
   const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
   const emailInput = document.getElementById('authEmailInput');
-  if (emailInput && lastEmail) emailInput.value = lastEmail;
+  const signupEmailInput = document.getElementById('signupEmailInput');
+  const resetEmailInput = document.getElementById('resetEmailInput');
 
-  const sizeFilter = document.getElementById('sizeFilter');
-  if (sizeFilter) sizeFilter.onchange = renderTiles;
+  if (lastEmail) {
+    if (emailInput) emailInput.value = lastEmail;
+    if (signupEmailInput) signupEmailInput.value = lastEmail;
+    if (resetEmailInput) resetEmailInput.value = lastEmail;
+  }
 
   const gridInput = document.getElementById('gridOpacity');
   if (gridInput) {
@@ -957,11 +1140,6 @@ function initUI() {
     brushInput.oninput = event => {
       brushSize = Number(event.target.value || 1);
     };
-  }
-
-  const layerInput = document.getElementById('layerInput');
-  if (layerInput) {
-    layerInput.oninput = event => setActiveLayer(Number(event.target.value || 1));
   }
 
   const scaleInput = document.getElementById('itemScale');
@@ -978,43 +1156,31 @@ function initUI() {
     button.onclick = () => setActiveLayer(Number(button.dataset.layer));
   });
 
-  updateSizeFilter();
   renderTiles();
   setActiveLayer(activeLayer);
   updateAuthUI();
+  updateToolButtons();
+  updatePreviewToggle();
+  updateInfoPanel();
 }
 
-function bind(id, event, fn) {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener(event, fn);
-}
+function setAuthTab(tab) {
+  document.querySelectorAll('.authTab').forEach(button => {
+    button.classList.toggle('active', button.dataset.authTab === tab);
+  });
 
-function updateSizeFilter() {
-  const catId = document.getElementById('categorySelect')?.value;
-  const sizeSelect = document.getElementById('sizeFilter');
+  document.getElementById('authLoginPanel')?.classList.toggle('hidden', tab !== 'login');
+  document.getElementById('authSignupPanel')?.classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('authResetPanel')?.classList.toggle('hidden', tab !== 'reset');
 
-  if (!catId || !sizeSelect || !categories[catId]) return;
-
-  const sizes = [...new Set(categories[catId].tiles.map(tile => tile.size))];
-  const old = sizeSelect.value;
-
-  sizeSelect.innerHTML =
-    '<option value="all">الكل</option>' +
-    sizes.map(size => `<option value="${size}">${SIZE_DATA[size]?.label || size}</option>`).join('');
-
-  sizeSelect.value = sizes.includes(old) ? old : 'all';
+  showAuthMessage('');
 }
 
 function renderTiles() {
-  const categoryId = document.getElementById('categorySelect')?.value;
-  const selectedSize = document.getElementById('sizeFilter')?.value || 'all';
   const tileset = document.getElementById('tileset');
+  if (!tileset || !categories[activeCategory]) return;
 
-  if (!categoryId || !tileset || !categories[categoryId]) return;
-
-  const tiles = categories[categoryId].tiles.filter(tile => {
-    return selectedSize === 'all' || tile.size === selectedSize;
-  });
+  const tiles = categories[activeCategory].tiles;
 
   tileset.innerHTML = tiles.map(tile => `
     <div class="tile" data-id="${tile.id}" title="${tile.name}">
@@ -1036,13 +1202,46 @@ function renderTiles() {
 
       selectedTile = tileMap[tileElement.dataset.id];
       eraser = false;
+      selectedIds.clear();
+      updateSelectedPreview();
       updateToolButtons();
     };
+
+    tileElement.onmouseenter = () => {
+      if (!tilePreviewEnabled) return;
+
+      const tile = tileMap[tileElement.dataset.id];
+      if (tile) showBigTilePreview(tile.image);
+    };
+
+    tileElement.onmouseleave = hideBigTilePreview;
   });
 }
 
+function updatePreviewToggle() {
+  const btn = document.getElementById('tilePreviewToggle');
+  if (!btn) return;
+
+  btn.classList.toggle('active', tilePreviewEnabled);
+  btn.innerHTML = `<i class="fa-solid fa-eye"></i> تكبير العناصر عند المرور: ${tilePreviewEnabled ? 'تشغيل' : 'إيقاف'}`;
+}
+
+function showBigTilePreview(src) {
+  const box = document.getElementById('bigTilePreview');
+  const img = document.getElementById('bigTilePreviewImg');
+
+  if (!box || !img) return;
+
+  img.src = src;
+  box.classList.remove('hidden');
+}
+
+function hideBigTilePreview() {
+  document.getElementById('bigTilePreview')?.classList.add('hidden');
+}
+
 function setActiveLayer(n) {
-  activeLayer = Math.max(0, Math.min(99, Number(n || 0)));
+  activeLayer = Math.max(1, Math.min(99, Number(n || 1)));
 
   const input = document.getElementById('layerInput');
   if (input) input.value = activeLayer;
@@ -1050,6 +1249,22 @@ function setActiveLayer(n) {
   document.querySelectorAll('.layerBtn').forEach(button => {
     button.classList.toggle('active', Number(button.dataset.layer) === activeLayer);
   });
+
+  if (selectedIds.size) {
+    pushUndo();
+
+    const changedCells = new Set();
+
+    for (const item of getItems()) {
+      if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
+        item.layer = activeLayer;
+        changedCells.add(item.cell);
+      }
+    }
+
+    saveLocalWorld();
+    changedCells.forEach(saveCellToFirebase);
+  }
 }
 
 function updateAuthUI() {
@@ -1057,10 +1272,9 @@ function updateAuthUI() {
   const authState = document.getElementById('authState');
   const openAuthBtn = document.getElementById('openAuthBtn');
   const logoutBtn = document.getElementById('logoutBtn');
+  const loginHint = document.getElementById('loginHint');
 
-  if (statusText) {
-    statusText.textContent = walkMode ? 'وضع التجول' : 'وضع البناء';
-  }
+  if (statusText) statusText.textContent = walkMode ? 'وضع التجول' : 'وضع البناء';
 
   if (authState) {
     if (isLoggedIn()) {
@@ -1076,6 +1290,7 @@ function updateAuthUI() {
 
   if (openAuthBtn) openAuthBtn.classList.toggle('hidden', isLoggedIn());
   if (logoutBtn) logoutBtn.classList.toggle('hidden', !isLoggedIn());
+  if (loginHint) loginHint.classList.toggle('hidden', isLoggedIn());
 
   const nameInput = document.getElementById('displayNameInput');
   if (nameInput && nameInput.value !== displayName) nameInput.value = displayName;
@@ -1091,15 +1306,47 @@ function updateToolButtons() {
   if (flipBtn) flipBtn.innerHTML = `<i class="fa-solid fa-left-right"></i> عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
 }
 
+function updateInfoPanel() {
+  const countBox = document.getElementById('myItemsCount');
+  const cellBox = document.getElementById('currentCellText');
+
+  if (countBox) countBox.textContent = String(getMyItems().length);
+
+  const center = screenToWorld(canvas.clientWidth / 2, canvas.clientHeight / 2);
+  const cell = walkMode ? cellFromWorld(player.x, player.y) : cellFromWorld(center.x, center.y);
+
+  if (cellBox) cellBox.textContent = cell ? cell.key : '--';
+
+  updateSelectedPreview();
+}
+
+function updateSelectedPreview() {
+  const img = document.getElementById('selectedItemPreview');
+  if (!img) return;
+
+  if (selectedIds.size !== 1) {
+    img.removeAttribute('src');
+    return;
+  }
+
+  const selected = getItems().find(item => selectedIds.has(item.uid));
+  const tile = selected ? tileMap[selected.tileId] : null;
+
+  if (tile) img.src = tile.image;
+  else img.removeAttribute('src');
+}
+
 function toggleEraser() {
   eraser = !eraser;
 
   if (eraser) {
     selectedTile = null;
+    selectedIds.clear();
     document.querySelectorAll('.tile').forEach(item => item.classList.remove('active'));
   }
 
   clearPaintState();
+  updateSelectedPreview();
   updateToolButtons();
 }
 
@@ -1151,6 +1398,34 @@ function toggleFlip() {
 
 function updateItemScale(event) {
   itemScale = Number(event.target.value || 1);
+
+  if (!selectedIds.size) return;
+
+  pushUndo();
+
+  const changedCells = new Set();
+
+  for (const item of getItems()) {
+    if (!selectedIds.has(item.uid) || !canEditCell(item.cell)) continue;
+
+    const tile = tileMap[item.tileId];
+    if (!tile) continue;
+
+    const centerX = item.x + item.w / 2;
+    const centerY = item.y + item.h / 2;
+    const newW = Math.max(12, Math.min(CELL, Math.round(tile.w * itemScale)));
+    const newH = Math.max(12, Math.min(CELL, Math.round(tile.h * itemScale)));
+
+    item.w = newW;
+    item.h = newH;
+    item.x = Math.max(0, Math.min(CELL - item.w, centerX - item.w / 2));
+    item.y = Math.max(0, Math.min(CELL - item.h, centerY - item.h / 2));
+
+    changedCells.add(item.cell);
+  }
+
+  saveLocalWorld();
+  changedCells.forEach(saveCellToFirebase);
 }
 
 function getMouse(event) {
@@ -1160,18 +1435,14 @@ function getMouse(event) {
   const x = clientX - rect.left;
   const y = clientY - rect.top;
 
-  return {
-    x,
-    y,
-    world: screenToWorld(x, y)
-  };
+  return { x, y, world: screenToWorld(x, y) };
 }
 
 function hitItem(x, y) {
   return getItems()
     .sort((a, b) => (b.layer || 1) - (a.layer || 1))
     .find(item => {
-      const rect = itemRect(item);
+      const rect = visualRect(item);
       return x >= rect.x && y >= rect.y && x <= rect.x + rect.w && y <= rect.y + rect.h;
     });
 }
@@ -1193,7 +1464,6 @@ function paintAt(x, y) {
 
 function paintOne(x, y) {
   const cell = cellFromWorld(x, y);
-
   if (!cell) return;
 
   if (!canEditCell(cell.key)) {
@@ -1201,8 +1471,8 @@ function paintOne(x, y) {
     return;
   }
 
-  const localX = Math.max(2, Math.min(CELL - 2, x - cell.x));
-  const localY = Math.max(2, Math.min(CELL - 2, y - cell.y));
+  const localX = Math.max(-CELL, Math.min(CELL * 2, x - cell.x));
+  const localY = Math.max(-CELL, Math.min(CELL * 2, y - cell.y));
   const snapX = Math.floor(localX / (CELL / MINI));
   const snapY = Math.floor(localY / (CELL / MINI));
   const key = `${cell.key}-${snapX}-${snapY}-${activeLayer}-${selectedTile?.id || 'none'}-${eraser}`;
@@ -1219,15 +1489,15 @@ function paintOne(x, y) {
   if (!selectedTile) return;
 
   const cellData = ensureCell(cell.key);
-  const scaledW = Math.max(12, Math.min(CELL, Math.round(selectedTile.w * itemScale)));
-  const scaledH = Math.max(12, Math.min(CELL, Math.round(selectedTile.h * itemScale)));
+  const scaledW = Math.max(12, Math.min(CELL * 2, Math.round(selectedTile.w * itemScale)));
+  const scaledH = Math.max(12, Math.min(CELL * 2, Math.round(selectedTile.h * itemScale)));
 
   const item = {
     uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
     tileId: selectedTile.id,
     cell: cell.key,
-    x: Math.max(0, Math.min(CELL - scaledW, localX - scaledW / 2)),
-    y: Math.max(0, Math.min(CELL - scaledH, localY - scaledH / 2)),
+    x: localX - scaledW / 2,
+    y: localY - scaledH / 2,
     w: scaledW,
     h: scaledH,
     flipX: flipMode,
@@ -1240,11 +1510,11 @@ function paintOne(x, y) {
 
   saveLocalWorld();
   saveCellToFirebase(cell.key);
+  updateInfoPanel();
 }
 
 function eraseAt(x, y) {
   const hit = hitItem(x, y);
-
   if (!hit) return;
 
   if (!canEditCell(hit.cell)) {
@@ -1263,10 +1533,11 @@ function eraseAt(x, y) {
 
   selectedIds.delete(hit.uid);
   saveLocalWorld();
+  updateInfoPanel();
 }
 
-function selectInBox(box) {
-  selectedIds.clear();
+function selectInBox(box, add = false) {
+  if (!add) selectedIds.clear();
 
   for (const item of getItems()) {
     const rect = itemRect(item);
@@ -1283,6 +1554,8 @@ function selectInBox(box) {
       selectedIds.add(item.uid);
     }
   }
+
+  updateSelectedPreview();
 }
 
 function moveSelected(dx, dy) {
@@ -1292,14 +1565,63 @@ function moveSelected(dx, dy) {
 
   for (const item of getItems()) {
     if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
-      item.x = Math.max(0, Math.min(CELL - item.w, item.x + dx));
-      item.y = Math.max(0, Math.min(CELL - item.h, item.y + dy));
+      item.x += dx;
+      item.y += dy;
       changedCells.add(item.cell);
     }
   }
 
   saveLocalWorld();
   changedCells.forEach(saveCellToFirebase);
+}
+
+function resizeSelected(pos) {
+  if (!selectedResize) return;
+
+  const item = selectedResize.item;
+  if (!item || !canEditCell(item.cell)) return;
+
+  const cell = parseCell(item.cell);
+  if (!cell) return;
+
+  const cellX = (cell.col - 1) * CELL;
+  const cellY = (cell.row - 1) * CELL;
+  const localX = pos.world.x - cellX;
+  const localY = pos.world.y - cellY;
+
+  const minSize = 12;
+  const maxSize = CELL * 2;
+
+  if (selectedResize.handle === 'br') {
+    item.w = Math.max(minSize, Math.min(maxSize, localX - item.x));
+    item.h = Math.max(minSize, Math.min(maxSize, localY - item.y));
+  }
+
+  if (selectedResize.handle === 'tr') {
+    const bottom = item.y + item.h;
+    item.w = Math.max(minSize, Math.min(maxSize, localX - item.x));
+    item.y = Math.min(bottom - minSize, localY);
+    item.h = bottom - item.y;
+  }
+
+  if (selectedResize.handle === 'bl') {
+    const right = item.x + item.w;
+    item.x = Math.min(right - minSize, localX);
+    item.w = right - item.x;
+    item.h = Math.max(minSize, Math.min(maxSize, localY - item.y));
+  }
+
+  if (selectedResize.handle === 'tl') {
+    const right = item.x + item.w;
+    const bottom = item.y + item.h;
+    item.x = Math.min(right - minSize, localX);
+    item.y = Math.min(bottom - minSize, localY);
+    item.w = right - item.x;
+    item.h = bottom - item.y;
+  }
+
+  saveLocalWorld();
+  saveCellToFirebase(item.cell);
 }
 
 canvas.addEventListener('mousedown', event => {
@@ -1311,16 +1633,32 @@ canvas.addEventListener('mousedown', event => {
   const pos = getMouse(event);
   dragStart = pos;
 
+  const resizeHit = hitResizeHandle(pos.x, pos.y);
+  if (resizeHit) {
+    pushUndo();
+    selectedResize = resizeHit;
+    dragMode = 'resize';
+    return;
+  }
+
   const hit = hitItem(pos.world.x, pos.world.y);
 
   if (event.button === 1 || event.altKey) {
     dragMode = 'pan';
   } else if (hit && !eraser) {
     dragMode = 'move';
-    selectedIds = new Set([hit.uid]);
+
+    if (event.ctrlKey || event.metaKey) {
+      if (selectedIds.has(hit.uid)) selectedIds.delete(hit.uid);
+      else selectedIds.add(hit.uid);
+    } else if (!selectedIds.has(hit.uid)) {
+      selectedIds = new Set([hit.uid]);
+    }
+
+    updateSelectedPreview();
   } else if (!selectedTile && !eraser) {
     dragMode = 'select';
-    selectionBox = { x: pos.x, y: pos.y, w: 0, h: 0 };
+    selectionBox = { x: pos.x, y: pos.y, w: 0, h: 0, add: event.ctrlKey || event.metaKey };
   } else {
     dragMode = 'paint';
     pushUndo();
@@ -1333,9 +1671,9 @@ canvas.addEventListener('mousemove', event => {
 
   const pos = getMouse(event);
 
-  if (dragMode === 'paint') {
-    paintAt(pos.world.x, pos.world.y);
-  }
+  if (dragMode === 'paint') paintAt(pos.world.x, pos.world.y);
+
+  if (dragMode === 'resize') resizeSelected(pos);
 
   if (dragMode === 'pan') {
     camX -= event.movementX / zoom;
@@ -1348,7 +1686,8 @@ canvas.addEventListener('mousemove', event => {
       x: Math.min(dragStart.x, pos.x),
       y: Math.min(dragStart.y, pos.y),
       w: Math.abs(pos.x - dragStart.x),
-      h: Math.abs(pos.y - dragStart.y)
+      h: Math.abs(pos.y - dragStart.y),
+      add: selectionBox?.add || false
     };
   }
 
@@ -1358,7 +1697,7 @@ canvas.addEventListener('mousemove', event => {
 });
 
 window.addEventListener('mouseup', () => {
-  if (dragMode === 'select' && selectionBox) selectInBox(selectionBox);
+  if (dragMode === 'select' && selectionBox) selectInBox(selectionBox, selectionBox.add);
   clearPaintState();
 });
 
@@ -1389,13 +1728,16 @@ window.addEventListener('keydown', event => {
 
   keys[event.key] = true;
 
+  const key = event.key.toLowerCase();
+  const code = event.code;
+
   if (!walkMode && (event.key === 'Delete' || event.key === 'Backspace') && selectedIds.size) {
     event.preventDefault();
     deleteSelectedItems();
     return;
   }
 
-  if (!walkMode && event.ctrlKey && event.key.toLowerCase() === 'z') {
+  if (!walkMode && event.ctrlKey && (key === 'z' || code === 'KeyZ')) {
     event.preventDefault();
     undo();
     return;
@@ -1403,12 +1745,14 @@ window.addEventListener('keydown', event => {
 
   if (walkMode) return;
 
-  if (event.ctrlKey && event.key.toLowerCase() === 'c') {
+  if (event.ctrlKey && (key === 'c' || code === 'KeyC')) {
+    event.preventDefault();
     copyBuffer = getItems().filter(item => selectedIds.has(item.uid)).map(item => ({ ...item }));
-    showToast('تم النسخ');
+    if (copyBuffer.length) showToast('تم النسخ');
   }
 
-  if (event.ctrlKey && event.key.toLowerCase() === 'v') {
+  if (event.ctrlKey && (key === 'v' || code === 'KeyV')) {
+    event.preventDefault();
     pasteItems();
   }
 
@@ -1448,8 +1792,8 @@ function pasteItems() {
     const item = {
       ...old,
       uid: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
-      x: Math.min(CELL - old.w, old.x + 14),
-      y: Math.min(CELL - old.h, old.y + 14),
+      x: old.x + 18,
+      y: old.y + 18,
       owner: currentOwner()
     };
 
@@ -1460,6 +1804,7 @@ function pasteItems() {
 
   saveLocalWorld();
   changedCells.forEach(saveCellToFirebase);
+  updateInfoPanel();
   showToast('تم اللصق');
 }
 
@@ -1495,12 +1840,12 @@ function deleteSelectedItems() {
   });
 
   clearPaintState();
+  updateInfoPanel();
   showToast('تم حذف العنصر المحدد');
 }
 
 function deleteMyItems() {
   if (!requireLogin()) return;
-
   if (!confirm('هل تريد حذف جميع عناصرك؟')) return;
 
   pushUndo();
@@ -1522,6 +1867,7 @@ function deleteMyItems() {
   changedCells.forEach(removeCellFromFirebase);
 
   clearPaintState();
+  updateInfoPanel();
   showToast('تم حذف جميع عناصرك');
 }
 
@@ -1537,6 +1883,7 @@ function undo() {
     saveWorld();
     selectedIds.clear();
     clearPaintState();
+    updateInfoPanel();
     showToast('تمت الاستعادة');
   } catch {
     showToast('فشل الاستعادة');
@@ -1548,7 +1895,7 @@ function jump() {
   const cell = parseCell(input?.value);
 
   if (!cell) {
-    showToast('اكتب خلية صحيحة مثل K90');
+    showToast('اكتب خلية صحيحة مثل K90 — علمًا أن حدود الخريطة 100×100');
     return;
   }
 
@@ -1575,6 +1922,7 @@ function showShortcuts() {
 Delete : حذف العنصر المحدد
 Ctrl + C : نسخ العنصر المحدد
 Ctrl + V : لصق
+Ctrl + ضغط : تحديد متعدد
 Alt + سحب : تحريك الخريطة
 Ctrl + عجلة الماوس : تكبير وتصغير
 الأسهم : تحريك العنصر المحدد`
@@ -1605,6 +1953,9 @@ function saveProfileData() {
     email: user.email || '',
     displayName: displayName || '',
     character: myCharacterId || 'woman-1',
+    lastX: Math.round(player.x),
+    lastY: Math.round(player.y),
+    lastDir: player.dir,
     updatedAt: Date.now()
   }).catch(error => {
     console.error('profile save error:', error);
@@ -1634,15 +1985,26 @@ function loadProfileData() {
       localStorage.setItem(CHARACTER_KEY, myCharacterId);
     }
 
+    if (typeof data.lastX === 'number' && typeof data.lastY === 'number') {
+      player.x = data.lastX;
+      player.y = data.lastY;
+      player.dir = data.lastDir || player.dir;
+      saveLastPlayer();
+      camX = player.x - canvas.clientWidth / zoom / 2;
+      camY = player.y - canvas.clientHeight / zoom / 2;
+      clampCam();
+    }
+
     updateAuthUI();
+    updateInfoPanel();
   }).catch(error => {
     console.error('profile load error:', error);
   });
 }
 
 function signup() {
-  const email = document.getElementById('authEmailInput')?.value.trim();
-  const pass = document.getElementById('authPassInput')?.value;
+  const email = document.getElementById('signupEmailInput')?.value.trim();
+  const pass = document.getElementById('signupPassInput')?.value;
   const nameInput = document.getElementById('displayNameInput');
 
   if (!email) return showAuthMessage('اكتب الإيميل');
@@ -1656,6 +2018,7 @@ function signup() {
     showAuthMessage('تم إنشاء الحساب');
     closeAuthModal();
     saveProfileData();
+    updateAuthUI();
     showCharacterModal(true);
   }).catch(error => {
     showAuthMessage(authErrorMessage(error));
@@ -1674,6 +2037,7 @@ function login() {
   window.signInWithEmailAndPassword(window.auth, email, pass).then(() => {
     showAuthMessage('تم تسجيل الدخول');
     closeAuthModal();
+    updateAuthUI();
   }).catch(error => {
     showAuthMessage(authErrorMessage(error));
   });
@@ -1683,6 +2047,8 @@ function logout() {
   if (walkMode) toggleWalk();
 
   if (!window.auth || !window.signOut) return;
+
+  saveProfileData();
 
   window.signOut(window.auth).then(() => {
     currentUser = null;
@@ -1695,12 +2061,12 @@ function logout() {
 }
 
 function resetPassword() {
-  const email = document.getElementById('authEmailInput')?.value.trim();
+  const email = document.getElementById('resetEmailInput')?.value.trim();
 
   if (!email) return showAuthMessage('اكتب الإيميل أولًا');
 
   window.sendPasswordResetEmail(window.auth, email).then(() => {
-    showAuthMessage('تم إرسال رابط استعادة كلمة المرور إلى الإيميل');
+    showAuthMessage('تم إرسال رابط استعادة كلمة المرور إلى الإيميل، ربما تجدها في علبة الرسائل غير المرغوب فيها');
   }).catch(error => {
     showAuthMessage(authErrorMessage(error));
   });
@@ -1709,12 +2075,12 @@ function resetPassword() {
 function authErrorMessage(error) {
   const code = error?.code || '';
 
-  if (code.includes('email-already-in-use')) return 'الإيميل مستخدم مسبقًا';
+  if (code.includes('email-already-in-use')) return 'هذا الإيميل مستخدم مسبقًا، جرّب تسجيل الدخول بدل إنشاء حساب جديد';
   if (code.includes('invalid-email')) return 'الإيميل غير صحيح';
   if (code.includes('weak-password')) return 'كلمة المرور ضعيفة';
-  if (code.includes('user-not-found')) return 'الحساب غير موجود';
+  if (code.includes('user-not-found')) return 'هذا الحساب غير مسجل، يمكنك إنشاء حساب جديد';
   if (code.includes('wrong-password')) return 'كلمة المرور غير صحيحة';
-  if (code.includes('invalid-credential')) return 'بيانات الدخول غير صحيحة';
+  if (code.includes('invalid-credential')) return 'هذا الحساب غير مسجل أو أن كلمة المرور غير صحيحة، تأكد من البيانات أو أنشئ حسابًا جديدًا';
   if (code.includes('too-many-requests')) return 'محاولات كثيرة، حاول لاحقًا';
 
   return 'حدث خطأ، حاول مرة أخرى';
@@ -1725,24 +2091,18 @@ function centerStartOnce() {
 
   didInitialCenter = true;
 
-  const centerX = (50 - 0.5) * CELL;
-  const centerY = (50 - 0.5) * CELL;
-
-  player.x = centerX;
-  player.y = centerY;
-
-  camX = centerX - canvas.clientWidth / zoom / 2;
-  camY = centerY - canvas.clientHeight / zoom / 2;
+  camX = player.x - canvas.clientWidth / zoom / 2;
+  camY = player.y - canvas.clientHeight / zoom / 2;
 
   clampCam();
 }
 
 function getPlayerRect(x = player.x, y = player.y) {
   return {
-    x: x - 18,
-    y: y - 28,
-    w: 36,
-    h: 36
+    x: x - 14,
+    y: y - 24,
+    w: 28,
+    h: 30
   };
 }
 
@@ -1784,24 +2144,21 @@ function movePlayer() {
     dx /= length;
     dy /= length;
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-      player.dir = dx > 0 ? 'right' : 'left';
-    } else {
-      player.dir = dy > 0 ? 'down' : 'up';
-    }
+    if (Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : 'left';
+    else player.dir = dy > 0 ? 'down' : 'up';
 
     const nextX = Math.max(18, Math.min(WORLD_COLS * CELL - 18, player.x + dx * player.speed));
     const nextY = Math.max(28, Math.min(WORLD_ROWS * CELL - 8, player.y + dy * player.speed));
 
     if (!isBlockedAt(nextX, player.y)) player.x = nextX;
     if (!isBlockedAt(player.x, nextY)) player.y = nextY;
+
+    saveLastPlayer();
   }
 
-  if (walkMode) {
-    camX = player.x - canvas.clientWidth / zoom / 2;
-    camY = player.y - canvas.clientHeight / zoom / 2;
-    clampCam();
-  }
+  camX = player.x - canvas.clientWidth / zoom / 2;
+  camY = player.y - canvas.clientHeight / zoom / 2;
+  clampCam();
 }
 
 function toggleWalk() {
@@ -1815,6 +2172,10 @@ function toggleWalk() {
     selectedIds.clear();
     clearPaintState();
 
+    const center = screenToWorld(canvas.clientWidth / 2, canvas.clientHeight / 2);
+    player.x = Math.max(18, Math.min(WORLD_COLS * CELL - 18, center.x));
+    player.y = Math.max(28, Math.min(WORLD_ROWS * CELL - 8, center.y));
+
     document.body.classList.add('walking');
     panel?.classList.add('closed');
 
@@ -1823,6 +2184,8 @@ function toggleWalk() {
     zoom = previousBuildZoom || 0.55;
     document.body.classList.remove('walking');
     resetJoystick();
+    saveLastPlayer();
+    saveProfileData();
   }
 
   resize();
@@ -1866,8 +2229,9 @@ let lastPlayerSave = 0;
 function gameLoop() {
   movePlayer();
 
-  if (walkMode && Date.now() - lastPlayerSave > 350) {
-    savePlayerToFirebase();
+  if (isLoggedIn() && Date.now() - lastPlayerSave > 700) {
+    if (walkMode) savePlayerToFirebase();
+    saveLastPlayer();
     lastPlayerSave = Date.now();
   }
 
@@ -1985,6 +2349,7 @@ function waitFirebaseReady() {
     }
 
     updateAuthUI();
+    updateInfoPanel();
   });
 
   listenWorldFromFirebase();
@@ -1992,6 +2357,8 @@ function waitFirebaseReady() {
 }
 
 window.addEventListener('beforeunload', () => {
+  saveLastPlayer();
+  saveProfileData();
   if (walkMode) removePlayerFromFirebase();
 });
 
