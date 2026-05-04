@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v12.2
+// GameNjd v12.3
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -11,11 +11,13 @@ const WORLD_ROWS = 100;
 const CELL = 500;
 const MINI = 10;
 
-const SAVE_KEY = 'GameNjd_v122_world';
-const CHARACTER_KEY = 'GameNjd_v122_character';
-const DISPLAY_NAME_KEY = 'GameNjd_v122_display_name';
-const LAST_EMAIL_KEY = 'GameNjd_v122_last_email';
-const LAST_PLAYER_KEY = 'GameNjd_v122_last_player';
+const VERSION = '12.3';
+
+const SAVE_KEY = 'GameNjd_v123_world';
+const CHARACTER_KEY = 'GameNjd_v123_character';
+const DISPLAY_NAME_KEY = 'GameNjd_v123_display_name';
+const LAST_EMAIL_KEY = 'GameNjd_v123_last_email';
+const LAST_PLAYER_KEY = 'GameNjd_v123_last_player';
 
 const CHARACTER_BASE = 'Characters';
 const ASSET_BASE = 'All-Pic-tiles';
@@ -85,12 +87,16 @@ let zoom = 0.55;
 let camX = 0;
 let camY = 0;
 let gridOpacity = 0.45;
+
 let selectedTile = null;
-let activeCategory = 'furniture';
+let activeCategory = '';
 let activeLayer = 1;
 let brushSize = 1;
 let eraser = false;
 let blockingMode = false;
+let flipMode = false;
+let itemScale = 1;
+
 let walkMode = false;
 let isDown = false;
 let lastPaintKey = '';
@@ -100,22 +106,22 @@ let dragMode = null;
 let dragStart = null;
 let copyBuffer = [];
 let undoStack = [];
+let selectedResize = null;
+let tilePreviewEnabled = true;
+
 let currentUser = null;
 let currentUserEmail = '';
 let displayName = localStorage.getItem(DISPLAY_NAME_KEY) || '';
-let flipMode = false;
-let itemScale = 1;
-let didInitialCenter = false;
+let myCharacterId = localStorage.getItem(CHARACTER_KEY) || '';
+let onlinePlayers = {};
+let world = loadWorld();
+let player = loadLastPlayer();
+
 let previousBuildZoom = zoom;
 let playerMoving = false;
-let onlinePlayers = {};
-let myCharacterId = localStorage.getItem(CHARACTER_KEY) || '';
-let world = loadWorld();
-let selectedResize = null;
-let tilePreviewEnabled = true;
+let didInitialCenter = false;
 let lastUiUpdate = 0;
-
-let player = loadLastPlayer();
+let lastSavedSnapshot = '';
 
 const keys = {};
 const imageCache = {};
@@ -123,6 +129,10 @@ const characterImageCache = {};
 const alphaBoxCache = {};
 const floorImage = new Image();
 floorImage.src = DEFAULT_FLOOR_SRC;
+
+let confirmCallback = null;
+
+/* ===== Data ===== */
 
 function loadLastPlayer() {
   try {
@@ -223,12 +233,34 @@ function saveLocalWorld() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(world));
 }
 
+function normalizeWorldData(data) {
+  const result = {};
+
+  for (const key in data || {}) {
+    const cell = data[key];
+
+    if (!cell || typeof cell !== 'object' || cell === true) continue;
+
+    const items = Array.isArray(cell.items) ? cell.items : Object.values(cell.items || {});
+
+    result[key] = {
+      owner: cell.owner || '',
+      items: items.filter(item => item && item.uid && item.tileId)
+    };
+  }
+
+  return result;
+}
+
+/* ===== Auth ===== */
+
 function isLoggedIn() {
   return !!(window.auth && window.auth.currentUser && !window.auth.currentUser.isAnonymous);
 }
 
 function requireLogin(message = 'يجب تسجيل الدخول أو إنشاء حساب للعب') {
   if (isLoggedIn()) return true;
+
   showToast(message);
   openAuthModal();
   return false;
@@ -250,24 +282,30 @@ function ensureCell(key) {
   return world[key];
 }
 
-function normalizeWorldData(data) {
-  const result = {};
+function disablePlayButtonsIfGuest() {
+  const mustLoginIds = [
+    'walkBtn',
+    'changeCharacterBtn',
+    'eraseBtn',
+    'undoBtn',
+    'blockBtn',
+    'flipBtn',
+    'deleteSelectedBtn',
+    'deleteAllBtn',
+    'mobileUndoBtn',
+    'mobileEraseBtn',
+    'mobileBlockBtn',
+    'mobileFlipBtn',
+    'mobileDeleteBtn'
+  ];
 
-  for (const key in data || {}) {
-    const cell = data[key];
-
-    if (!cell || typeof cell !== 'object' || cell === true) continue;
-
-    const items = Array.isArray(cell.items) ? cell.items : Object.values(cell.items || {});
-
-    result[key] = {
-      owner: cell.owner || '',
-      items: items.filter(item => item && item.uid && item.tileId)
-    };
-  }
-
-  return result;
+  mustLoginIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !isLoggedIn();
+  });
 }
+
+/* ===== Firebase ===== */
 
 function saveCellToFirebase(cellKey) {
   if (!window.db || !window.ref || !window.set || !window.remove) return;
@@ -297,6 +335,15 @@ function removeCellFromFirebase(cellKey) {
   });
 }
 
+function saveWorldToFirebaseFull() {
+  if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
+
+  window.set(window.ref(window.db, 'world'), world).catch(error => {
+    console.error('Firebase world save error:', error);
+    showToast('فشل حفظ العالم');
+  });
+}
+
 function saveWorld() {
   saveLocalWorld();
 
@@ -314,8 +361,11 @@ function listenWorldFromFirebase() {
   }
 
   window.onValue(window.ref(window.db, 'world'), snapshot => {
+    if (dragMode || isDown) return;
+
     world = normalizeWorldData(snapshot.val() || {});
     saveLocalWorld();
+    lastSavedSnapshot = JSON.stringify(world);
     centerStartOnce();
     updateInfoPanel();
   }, error => {
@@ -334,6 +384,8 @@ function listenPlayersFromFirebase() {
     onlinePlayers = snapshot.val() || {};
   });
 }
+
+/* ===== Helpers ===== */
 
 function getTileImage(src) {
   if (!src) return null;
@@ -429,12 +481,12 @@ function itemRect(item) {
 
 function getAlphaBox(item) {
   const tile = tileMap[item.tileId];
-  if (!tile) return { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
+  if (!tile) return { left: 0.12, top: 0.12, right: 0.88, bottom: 0.88 };
 
   const img = getTileImage(tile.image);
 
   if (!img || !img.complete || !img.naturalWidth) {
-    return { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
+    return { left: 0.12, top: 0.12, right: 0.88, bottom: 0.88 };
   }
 
   if (alphaBoxCache[tile.image]) return alphaBoxCache[tile.image];
@@ -447,16 +499,15 @@ function getAlphaBox(item) {
   small.width = w;
   small.height = h;
 
-  sctx.drawImage(img, 0, 0, w, h);
-
-  let minX = w;
-  let minY = h;
-  let maxX = 0;
-  let maxY = 0;
-  let found = false;
-
   try {
+    sctx.drawImage(img, 0, 0, w, h);
+
     const data = sctx.getImageData(0, 0, w, h).data;
+    let minX = w;
+    let minY = h;
+    let maxX = 0;
+    let maxY = 0;
+    let found = false;
 
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -471,22 +522,20 @@ function getAlphaBox(item) {
         }
       }
     }
-  } catch {
-    found = false;
-  }
 
-  if (!found) {
-    alphaBoxCache[tile.image] = { left: 0.18, top: 0.18, right: 0.82, bottom: 0.82 };
-    return alphaBoxCache[tile.image];
-  }
+    if (found) {
+      alphaBoxCache[tile.image] = {
+        left: minX / w,
+        top: minY / h,
+        right: maxX / w,
+        bottom: maxY / h
+      };
 
-  alphaBoxCache[tile.image] = {
-    left: minX / w,
-    top: minY / h,
-    right: maxX / w,
-    bottom: maxY / h
-  };
+      return alphaBoxCache[tile.image];
+    }
+  } catch {}
 
+  alphaBoxCache[tile.image] = { left: 0.12, top: 0.12, right: 0.88, bottom: 0.88 };
   return alphaBoxCache[tile.image];
 }
 
@@ -523,6 +572,16 @@ function rectsHit(a, b) {
   );
 }
 
+function getMouse(event) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+  const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
+  return { x, y, world: screenToWorld(x, y) };
+}
+
 function pushUndo() {
   undoStack.push(JSON.stringify(world));
   if (undoStack.length > 80) undoStack.shift();
@@ -534,33 +593,6 @@ function clearPaintState() {
   dragMode = null;
   selectionBox = null;
   selectedResize = null;
-}
-
-function showToast(message) {
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.style.display = 'block';
-
-  clearTimeout(showToast.timer);
-
-  showToast.timer = setTimeout(() => {
-    toast.style.display = 'none';
-  }, 2200);
-}
-
-function showAuthMessage(message) {
-  const box = document.getElementById('authMessage');
-  if (box) box.textContent = message || '';
-}
-
-function openAuthModal() {
-  document.getElementById('authModal')?.classList.remove('hidden');
-}
-
-function closeAuthModal() {
-  document.getElementById('authModal')?.classList.add('hidden');
-  showAuthMessage('');
 }
 
 function resize() {
@@ -585,6 +617,68 @@ function clampCam() {
 
 window.addEventListener('resize', resize);
 resize();
+
+/* ===== Toast / Modals ===== */
+
+function showToast(message) {
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.style.display = 'block';
+
+  clearTimeout(showToast.timer);
+
+  showToast.timer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 2400);
+}
+
+function showAuthMessage(message) {
+  const box = document.getElementById('authMessage');
+  if (box) box.textContent = message || '';
+}
+
+function openAuthModal() {
+  document.getElementById('authModal')?.classList.remove('hidden');
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal')?.classList.add('hidden');
+  showAuthMessage('');
+}
+
+function showInfo(title, text) {
+  const modal = document.getElementById('infoModal');
+  const titleBox = document.getElementById('infoTitle');
+  const textBox = document.getElementById('infoText');
+
+  if (titleBox) titleBox.textContent = title;
+  if (textBox) textBox.textContent = text;
+  if (modal) modal.classList.remove('hidden');
+}
+
+function openConfirm(title, text, callback) {
+  confirmCallback = callback;
+
+  const modal = document.getElementById('confirmModal');
+  const titleBox = document.getElementById('confirmTitle');
+  const textBox = document.getElementById('confirmText');
+
+  if (titleBox) titleBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${title}`;
+  if (textBox) textBox.textContent = text;
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeConfirm(answer) {
+  document.getElementById('confirmModal')?.classList.add('hidden');
+
+  const cb = confirmCallback;
+  confirmCallback = null;
+
+  if (answer && typeof cb === 'function') cb();
+}
+
+/* ===== Characters ===== */
 
 function normalizeCharacterId(id) {
   if (!id) return '';
@@ -684,6 +778,8 @@ function showCharacterModal(force = false) {
   buildCharacterChoices();
   document.getElementById('characterModal')?.classList.remove('hidden');
 }
+
+/* ===== Drawing ===== */
 
 function getEdgeFloorSrc(col, row) {
   const isTop = row === 1;
@@ -815,28 +911,7 @@ function drawItems() {
       continue;
     }
 
-    ctx.save();
-
-    if (item.flipX) {
-      ctx.translate(point.x + rect.w * zoom, point.y);
-      ctx.scale(-1, 1);
-
-      if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, 0, 0, rect.w * zoom, rect.h * zoom);
-      } else {
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(0, 0, rect.w * zoom, rect.h * zoom);
-      }
-    } else {
-      if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, point.x, point.y, rect.w * zoom, rect.h * zoom);
-      } else {
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(point.x, point.y, rect.w * zoom, rect.h * zoom);
-      }
-    }
-
-    ctx.restore();
+    drawImageItem(img, point.x, point.y, rect.w * zoom, rect.h * zoom, !!item.flipX, 1);
 
     if (!walkMode && selectedIds.has(item.uid)) {
       ctx.strokeStyle = '#22c55e';
@@ -857,6 +932,52 @@ function drawItems() {
   }
 }
 
+function drawImageItem(img, x, y, w, h, flip, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  if (flip) {
+    ctx.translate(x + w, y);
+    ctx.scale(-1, 1);
+
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(0, 0, w, h);
+    }
+  } else {
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, x, y, w, h);
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x, y, w, h);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawGhostTile() {
+  if (walkMode || !selectedTile || !mouseWorldPos) return;
+
+  const cell = cellFromWorld(mouseWorldPos.x, mouseWorldPos.y);
+  if (!cell) return;
+
+  const img = getTileImage(selectedTile.image);
+  const w = Math.max(12, Math.min(CELL * 2, Math.round(selectedTile.w * itemScale)));
+  const h = Math.max(12, Math.min(CELL * 2, Math.round(selectedTile.h * itemScale)));
+  const x = mouseWorldPos.x - w / 2;
+  const y = mouseWorldPos.y - h / 2;
+  const p = worldToScreen(x, y);
+
+  drawImageItem(img, p.x, p.y, w * zoom, h * zoom, flipMode, 0.45);
+
+  ctx.strokeStyle = 'rgba(34,197,94,0.8)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(p.x, p.y, w * zoom, h * zoom);
+}
+
 function getResizeHandles(item) {
   const rect = itemRect(item);
   const p = worldToScreen(rect.x, rect.y);
@@ -873,9 +994,7 @@ function getResizeHandles(item) {
 }
 
 function drawResizeHandles(item) {
-  const handles = getResizeHandles(item);
-
-  for (const h of handles) {
+  for (const h of getResizeHandles(item)) {
     ctx.fillStyle = '#22c55e';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -1012,6 +1131,8 @@ function drawSelectionBox() {
   ctx.setLineDash([]);
 }
 
+let mouseWorldPos = null;
+
 function draw() {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
@@ -1024,6 +1145,7 @@ function draw() {
   drawFixedGroundTiles();
   drawGrid(width, height);
   drawItems();
+  drawGhostTile();
   drawSelectionBox();
   drawOnlinePlayers();
 
@@ -1038,6 +1160,8 @@ function draw() {
 }
 
 requestAnimationFrame(draw);
+
+/* ===== UI ===== */
 
 function bind(id, event, fn) {
   const el = document.getElementById(id);
@@ -1061,16 +1185,36 @@ function initUI() {
     );
   });
 
+  bind('settingsHelpBtn', 'click', showSettingsHelp);
   bind('shortcutsBtn', 'click', showShortcuts);
   bind('flipBtn', 'click', toggleFlip);
   bind('deleteAllBtn', 'click', deleteMyItems);
+
+  bind('confirmYesBtn', 'click', () => closeConfirm(true));
+  bind('confirmNoBtn', 'click', () => closeConfirm(false));
+
   bind('stopWalkBtn', 'click', () => {
     if (walkMode) toggleWalk();
   });
+
   bind('infoCloseBtn', 'click', () => document.getElementById('infoModal')?.classList.add('hidden'));
   bind('changeCharacterBtn', 'click', () => showCharacterModal(true));
-  bind('mobileGearBtn', 'click', () => panel?.classList.toggle('closed'));
-  bind('togglePanel', 'click', () => panel?.classList.toggle('closed'));
+
+  bind('mobileGearBtn', 'click', () => {
+    panel?.classList.toggle('closed');
+    resize();
+  });
+
+  bind('togglePanel', 'click', () => {
+    panel?.classList.toggle('closed');
+    resize();
+  });
+
+  bind('mobileUndoBtn', 'click', undo);
+  bind('mobileEraseBtn', 'click', toggleEraser);
+  bind('mobileBlockBtn', 'click', toggleBlocking);
+  bind('mobileFlipBtn', 'click', toggleFlip);
+  bind('mobileDeleteBtn', 'click', deleteSelectedItems);
 
   bind('zoomInBtn', 'click', () => {
     zoom = Math.min(3, zoom * 1.15);
@@ -1099,16 +1243,7 @@ function initUI() {
   });
 
   document.querySelectorAll('.categoryBtn').forEach(button => {
-    button.onclick = () => {
-      activeCategory = button.dataset.category;
-      document.querySelectorAll('.categoryBtn').forEach(item => item.classList.remove('active'));
-      button.classList.add('active');
-
-      const hidden = document.getElementById('categorySelect');
-      if (hidden) hidden.value = activeCategory;
-
-      renderTiles();
-    };
+    button.onclick = () => toggleCategory(button.dataset.category);
   });
 
   const displayNameInput = document.getElementById('displayNameInput');
@@ -1145,13 +1280,6 @@ function initUI() {
   const scaleInput = document.getElementById('itemScale');
   if (scaleInput) scaleInput.oninput = updateItemScale;
 
-  document.querySelectorAll('.collapseBtn').forEach(button => {
-    button.onclick = () => {
-      button.classList.toggle('open');
-      document.getElementById(button.dataset.target)?.classList.toggle('hidden');
-    };
-  });
-
   document.querySelectorAll('.layerBtn').forEach(button => {
     button.onclick = () => setActiveLayer(Number(button.dataset.layer));
   });
@@ -1176,9 +1304,42 @@ function setAuthTab(tab) {
   showAuthMessage('');
 }
 
+function toggleCategory(category) {
+  const tileset = document.getElementById('tileset');
+
+  if (activeCategory === category) {
+    activeCategory = '';
+    selectedTile = null;
+
+    document.querySelectorAll('.categoryBtn').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.tile').forEach(item => item.classList.remove('active'));
+    tileset?.classList.add('hidden');
+
+    return;
+  }
+
+  activeCategory = category;
+
+  document.querySelectorAll('.categoryBtn').forEach(item => {
+    item.classList.toggle('active', item.dataset.category === category);
+  });
+
+  const hidden = document.getElementById('categorySelect');
+  if (hidden) hidden.value = activeCategory;
+
+  tileset?.classList.remove('hidden');
+  renderTiles();
+}
+
 function renderTiles() {
   const tileset = document.getElementById('tileset');
-  if (!tileset || !categories[activeCategory]) return;
+  if (!tileset) return;
+
+  if (!activeCategory || !categories[activeCategory]) {
+    tileset.innerHTML = '';
+    tileset.classList.add('hidden');
+    return;
+  }
 
   const tiles = categories[activeCategory].tiles;
 
@@ -1189,8 +1350,12 @@ function renderTiles() {
     </div>
   `).join('');
 
+  tileset.classList.remove('hidden');
+
   document.querySelectorAll('.tile').forEach(tileElement => {
     tileElement.onclick = () => {
+      if (!requireLogin('سجل دخولك حتى تستطيع اختيار العناصر')) return;
+
       if (selectedTile && selectedTile.id === tileElement.dataset.id) {
         selectedTile = null;
         tileElement.classList.remove('active');
@@ -1241,7 +1406,7 @@ function hideBigTilePreview() {
 }
 
 function setActiveLayer(n) {
-  activeLayer = Math.max(1, Math.min(99, Number(n || 1)));
+  activeLayer = Math.max(1, Math.min(5, Number(n || 1)));
 
   const input = document.getElementById('layerInput');
   if (input) input.value = activeLayer;
@@ -1250,7 +1415,7 @@ function setActiveLayer(n) {
     button.classList.toggle('active', Number(button.dataset.layer) === activeLayer);
   });
 
-  if (selectedIds.size) {
+  if (selectedIds.size && isLoggedIn()) {
     pushUndo();
 
     const changedCells = new Set();
@@ -1294,16 +1459,29 @@ function updateAuthUI() {
 
   const nameInput = document.getElementById('displayNameInput');
   if (nameInput && nameInput.value !== displayName) nameInput.value = displayName;
+
+  disablePlayButtonsIfGuest();
 }
 
 function updateToolButtons() {
+  const eraseText = `ممحاة: ${eraser ? 'تشغيل' : 'إيقاف'}`;
+  const blockText = `جعل العنصر عائق: ${blockingMode ? 'تشغيل' : 'إيقاف'}`;
+  const flipText = `عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
+
   const eraseBtn = document.getElementById('eraseBtn');
   const blockBtn = document.getElementById('blockBtn');
   const flipBtn = document.getElementById('flipBtn');
+  const mobileEraseBtn = document.getElementById('mobileEraseBtn');
+  const mobileBlockBtn = document.getElementById('mobileBlockBtn');
+  const mobileFlipBtn = document.getElementById('mobileFlipBtn');
 
-  if (eraseBtn) eraseBtn.innerHTML = `<i class="fa-solid fa-eraser"></i> ممحاة: ${eraser ? 'تشغيل' : 'إيقاف'}`;
-  if (blockBtn) blockBtn.innerHTML = `<i class="fa-solid fa-ban"></i> جعل العنصر عائق: ${blockingMode ? 'تشغيل' : 'إيقاف'}`;
-  if (flipBtn) flipBtn.innerHTML = `<i class="fa-solid fa-left-right"></i> عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
+  if (eraseBtn) eraseBtn.innerHTML = `<i class="fa-solid fa-eraser"></i> ${eraseText}`;
+  if (blockBtn) blockBtn.innerHTML = `<i class="fa-solid fa-ban"></i> ${blockText}`;
+  if (flipBtn) flipBtn.innerHTML = `<i class="fa-solid fa-left-right"></i> ${flipText}`;
+
+  if (mobileEraseBtn) mobileEraseBtn.classList.toggle('active', eraser);
+  if (mobileBlockBtn) mobileBlockBtn.classList.toggle('active', blockingMode);
+  if (mobileFlipBtn) mobileFlipBtn.classList.toggle('active', flipMode);
 }
 
 function updateInfoPanel() {
@@ -1321,10 +1499,13 @@ function updateInfoPanel() {
 }
 
 function updateSelectedPreview() {
+  const box = document.getElementById('selectedPreviewBox');
   const img = document.getElementById('selectedItemPreview');
-  if (!img) return;
+
+  if (!box || !img) return;
 
   if (selectedIds.size !== 1) {
+    box.classList.add('hidden');
     img.removeAttribute('src');
     return;
   }
@@ -1332,11 +1513,20 @@ function updateSelectedPreview() {
   const selected = getItems().find(item => selectedIds.has(item.uid));
   const tile = selected ? tileMap[selected.tileId] : null;
 
-  if (tile) img.src = tile.image;
-  else img.removeAttribute('src');
+  if (tile) {
+    img.src = tile.image;
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+    img.removeAttribute('src');
+  }
 }
 
+/* ===== Tools ===== */
+
 function toggleEraser() {
+  if (!requireLogin()) return;
+
   eraser = !eraser;
 
   if (eraser) {
@@ -1351,6 +1541,8 @@ function toggleEraser() {
 }
 
 function toggleBlocking() {
+  if (!requireLogin()) return;
+
   if (selectedIds.size) {
     pushUndo();
 
@@ -1374,6 +1566,8 @@ function toggleBlocking() {
 }
 
 function toggleFlip() {
+  if (!requireLogin()) return;
+
   if (selectedIds.size) {
     pushUndo();
 
@@ -1396,10 +1590,27 @@ function toggleFlip() {
   updateToolButtons();
 }
 
-function updateItemScale(event) {
-  itemScale = Number(event.target.value || 1);
+function changeItemScale(delta) {
+  itemScale = Math.max(0.2, Math.min(3, itemScale + delta));
+
+  const scaleInput = document.getElementById('itemScale');
+  if (scaleInput) scaleInput.value = itemScale;
 
   if (!selectedIds.size) return;
+
+  scaleSelectedItems(delta > 0 ? 1.08 : 0.92);
+}
+
+function updateItemScale(event) {
+  const newScale = Number(event.target.value || 1);
+  const factor = newScale / itemScale;
+  itemScale = newScale;
+
+  if (selectedIds.size) scaleSelectedItems(factor);
+}
+
+function scaleSelectedItems(factor) {
+  if (!selectedIds.size || !requireLogin()) return;
 
   pushUndo();
 
@@ -1408,34 +1619,20 @@ function updateItemScale(event) {
   for (const item of getItems()) {
     if (!selectedIds.has(item.uid) || !canEditCell(item.cell)) continue;
 
-    const tile = tileMap[item.tileId];
-    if (!tile) continue;
-
     const centerX = item.x + item.w / 2;
     const centerY = item.y + item.h / 2;
-    const newW = Math.max(12, Math.min(CELL, Math.round(tile.w * itemScale)));
-    const newH = Math.max(12, Math.min(CELL, Math.round(tile.h * itemScale)));
 
-    item.w = newW;
-    item.h = newH;
-    item.x = Math.max(0, Math.min(CELL - item.w, centerX - item.w / 2));
-    item.y = Math.max(0, Math.min(CELL - item.h, centerY - item.h / 2));
+    item.w = Math.max(12, Math.min(CELL * 2, item.w * factor));
+    item.h = Math.max(12, Math.min(CELL * 2, item.h * factor));
+
+    item.x = centerX - item.w / 2;
+    item.y = centerY - item.h / 2;
 
     changedCells.add(item.cell);
   }
 
   saveLocalWorld();
   changedCells.forEach(saveCellToFirebase);
-}
-
-function getMouse(event) {
-  const rect = canvas.getBoundingClientRect();
-  const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-  const clientY = event.touches ? event.touches[0].clientY : event.clientY;
-  const x = clientX - rect.left;
-  const y = clientY - rect.top;
-
-  return { x, y, world: screenToWorld(x, y) };
 }
 
 function hitItem(x, y) {
@@ -1471,8 +1668,8 @@ function paintOne(x, y) {
     return;
   }
 
-  const localX = Math.max(-CELL, Math.min(CELL * 2, x - cell.x));
-  const localY = Math.max(-CELL, Math.min(CELL * 2, y - cell.y));
+  const localX = x - cell.x;
+  const localY = y - cell.y;
   const snapX = Math.floor(localX / (CELL / MINI));
   const snapY = Math.floor(localY / (CELL / MINI));
   const key = `${cell.key}-${snapX}-${snapY}-${activeLayer}-${selectedTile?.id || 'none'}-${eraser}`;
@@ -1581,48 +1778,29 @@ function resizeSelected(pos) {
   const item = selectedResize.item;
   if (!item || !canEditCell(item.cell)) return;
 
+  const rect = itemRect(item);
+  const centerX = rect.x + rect.w / 2;
+  const centerY = rect.y + rect.h / 2;
+  const distance = Math.hypot(pos.world.x - centerX, pos.world.y - centerY);
+  const startDistance = selectedResize.startDistance || distance;
+  const factor = Math.max(0.2, Math.min(4, distance / startDistance));
+
   const cell = parseCell(item.cell);
   if (!cell) return;
 
   const cellX = (cell.col - 1) * CELL;
   const cellY = (cell.row - 1) * CELL;
-  const localX = pos.world.x - cellX;
-  const localY = pos.world.y - cellY;
 
-  const minSize = 12;
-  const maxSize = CELL * 2;
-
-  if (selectedResize.handle === 'br') {
-    item.w = Math.max(minSize, Math.min(maxSize, localX - item.x));
-    item.h = Math.max(minSize, Math.min(maxSize, localY - item.y));
-  }
-
-  if (selectedResize.handle === 'tr') {
-    const bottom = item.y + item.h;
-    item.w = Math.max(minSize, Math.min(maxSize, localX - item.x));
-    item.y = Math.min(bottom - minSize, localY);
-    item.h = bottom - item.y;
-  }
-
-  if (selectedResize.handle === 'bl') {
-    const right = item.x + item.w;
-    item.x = Math.min(right - minSize, localX);
-    item.w = right - item.x;
-    item.h = Math.max(minSize, Math.min(maxSize, localY - item.y));
-  }
-
-  if (selectedResize.handle === 'tl') {
-    const right = item.x + item.w;
-    const bottom = item.y + item.h;
-    item.x = Math.min(right - minSize, localX);
-    item.y = Math.min(bottom - minSize, localY);
-    item.w = right - item.x;
-    item.h = bottom - item.y;
-  }
+  item.w = Math.max(12, Math.min(CELL * 2, selectedResize.startW * factor));
+  item.h = Math.max(12, Math.min(CELL * 2, selectedResize.startH * factor));
+  item.x = centerX - cellX - item.w / 2;
+  item.y = centerY - cellY - item.h / 2;
 
   saveLocalWorld();
   saveCellToFirebase(item.cell);
 }
+
+/* ===== Mouse ===== */
 
 canvas.addEventListener('mousedown', event => {
   if (walkMode) return;
@@ -1632,11 +1810,25 @@ canvas.addEventListener('mousedown', event => {
 
   const pos = getMouse(event);
   dragStart = pos;
+  mouseWorldPos = pos.world;
 
   const resizeHit = hitResizeHandle(pos.x, pos.y);
   if (resizeHit) {
+    if (!requireLogin()) return;
     pushUndo();
-    selectedResize = resizeHit;
+
+    const rect = itemRect(resizeHit.item);
+    const centerX = rect.x + rect.w / 2;
+    const centerY = rect.y + rect.h / 2;
+
+    selectedResize = {
+      item: resizeHit.item,
+      handle: resizeHit.handle,
+      startW: resizeHit.item.w,
+      startH: resizeHit.item.h,
+      startDistance: Math.hypot(pos.world.x - centerX, pos.world.y - centerY)
+    };
+
     dragMode = 'resize';
     return;
   }
@@ -1646,6 +1838,8 @@ canvas.addEventListener('mousedown', event => {
   if (event.button === 1 || event.altKey) {
     dragMode = 'pan';
   } else if (hit && !eraser) {
+    if (!requireLogin()) return;
+
     dragMode = 'move';
 
     if (event.ctrlKey || event.metaKey) {
@@ -1660,6 +1854,8 @@ canvas.addEventListener('mousedown', event => {
     dragMode = 'select';
     selectionBox = { x: pos.x, y: pos.y, w: 0, h: 0, add: event.ctrlKey || event.metaKey };
   } else {
+    if (!requireLogin()) return;
+
     dragMode = 'paint';
     pushUndo();
     paintAt(pos.world.x, pos.world.y);
@@ -1667,9 +1863,10 @@ canvas.addEventListener('mousedown', event => {
 });
 
 canvas.addEventListener('mousemove', event => {
-  if (!isDown || walkMode) return;
-
   const pos = getMouse(event);
+  mouseWorldPos = pos.world;
+
+  if (!isDown || walkMode) return;
 
   if (dragMode === 'paint') paintAt(pos.world.x, pos.world.y);
 
@@ -1694,6 +1891,10 @@ canvas.addEventListener('mousemove', event => {
   if (dragMode === 'move') {
     moveSelected(event.movementX / zoom, event.movementY / zoom);
   }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseWorldPos = null;
 });
 
 window.addEventListener('mouseup', () => {
@@ -1721,6 +1922,8 @@ canvas.addEventListener('wheel', event => {
   clampCam();
 }, { passive: false });
 
+/* ===== Keyboard ===== */
+
 window.addEventListener('keydown', event => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
     event.preventDefault();
@@ -1730,6 +1933,23 @@ window.addEventListener('keydown', event => {
 
   const key = event.key.toLowerCase();
   const code = event.code;
+
+  if (!walkMode && /^[1-5]$/.test(event.key)) {
+    setActiveLayer(Number(event.key));
+    return;
+  }
+
+  if (!walkMode && (event.key === '+' || event.key === '=' || code === 'NumpadAdd')) {
+    event.preventDefault();
+    changeItemScale(0.08);
+    return;
+  }
+
+  if (!walkMode && (event.key === '-' || code === 'NumpadSubtract')) {
+    event.preventDefault();
+    changeItemScale(-0.08);
+    return;
+  }
 
   if (!walkMode && (event.key === 'Delete' || event.key === 'Backspace') && selectedIds.size) {
     event.preventDefault();
@@ -1758,7 +1978,6 @@ window.addEventListener('keydown', event => {
 
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key) && selectedIds.size) {
     event.preventDefault();
-
     pushUndo();
 
     const move = {
@@ -1775,6 +1994,64 @@ window.addEventListener('keydown', event => {
 window.addEventListener('keyup', event => {
   keys[event.key] = false;
 });
+
+/* ===== Touch Mobile ===== */
+
+let touchPanLast = null;
+let pinchStartDistance = 0;
+let pinchStartZoom = zoom;
+
+canvas.addEventListener('touchstart', event => {
+  if (walkMode) {
+    touchPanLast = null;
+    return;
+  }
+
+  if (event.touches.length === 1) {
+    const touch = event.touches[0];
+    touchPanLast = { x: touch.clientX, y: touch.clientY };
+  }
+
+  if (event.touches.length === 2) {
+    pinchStartDistance = touchDistance(event.touches[0], event.touches[1]);
+    pinchStartZoom = zoom;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', event => {
+  if (walkMode) return;
+
+  if (event.touches.length === 2 && pinchStartDistance > 0) {
+    const distance = touchDistance(event.touches[0], event.touches[1]);
+    zoom = Math.max(0.2, Math.min(3, pinchStartZoom * (distance / pinchStartDistance)));
+    clampCam();
+    event.preventDefault();
+    return;
+  }
+
+  if (event.touches.length === 1 && touchPanLast && !selectedTile && !eraser) {
+    const touch = event.touches[0];
+
+    camX -= (touch.clientX - touchPanLast.x) / zoom;
+    camY -= (touch.clientY - touchPanLast.y) / zoom;
+
+    touchPanLast = { x: touch.clientX, y: touch.clientY };
+
+    clampCam();
+    event.preventDefault();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+  touchPanLast = null;
+  pinchStartDistance = 0;
+}, { passive: false });
+
+function touchDistance(a, b) {
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+/* ===== Copy / Delete / Undo ===== */
 
 function pasteItems() {
   if (!requireLogin()) return;
@@ -1846,32 +2123,35 @@ function deleteSelectedItems() {
 
 function deleteMyItems() {
   if (!requireLogin()) return;
-  if (!confirm('هل تريد حذف جميع عناصرك؟')) return;
 
-  pushUndo();
+  openConfirm('حذف جميع عناصرك', 'هل تريد حذف جميع عناصرك؟', () => {
+    pushUndo();
 
-  const changedCells = new Set();
-  const owner = currentOwner();
+    const changedCells = new Set();
+    const owner = currentOwner();
 
-  for (const cellKey in world) {
-    const cell = world[cellKey];
-    if (!cell || cell.owner !== owner) continue;
+    for (const cellKey in world) {
+      const cell = world[cellKey];
+      if (!cell || cell.owner !== owner) continue;
 
-    delete world[cellKey];
-    changedCells.add(cellKey);
-  }
+      delete world[cellKey];
+      changedCells.add(cellKey);
+    }
 
-  selectedIds.clear();
-  saveLocalWorld();
+    selectedIds.clear();
+    saveLocalWorld();
 
-  changedCells.forEach(removeCellFromFirebase);
+    changedCells.forEach(removeCellFromFirebase);
 
-  clearPaintState();
-  updateInfoPanel();
-  showToast('تم حذف جميع عناصرك');
+    clearPaintState();
+    updateInfoPanel();
+    showToast('تم حذف جميع عناصرك');
+  });
 }
 
 function undo() {
+  if (!requireLogin()) return;
+
   if (!undoStack.length) {
     showToast('لا يوجد شيء للاستعادة');
     return;
@@ -1879,16 +2159,22 @@ function undo() {
 
   try {
     world = JSON.parse(undoStack.pop()) || {};
+    world = normalizeWorldData(world);
+
     saveLocalWorld();
-    saveWorld();
+    saveWorldToFirebaseFull();
+
     selectedIds.clear();
     clearPaintState();
     updateInfoPanel();
+
     showToast('تمت الاستعادة');
   } catch {
     showToast('فشل الاستعادة');
   }
 }
+
+/* ===== Jump / Help ===== */
 
 function jump() {
   const input = document.getElementById('jumpInput');
@@ -1905,16 +2191,6 @@ function jump() {
   clampCam();
 }
 
-function showInfo(title, text) {
-  const modal = document.getElementById('infoModal');
-  const titleBox = document.getElementById('infoTitle');
-  const textBox = document.getElementById('infoText');
-
-  if (titleBox) titleBox.textContent = title;
-  if (textBox) textBox.textContent = text;
-  if (modal) modal.classList.remove('hidden');
-}
-
 function showShortcuts() {
   showInfo(
     'شرح الاختصارات',
@@ -1923,11 +2199,62 @@ Delete : حذف العنصر المحدد
 Ctrl + C : نسخ العنصر المحدد
 Ctrl + V : لصق
 Ctrl + ضغط : تحديد متعدد
+1 إلى 5 : تغيير الطبقة
++ و - : تكبير وتصغير العنصر
 Alt + سحب : تحريك الخريطة
-Ctrl + عجلة الماوس : تكبير وتصغير
+Ctrl + عجلة الماوس : تكبير وتصغير الشاشة
 الأسهم : تحريك العنصر المحدد`
   );
 }
+
+function showSettingsHelp() {
+  showInfo(
+    'شرح الإعدادات',
+    `عدد عناصرك:
+يعرض عدد العناصر التي وضعتها في العالم.
+
+موقعك الحالي:
+يعرض الخلية الحالية مثل AY51.
+
+القسم:
+اختيار نوع العناصر، وعند الضغط مرة ثانية على نفس القسم يتم إخفاء العناصر.
+
+تكبير العناصر عند المرور:
+يعرض معاينة كبيرة للعنصر عند مرور الماوس عليه.
+
+الطبقة:
+تحدد ترتيب ظهور العناصر فوق بعض. الأرقام 1 إلى 5 تعمل من الكيبورد أيضًا.
+
+شفافية الجدول:
+تتحكم في ظهور خطوط الشبكة أثناء البناء فقط.
+
+حجم ريشة الرسم:
+تحدد مساحة وضع العناصر.
+
+حجم العنصر:
+يكبر أو يصغر العنصر قبل وضعه، أو العنصر المحدد بعد تحديده.
+
+الممحاة:
+تحذف العناصر بالضغط عليها.
+
+استعادة:
+ترجع آخر تغيير.
+
+جعل العنصر عائق:
+يجعل العنصر يمنع مرور الشخصية.
+
+عكس العنصر:
+يقلب العنصر يمين ويسار.
+
+حذف العنصر المحدد:
+يحذف ما تم تحديده.
+
+حذف جميع عناصري:
+يحذف فقط العناصر التي تملكها.`
+  );
+}
+
+/* ===== Profile / Auth ===== */
 
 function saveDisplayName() {
   const input = document.getElementById('displayNameInput');
@@ -1990,6 +2317,7 @@ function loadProfileData() {
       player.y = data.lastY;
       player.dir = data.lastDir || player.dir;
       saveLastPlayer();
+
       camX = player.x - canvas.clientWidth / zoom / 2;
       camY = player.y - canvas.clientHeight / zoom / 2;
       clampCam();
@@ -2085,6 +2413,8 @@ function authErrorMessage(error) {
 
   return 'حدث خطأ، حاول مرة أخرى';
 }
+
+/* ===== Walk Mode ===== */
 
 function centerStartOnce() {
   if (didInitialCenter) return;
@@ -2240,6 +2570,8 @@ function gameLoop() {
 
 requestAnimationFrame(gameLoop);
 
+/* ===== Joystick ===== */
+
 const joystick = document.getElementById('joystick');
 const stick = document.getElementById('stick');
 const joystickVector = { x: 0, y: 0 };
@@ -2299,36 +2631,7 @@ if (joystick) {
   }, { passive: false });
 }
 
-let touchPanLast = null;
-
-canvas.addEventListener('touchstart', event => {
-  if (walkMode) {
-    touchPanLast = null;
-    return;
-  }
-
-  if (event.touches.length === 1) {
-    const touch = event.touches[0];
-    touchPanLast = { x: touch.clientX, y: touch.clientY };
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchmove', event => {
-  if (walkMode) return;
-
-  if (event.touches.length === 1 && touchPanLast && !selectedTile && !eraser) {
-    const touch = event.touches[0];
-    camX -= (touch.clientX - touchPanLast.x) / zoom;
-    camY -= (touch.clientY - touchPanLast.y) / zoom;
-    touchPanLast = { x: touch.clientX, y: touch.clientY };
-    clampCam();
-    event.preventDefault();
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchend', () => {
-  touchPanLast = null;
-}, { passive: false });
+/* ===== Firebase Ready ===== */
 
 function waitFirebaseReady() {
   if (!window.auth || !window.onAuthStateChanged) {
