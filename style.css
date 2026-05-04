@@ -1,4 +1,4 @@
-/* GameNjd v12.2 */
+/* GameNjd v12.3 */
 
 * {
   box-sizing: border-box;
@@ -41,8 +41,9 @@ button.active {
 }
 
 button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
+  filter: grayscale(0.4);
 }
 
 input,
@@ -230,6 +231,7 @@ body.loaded #loadingScreen {
   display: grid;
   grid-template-columns: 1fr 340px;
   direction: ltr;
+  background: #0b1120;
 }
 
 .worldWrap {
@@ -426,41 +428,11 @@ body.loaded #loadingScreen {
   padding: 4px;
 }
 
-/* ===== Collapse ===== */
+/* ===== Elements ===== */
 
-.collapseBtn {
-  width: 100%;
-  margin-bottom: 10px;
-  background: #0f172a;
-  border: 1px solid #475569;
-  text-align: right;
-  font-weight: 800;
-  position: relative;
+.elementsSection {
+  display: block;
 }
-
-.collapseBtn i {
-  margin-left: 7px;
-  color: #93c5fd;
-}
-
-.collapseBtn::after {
-  content: "＋";
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #93c5fd;
-}
-
-.collapseBtn.open::after {
-  content: "−";
-}
-
-.collapseBody {
-  margin-top: 8px;
-}
-
-/* ===== Category Buttons ===== */
 
 .categoryButtons {
   display: grid;
@@ -623,26 +595,43 @@ body.loaded #loadingScreen {
   font-weight: 800;
 }
 
-/* ===== Floating Buttons ===== */
+/* ===== Mobile Quick Tools ===== */
 
-.floatingBtn {
+.mobileQuickTools {
   position: absolute;
-  z-index: 20;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
+  z-index: 60;
+  right: 12px;
+  top: 12px;
   display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  grid-template-columns: repeat(3, 44px);
+  gap: 8px;
 }
 
-.gearBtn {
-  right: 14px;
-  top: 14px;
-  background: #1f2937;
-  border: 1px solid #64748b;
+.mobileToolBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 1px solid #93c5fd;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.mobileToolBtn:hover,
+.mobileToolBtn.active {
+  background: #1d4ed8;
+}
+
+.dangerMobileBtn {
+  background: #dc2626;
+}
+
+.dangerMobileBtn:hover {
+  background: #b91c1c;
 }
 
 /* ===== Joystick ===== */
@@ -692,7 +681,7 @@ body.walking .panel {
   display: none !important;
 }
 
-body.walking .gearBtn {
+body.walking .mobileQuickTools {
   display: none !important;
 }
 
@@ -831,7 +820,7 @@ body.walking .worldWrap {
 
 .authTabs {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin: 12px 0;
 }
@@ -840,6 +829,7 @@ body.walking .worldWrap {
   background: #111827;
   border: 1px solid #475569;
   font-weight: 800;
+  min-height: 48px;
 }
 
 .authTab.active {
@@ -887,6 +877,15 @@ body.walking .worldWrap {
   background: #374151;
   border: 1px solid #64748b;
   font-weight: 800;
+}
+
+/* ===== Confirm Modal ===== */
+
+.confirmActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 /* ===== Resize Handles ===== */
@@ -992,6 +991,7 @@ body.walking .worldWrap {
     height: calc(100vh - 56px);
     display: flex;
     flex-direction: column;
+    background: transparent;
   }
 
   .worldWrap {
@@ -1005,25 +1005,34 @@ body.walking .worldWrap {
     top: auto;
     right: auto;
     width: 100%;
-    height: calc(45vh);
+    height: 45vh;
     flex: 1 1 auto;
     z-index: 40;
     border-right: 0;
     border-top: 1px solid #334155;
     transform: none;
     transition: 0.2s;
+    background: #111827;
   }
 
   .panel.closed {
-    display: none;
+    display: none !important;
+  }
+
+  .panel.closed + * {
+    display: none !important;
   }
 
   .mobileOnly {
     display: block;
   }
 
-  .floatingBtn {
-    display: flex;
+  .mobileQuickTools {
+    display: grid;
+  }
+
+  .desktopTools {
+    display: none;
   }
 
   #tileset {
@@ -1045,6 +1054,15 @@ body.walking .worldWrap {
 
   .authBox {
     gap: 5px;
+  }
+
+  .authTabs {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .authTab {
+    font-size: 12px;
+    padding: 8px 4px;
   }
 
   body.walking .layout {
@@ -1130,6 +1148,18 @@ body.walking .worldWrap {
     height: 50px;
   }
 
+  .mobileQuickTools {
+    grid-template-columns: repeat(3, 42px);
+    gap: 7px;
+    right: 10px;
+    top: 10px;
+  }
+
+  .mobileToolBtn {
+    width: 42px;
+    height: 42px;
+  }
+
   .joystick {
     width: 112px;
     height: 112px;
@@ -1149,6 +1179,10 @@ body.walking .worldWrap {
   }
 
   .authTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmActions {
     grid-template-columns: 1fr;
   }
 }
