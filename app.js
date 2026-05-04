@@ -812,14 +812,15 @@ function drawFloorBackground(width, height) {
       const sx = ((col - 1) * CELL - camX) * zoom;
       const sy = ((row - 1) * CELL - camY) * zoom;
       const size = CELL * zoom;
+      const bleed = 1;
 
       if (img && img.complete && img.naturalWidth) {
-        ctx.drawImage(img, sx, sy, size, size);
+        ctx.drawImage(img, sx - bleed, sy - bleed, size + bleed * 2, size + bleed * 2);
       } else if (floorImage.complete && floorImage.naturalWidth) {
-        ctx.drawImage(floorImage, sx, sy, size, size);
+        ctx.drawImage(floorImage, sx - bleed, sy - bleed, size + bleed * 2, size + bleed * 2);
       } else {
         ctx.fillStyle = '#a16207';
-        ctx.fillRect(sx, sy, size, size);
+        ctx.fillRect(sx - bleed, sy - bleed, size + bleed * 2, size + bleed * 2);
       }
     }
   }
@@ -852,7 +853,8 @@ function drawFixedGroundTiles() {
 }
 
 function drawGrid(width, height) {
-  if (walkMode || gridOpacity <= 0) return;
+  if (walkMode) return;
+  if (gridOpacity <= 0) return;
 
   const startCol = Math.max(1, Math.floor(camX / CELL) + 1);
   const endCol = Math.min(WORLD_COLS, Math.ceil((camX + width / zoom) / CELL) + 1);
