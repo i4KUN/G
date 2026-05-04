@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v12.2</title>
+  <title>GameNjd v12.3</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="https://n4anime.github.io/bon/icon/cover2.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v12.2" />
+  <meta property="og:title" content="GameNjd v12.3" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
   <meta property="og:url" content="https://i4kun.github.io/G/" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v12.2" />
+  <meta name="twitter:title" content="GameNjd v12.3" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
 
@@ -44,12 +44,12 @@
       </div>
 
       <div class="topControls">
-        <button id="zoomInBtn" class="topIconBtn" type="button" title="تكبير">
-          <i class="fa-solid fa-plus"></i>
+        <button id="zoomOutBtn" class="topIconBtn" type="button" title="تصغير الشاشة">
+          <i class="fa-solid fa-minus"></i>
         </button>
 
-        <button id="zoomOutBtn" class="topIconBtn" type="button" title="تصغير">
-          <i class="fa-solid fa-minus"></i>
+        <button id="zoomInBtn" class="topIconBtn" type="button" title="تكبير الشاشة">
+          <i class="fa-solid fa-plus"></i>
         </button>
 
         <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">
@@ -90,9 +90,31 @@
           <div id="stick"></div>
         </div>
 
-        <button id="mobileGearBtn" class="floatingBtn gearBtn" type="button" title="الإعدادات">
-          <i class="fa-solid fa-gear"></i>
-        </button>
+        <div id="mobileQuickTools" class="mobileQuickTools">
+          <button id="mobileGearBtn" class="mobileToolBtn" type="button" title="الإعدادات">
+            <i class="fa-solid fa-gear"></i>
+          </button>
+
+          <button id="mobileUndoBtn" class="mobileToolBtn" type="button" title="استعادة">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+
+          <button id="mobileEraseBtn" class="mobileToolBtn" type="button" title="ممحاة">
+            <i class="fa-solid fa-eraser"></i>
+          </button>
+
+          <button id="mobileBlockBtn" class="mobileToolBtn" type="button" title="عائق">
+            <i class="fa-solid fa-ban"></i>
+          </button>
+
+          <button id="mobileFlipBtn" class="mobileToolBtn" type="button" title="عكس">
+            <i class="fa-solid fa-left-right"></i>
+          </button>
+
+          <button id="mobileDeleteBtn" class="mobileToolBtn dangerMobileBtn" type="button" title="حذف">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </section>
 
       <aside id="panel" class="panel">
@@ -123,7 +145,7 @@
             <b id="currentCellText">--</b>
           </div>
 
-          <div class="selectedPreviewBox">
+          <div id="selectedPreviewBox" class="selectedPreviewBox hidden">
             <span>
               <i class="fa-solid fa-magnifying-glass"></i>
               العنصر المحدد
@@ -144,77 +166,70 @@
           </button>
         </div>
 
-        <div class="section">
-          <button class="collapseBtn open" data-target="elementsPanel" type="button">
-            <i class="fa-solid fa-couch"></i>
-            العناصر
-          </button>
+        <div class="section elementsSection">
+          <label>
+            <i class="fa-solid fa-layer-group"></i>
+            القسم
+          </label>
 
-          <div id="elementsPanel" class="collapseBody">
-            <label>
-              <i class="fa-solid fa-layer-group"></i>
-              القسم
-            </label>
+          <div id="categoryButtons" class="categoryButtons">
+            <button data-category="furniture" class="categoryBtn" type="button">
+              <i class="fa-solid fa-couch"></i>
+              أثاث
+            </button>
 
-            <div id="categoryButtons" class="categoryButtons">
-              <button data-category="furniture" class="categoryBtn active" type="button">
-                <i class="fa-solid fa-couch"></i>
-                أثاث
-              </button>
+            <button data-category="storage" class="categoryBtn" type="button">
+              <i class="fa-solid fa-box"></i>
+              تخزين
+            </button>
 
-              <button data-category="storage" class="categoryBtn" type="button">
-                <i class="fa-solid fa-box"></i>
-                تخزين
-              </button>
+            <button data-category="kitchenware" class="categoryBtn" type="button">
+              <i class="fa-solid fa-utensils"></i>
+              أدوات وأواني
+            </button>
 
-              <button data-category="kitchenware" class="categoryBtn" type="button">
-                <i class="fa-solid fa-utensils"></i>
-                أدوات وأواني
-              </button>
+            <button data-category="floors" class="categoryBtn" type="button">
+              <i class="fa-solid fa-border-all"></i>
+              أرضيات
+            </button>
 
-              <button data-category="floors" class="categoryBtn" type="button">
-                <i class="fa-solid fa-border-all"></i>
-                أرضيات
-              </button>
+            <button data-category="carpets" class="categoryBtn" type="button">
+              <i class="fa-solid fa-rug"></i>
+              سجاد ومنسوجات
+            </button>
 
-              <button data-category="carpets" class="categoryBtn" type="button">
-                <i class="fa-solid fa-rug"></i>
-                سجاد ومنسوجات
-              </button>
+            <button data-category="plants" class="categoryBtn" type="button">
+              <i class="fa-solid fa-seedling"></i>
+              نباتات
+            </button>
 
-              <button data-category="plants" class="categoryBtn" type="button">
-                <i class="fa-solid fa-seedling"></i>
-                نباتات
-              </button>
+            <button data-category="walls" class="categoryBtn" type="button">
+              <i class="fa-solid fa-dungeon"></i>
+              جدران ومباني
+            </button>
 
-              <button data-category="walls" class="categoryBtn" type="button">
-                <i class="fa-solid fa-dungeon"></i>
-                جدران ومباني
-              </button>
+            <button data-category="doors" class="categoryBtn" type="button">
+              <i class="fa-solid fa-door-open"></i>
+              أبواب ونوافذ
+            </button>
 
-              <button data-category="doors" class="categoryBtn" type="button">
-                <i class="fa-solid fa-door-open"></i>
-                أبواب ونوافذ
-              </button>
-
-              <button data-category="decorations" class="categoryBtn" type="button">
-                <i class="fa-solid fa-star"></i>
-                ديكور
-              </button>
-            </div>
-
-            <input id="categorySelect" class="hidden" type="hidden" value="furniture" />
-            <input id="sizeFilter" class="hidden" type="hidden" value="all" />
-
-            <div class="previewToggleBox">
-              <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
-                <i class="fa-solid fa-eye"></i>
-                تكبير العناصر عند المرور: تشغيل
-              </button>
-            </div>
-
-            <div id="tileset"></div>
+            <button data-category="decorations" class="categoryBtn" type="button">
+              <i class="fa-solid fa-star"></i>
+              ديكور
+            </button>
           </div>
+
+          <input id="categorySelect" class="hidden" type="hidden" value="" />
+          <input id="sizeFilter" class="hidden" type="hidden" value="all" />
+
+          <div class="previewToggleBox">
+            <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
+              <i class="fa-solid fa-eye"></i>
+              تكبير العناصر عند المرور: تشغيل
+            </button>
+          </div>
+
+          <div id="tileset" class="hidden"></div>
         </div>
 
         <div class="section">
@@ -272,42 +287,44 @@
           <input id="itemScale" type="range" min="0.5" max="2.5" step="0.05" value="1" />
         </div>
 
-        <div class="section two">
-          <button id="eraseBtn" type="button">
-            <i class="fa-solid fa-eraser"></i>
-            ممحاة: إيقاف
-          </button>
+        <div class="desktopTools">
+          <div class="section two">
+            <button id="eraseBtn" type="button">
+              <i class="fa-solid fa-eraser"></i>
+              ممحاة: إيقاف
+            </button>
 
-          <button id="undoBtn" type="button">
-            <i class="fa-solid fa-rotate-left"></i>
-            استعادة
-          </button>
-        </div>
+            <button id="undoBtn" type="button">
+              <i class="fa-solid fa-rotate-left"></i>
+              استعادة
+            </button>
+          </div>
 
-        <div class="section">
-          <button id="blockBtn" type="button">
-            <i class="fa-solid fa-ban"></i>
-            جعل العنصر عائق: إيقاف
-          </button>
-        </div>
+          <div class="section">
+            <button id="blockBtn" type="button">
+              <i class="fa-solid fa-ban"></i>
+              جعل العنصر عائق: إيقاف
+            </button>
+          </div>
 
-        <div class="section two">
-          <button id="flipBtn" type="button">
-            <i class="fa-solid fa-left-right"></i>
-            عكس العنصر: إيقاف
-          </button>
+          <div class="section two">
+            <button id="flipBtn" type="button">
+              <i class="fa-solid fa-left-right"></i>
+              عكس العنصر: إيقاف
+            </button>
 
-          <button id="deleteSelectedBtn" type="button">
-            <i class="fa-solid fa-trash"></i>
-            حذف العنصر المحدد
-          </button>
-        </div>
+            <button id="deleteSelectedBtn" type="button">
+              <i class="fa-solid fa-trash"></i>
+              حذف العنصر المحدد
+            </button>
+          </div>
 
-        <div class="section">
-          <button id="deleteAllBtn" class="dangerBtn" type="button">
-            <i class="fa-solid fa-trash-can"></i>
-            حذف جميع عناصري
-          </button>
+          <div class="section">
+            <button id="deleteAllBtn" class="dangerBtn" type="button">
+              <i class="fa-solid fa-trash-can"></i>
+              حذف جميع عناصري
+            </button>
+          </div>
         </div>
 
         <div class="section jumpBox">
@@ -330,6 +347,13 @@
             شرح الاختصارات
           </button>
 
+          <button id="settingsHelpBtn" type="button">
+            <i class="fa-solid fa-circle-info"></i>
+            شرح الإعدادات
+          </button>
+        </div>
+
+        <div class="section">
           <button id="aboutBtn" type="button">
             <i class="fa-solid fa-circle-question"></i>
             من نحن
@@ -416,6 +440,29 @@
         <i class="fa-solid fa-xmark"></i>
         إغلاق
       </button>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="characterModal hidden">
+    <div class="characterBox smallBox">
+      <h2 id="confirmTitle">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        تأكيد
+      </h2>
+
+      <p id="confirmText">هل أنت متأكد؟</p>
+
+      <div class="confirmActions">
+        <button id="confirmYesBtn" class="dangerBtn" type="button">
+          <i class="fa-solid fa-check"></i>
+          نعم
+        </button>
+
+        <button id="confirmNoBtn" type="button">
+          <i class="fa-solid fa-xmark"></i>
+          إلغاء
+        </button>
+      </div>
     </div>
   </div>
 
