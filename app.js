@@ -951,8 +951,8 @@ function drawLights() {
     const radius = 160 * zoom;
 
     const glow = ctx.createRadialGradient(lightX, lightY, 10, lightX, lightY, radius);
-    glow.addColorStop(0, 'rgb(255 254 0 / 55%)');
-    glow.addColorStop(1, 'rgb(255 255 230 / 5%)');
+    glow.addColorStop(0, 'rgb(255 254 0 / 40%)');
+    glow.addColorStop(1, 'rgb(255 255 230 / 2%)');
 
     ctx.fillStyle = glow;
     ctx.beginPath();
