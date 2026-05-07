@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v12.3
+// GameNjd v12.5
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -11,57 +11,73 @@ const WORLD_ROWS = 100;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '12.3';
+const VERSION = '12.5';
 
-const SAVE_KEY = 'GameNjd_v123_world';
-const CHARACTER_KEY = 'GameNjd_v123_character';
-const DISPLAY_NAME_KEY = 'GameNjd_v123_display_name';
-const LAST_EMAIL_KEY = 'GameNjd_v123_last_email';
-const LAST_PLAYER_KEY = 'GameNjd_v123_last_player';
+const SAVE_KEY = 'GameNjd_v125_world';
+const CHARACTER_KEY = 'GameNjd_v125_character';
+const DISPLAY_NAME_KEY = 'GameNjd_v125_display_name';
+const LAST_EMAIL_KEY = 'GameNjd_v125_last_email';
+const LAST_PLAYER_KEY = 'GameNjd_v125_last_player';
+const HOME_KEY = 'GameNjd_v125_home_camera';
+const SETTINGS_HELP_SEEN_KEY = 'GameNjd_v125_settings_help_seen';
 
 const CHARACTER_BASE = 'Characters';
-const ASSET_BASE = 'All-Pic-tiles';
+const ASSET_BASE = 'All-Pic/tiles';
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
 const PLAYER_DRAW_W = 92;
 const PLAYER_DRAW_H = 92;
 
-const DEFAULT_FLOOR_SRC = 'All-Pic-tiles/04-Floors/Big/Floors-big-36.png';
+const DEFAULT_FLOOR_SRC = 'All-Pic/map-pic/00.png';
 
 const edgeImagesSrc = {
-  topRight: 'All-Pic-tiles/map-pic/01.png',
-  bottomRight: 'All-Pic-tiles/map-pic/02.png',
-  topLeft: 'All-Pic-tiles/map-pic/03.png',
-  bottomLeft: 'All-Pic-tiles/map-pic/04.png',
-  top: 'All-Pic-tiles/map-pic/05.png',
-  bottom: 'All-Pic-tiles/map-pic/06.png',
-  right: 'All-Pic-tiles/map-pic/07.png',
-  left: 'All-Pic-tiles/map-pic/08.png'
+  topRight: 'All-Pic/map-pic/01.png',
+  bottomRight: 'All-Pic/map-pic/02.png',
+  topLeft: 'All-Pic/map-pic/03.png',
+  bottomLeft: 'All-Pic/map-pic/04.png',
+  top: 'All-Pic/map-pic/05.png',
+  bottom: 'All-Pic/map-pic/06.png',
+  right: 'All-Pic/map-pic/07.png',
+  left: 'All-Pic/map-pic/08.png'
 };
 
 const fixedGroundTiles = [
-  { cell: 'H12', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'R18', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'AF15', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'BQ20', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'CN14', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'J76', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'AD84', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'BK78', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'CV86', src: 'All-Pic-tiles/map-pic/09.png' },
-  { cell: 'CX35', src: 'All-Pic-tiles/map-pic/09.png' },
+  { cell: 'H12', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'R18', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AF15', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'BQ20', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'CN14', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'J76', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AD84', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'BK78', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'CV86', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'CX35', src: 'All-Pic/map-pic/09.png' },
 
-  { cell: 'M28', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'X9', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'AL31', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'BA11', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CS25', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'F63', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'AH69', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'BP90', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CD72', src: 'All-Pic-tiles/map-pic/10.png' },
-  { cell: 'CJ54', src: 'All-Pic-tiles/map-pic/10.png' }
+  { cell: 'M28', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'X9', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AL31', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'BA11', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'CS25', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'F63', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AH69', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'BP90', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'CD72', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'CJ54', src: 'All-Pic/map-pic/10.png' }
+];
+
+
+const fixedAnimalTiles = [
+  { cell: 'E8', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'P17', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AB9', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AO25', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'BH13', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'CS31', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'K64', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AD77', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'BP88', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'CV55', src: 'All-Pic/animal/animal-01.gif' }
 ];
 
 const SIZE_DATA = {
@@ -72,15 +88,30 @@ const SIZE_DATA = {
 };
 
 const tileGroups = [
-  { key: 'furniture', name: 'أثاث', folder: '05-Furniture', prefix: 'Furniture', sizes: { Medium: 55, Small: 143 } },
-  { key: 'storage', name: 'تخزين', folder: '07-Storage', prefix: 'Storage', sizes: { Medium: 8, Small: 148 } },
-  { key: 'kitchenware', name: 'أدوات وأواني', folder: '06-Kitchenware', prefix: 'Kitchenware', sizes: { Small: 266, Precise: 9 } },
-  { key: 'floors', name: 'أرضيات', folder: '04-Floors', prefix: 'Floors', sizes: { Big: 196 } },
-  { key: 'carpets', name: 'سجاد ومنسوجات', folder: '01-Carpets', prefix: 'Carpets', sizes: { Medium: 91, Small: 125 } },
-  { key: 'plants', name: 'نباتات', folder: '09-Plants', prefix: 'Plants', sizes: { Big: 7, Small: 8, Precise: 7 } },
-  { key: 'walls', name: 'جدران ومباني', folder: '08-Walls', prefix: 'Walls', sizes: { Big: 142, Medium: 43 } },
-  { key: 'doors', name: 'أبواب ونوافذ', folder: '03-Doors', prefix: 'Doors', sizes: { Medium: 188, Precise: 5 } },
-  { key: 'decorations', name: 'ديكور', folder: '02-Decorations', prefix: 'Decorations', sizes: { Small: 164 } }
+  { key: 'bag', name: 'أكياس', folder: 'Bag', prefix: 'Bag', count: 10, w: 75, h: 75, blocking: false },
+  { key: 'lighting', name: 'إنارات', folder: 'Lighting', prefix: 'Lighting', count: 10, w: 70, h: 90, blocking: false },
+  { key: 'door', name: 'باب', folder: 'Door', prefix: 'Door', count: 11, w: 100, h: 120, blocking: true },
+  { key: 'coffee_pot', name: 'دلة', folder: 'teapot', prefix: 'teapot', count: 18, w: 70, h: 70, blocking: false },
+  { key: 'cabinet', name: 'دولاب', folder: 'Cabinet', prefix: 'Cabinet', count: 16, w: 120, h: 120, blocking: false },
+  { key: 'decor', name: 'ديكورات', folder: 'Decor', prefix: 'Decor', count: 74, w: 70, h: 70, blocking: false },
+  { key: 'carpet', name: 'زولية', folder: 'Carpet', prefix: 'Carpet', count: 13, w: 150, h: 120, blocking: false },
+  { key: 'curtain', name: 'ستارة', folder: 'Curtain', prefix: 'Curtain', count: 14, w: 100, h: 120, blocking: false },
+  { key: 'bed', name: 'سرير', folder: 'Bed', prefix: 'Bed', count: 5, w: 150, h: 110, blocking: false },
+  { key: 'plant', name: 'شجرة', folder: 'Plant', prefix: 'Plant', count: 106, w: 80, h: 80, blocking: false },
+  { key: 'bedsheet', name: 'شرشف', folder: 'Bedsheet', prefix: 'Bedsheet', count: 24, w: 130, h: 100, blocking: false },
+  { key: 'plate', name: 'صحن', folder: 'Plate', prefix: 'Plate', count: 83, w: 65, h: 65, blocking: false },
+  { key: 'box', name: 'صندوق', folder: 'Box', prefix: 'Box', count: 8, w: 80, h: 80, blocking: false },
+  { key: 'table', name: 'طاولة', folder: 'Table', prefix: 'Table', count: 49, w: 120, h: 90, blocking: false },
+  { key: 'pottery', name: 'فخار', folder: 'Pottery', prefix: 'Pottery', count: 25, w: 75, h: 75, blocking: false },
+  { key: 'cooking_pot', name: 'قدر', folder: 'Pot', prefix: 'Pot', count: 12, w: 75, h: 75, blocking: false },
+  { key: 'chair', name: 'كرسي', folder: 'Chair', prefix: 'Chair', count: 15, w: 95, h: 95, blocking: false },
+  { key: 'cup', name: 'كوب', folder: 'Cup', prefix: 'Cup', count: 18, w: 55, h: 55, blocking: false },
+  { key: 'painting', name: 'لوحة', folder: 'Painting', prefix: 'Painting', count: 20, w: 90, h: 75, blocking: false },
+  { key: 'pillow', name: 'مخدة', folder: 'Pillow', prefix: 'Pillow', count: 41, w: 70, h: 55, blocking: false },
+  { key: 'floor_mattress', name: 'مرتبة', folder: 'Mattress', prefix: 'Mattress', count: 12, w: 130, h: 100, blocking: false },
+  { key: 'window', name: 'نافذة', folder: 'Window', prefix: 'Window', count: 15, w: 95, h: 95, blocking: false },
+  { key: 'floor', name: 'ارضيات', folder: 'Floof', prefix: 'Floof', count: 86, w: 220, h: 220, blocking: false },
+  { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 160, h: 160, blocking: true }
 ];
 
 let zoom = 0.55;
@@ -95,7 +126,9 @@ let brushSize = 1;
 let eraser = false;
 let blockingMode = false;
 let flipMode = false;
-let itemScale = 1;
+let flipYMode = false;
+let autoAlignMode = false;
+let itemScale = 1.10;
 
 let walkMode = false;
 let isDown = false;
@@ -190,26 +223,27 @@ function buildCategories() {
   const result = {};
 
   for (const group of tileGroups) {
-    const tiles = [];
-
-    for (const [size, count] of Object.entries(group.sizes)) {
-      for (let i = 1; i <= count; i++) {
-        const dims = getTileSize(group.key, size);
-
-        tiles.push({
-          id: `${group.key}_${size.toLowerCase()}_${i}`,
-          name: `${group.name} ${i}`,
-          image: `${ASSET_BASE}/${group.folder}/${size}/${getImageName(group, size, i)}`,
-          w: dims.w,
-          h: dims.h,
-          size,
-          category: group.key,
-          blocking: isDefaultBlocking(group.key)
-        });
-      }
+    if (!result[group.key]) {
+      result[group.key] = {
+        name: group.name,
+        tiles: []
+      };
     }
 
-    result[group.key] = { name: group.name, tiles };
+    for (let i = 1; i <= group.count; i++) {
+      const number = String(i).padStart(3, '0');
+
+      result[group.key].tiles.push({
+        id: `${group.folder}_${number}`,
+        name: `${group.name} ${number}`,
+        image: `${ASSET_BASE}/${group.folder}/${group.prefix}-${number}.png`,
+        w: group.w,
+        h: group.h,
+        size: 'auto',
+        category: group.key,
+        blocking: !!group.blocking
+      });
+    }
   }
 
   return result;
@@ -296,7 +330,11 @@ function disablePlayButtonsIfGuest() {
     'mobileEraseBtn',
     'mobileBlockBtn',
     'mobileFlipBtn',
-    'mobileDeleteBtn'
+    'mobileFlipYBtn',
+    'mobileDeleteBtn',
+    'flipYBtn',
+    'homeBtn',
+    'autoAlignBtn'
   ];
 
   mustLoginIds.forEach(id => {
@@ -647,13 +685,16 @@ function closeAuthModal() {
   showAuthMessage('');
 }
 
-function showInfo(title, text) {
+function showInfo(title, text, isHtml = false) {
   const modal = document.getElementById('infoModal');
   const titleBox = document.getElementById('infoTitle');
   const textBox = document.getElementById('infoText');
 
   if (titleBox) titleBox.textContent = title;
-  if (textBox) textBox.textContent = text;
+  if (textBox) {
+    if (isHtml) textBox.innerHTML = text;
+    else textBox.textContent = text;
+  }
   if (modal) modal.classList.remove('hidden');
 }
 
@@ -665,7 +706,10 @@ function openConfirm(title, text, callback) {
   const textBox = document.getElementById('confirmText');
 
   if (titleBox) titleBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${title}`;
-  if (textBox) textBox.textContent = text;
+  if (textBox) {
+    if (isHtml) textBox.innerHTML = text;
+    else textBox.textContent = text;
+  }
   if (modal) modal.classList.remove('hidden');
 }
 
@@ -690,10 +734,10 @@ function normalizeCharacterId(id) {
 function getCharacterSrc(id) {
   const fixedId = normalizeCharacterId(id || 'woman-1');
 
-  if (fixedId.startsWith('man-')) return `${CHARACTER_BASE}/man/${fixedId}.png`;
-  if (fixedId.startsWith('woman-')) return `${CHARACTER_BASE}/woman/${fixedId}.png`;
+  if (fixedId.startsWith('man-')) return `All-Pic/${CHARACTER_BASE}/man/${fixedId}.png`;
+  if (fixedId.startsWith('woman-')) return `All-Pic/${CHARACTER_BASE}/woman/${fixedId}.png`;
 
-  return `${CHARACTER_BASE}/woman/woman-1.png`;
+  return `All-Pic/${CHARACTER_BASE}/woman/woman-1.png`;
 }
 
 function getCharacterImage(id) {
@@ -733,7 +777,7 @@ function buildCharacterChoices() {
     html += `
       <button class="characterChoice" data-id="${id}" type="button">
         <span class="characterPreviewFrame">
-          <img class="characterPreviewImg" src="Characters/man/man-${i}.png" alt="رجل ${i}">
+          <img class="characterPreviewImg" src="All-Pic/Characters/man/man-${i}.png" alt="رجل ${i}">
         </span>
         <b>رجل ${i}</b>
       </button>
@@ -747,7 +791,7 @@ function buildCharacterChoices() {
     html += `
       <button class="characterChoice" data-id="${id}" type="button">
         <span class="characterPreviewFrame">
-          <img class="characterPreviewImg" src="Characters/woman/woman-${i}.png" alt="امرأة ${i}">
+          <img class="characterPreviewImg" src="All-Pic/Characters/woman/woman-${i}.png" alt="امرأة ${i}">
         </span>
         <b>امرأة ${i}</b>
       </button>
@@ -852,6 +896,71 @@ function drawFixedGroundTiles() {
   }
 }
 
+
+function drawFixedAnimals() {
+  for (const animal of fixedAnimalTiles) {
+    const cell = parseCell(animal.cell);
+    if (!cell) continue;
+
+    const img = getTileImage(animal.src);
+    const sizeWorld = CELL * 0.28;
+    const x = (cell.col - 1) * CELL + CELL / 2 - sizeWorld / 2;
+    const y = (cell.row - 1) * CELL + CELL / 2 - sizeWorld / 2;
+    const point = worldToScreen(x, y);
+    const size = sizeWorld * zoom;
+
+    if (
+      point.x + size < -100 ||
+      point.y + size < -100 ||
+      point.x > canvas.clientWidth + 100 ||
+      point.y > canvas.clientHeight + 100
+    ) {
+      continue;
+    }
+
+    if (img && img.complete && img.naturalWidth) {
+      ctx.drawImage(img, point.x, point.y, size, size);
+    }
+  }
+}
+
+function isNightActive() {
+  return Math.floor(Date.now() / (60 * 60 * 1000)) % 2 === 1;
+}
+
+function drawNightFilter(width, height) {
+  if (!isNightActive()) return;
+
+  ctx.fillStyle = 'rgba(0, 20, 60, 0.45)';
+  ctx.fillRect(0, 0, width, height);
+}
+
+function drawLights() {
+  if (!isNightActive()) return;
+
+  const visibleItems = getItems();
+
+  for (const item of visibleItems) {
+    if (!String(item.tileId || '').includes('Lighting')) continue;
+
+    const rect = itemRect(item);
+    const point = worldToScreen(rect.x, rect.y);
+
+    const lightX = point.x + rect.w * zoom / 2;
+    const lightY = point.y + rect.h * zoom / 2;
+    const radius = 160 * zoom;
+
+    const glow = ctx.createRadialGradient(lightX, lightY, 10, lightX, lightY, radius);
+    glow.addColorStop(0, 'rgb(255 254 0 / 55%)');
+    glow.addColorStop(1, 'rgb(255 255 230 / 5%)');
+
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(lightX, lightY, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function drawGrid(width, height) {
   if (walkMode) return;
   if (gridOpacity <= 0) return;
@@ -913,7 +1022,7 @@ function drawItems() {
       continue;
     }
 
-    drawImageItem(img, point.x, point.y, rect.w * zoom, rect.h * zoom, !!item.flipX, 1);
+    drawImageItem(img, point.x, point.y, rect.w * zoom, rect.h * zoom, !!item.flipX, 1, !!item.flipY);
 
     if (!walkMode && selectedIds.has(item.uid)) {
       ctx.strokeStyle = '#22c55e';
@@ -934,34 +1043,24 @@ function drawItems() {
   }
 }
 
-function drawImageItem(img, x, y, w, h, flip, alpha) {
+function drawImageItem(img, x, y, w, h, flip, alpha, flipY = false) {
   ctx.save();
   ctx.globalAlpha = alpha;
+  ctx.translate(x + (flip ? w : 0), y + (flipY ? h : 0));
+  ctx.scale(flip ? -1 : 1, flipY ? -1 : 1);
 
-  if (flip) {
-    ctx.translate(x + w, y);
-    ctx.scale(-1, 1);
-
-    if (img && img.complete && img.naturalWidth) {
-      ctx.drawImage(img, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(0, 0, w, h);
-    }
+  if (img && img.complete && img.naturalWidth) {
+    ctx.drawImage(img, 0, 0, w, h);
   } else {
-    if (img && img.complete && img.naturalWidth) {
-      ctx.drawImage(img, x, y, w, h);
-    } else {
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(x, y, w, h);
-    }
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, 0, w, h);
   }
 
   ctx.restore();
 }
 
 function drawGhostTile() {
-  if (walkMode || !selectedTile || !mouseWorldPos) return;
+  if (walkMode || !selectedTile || !mouseWorldPos || selectedIds.size) return;
 
   const cell = cellFromWorld(mouseWorldPos.x, mouseWorldPos.y);
   if (!cell) return;
@@ -973,7 +1072,7 @@ function drawGhostTile() {
   const y = mouseWorldPos.y - h / 2;
   const p = worldToScreen(x, y);
 
-  drawImageItem(img, p.x, p.y, w * zoom, h * zoom, flipMode, 0.45);
+  drawImageItem(img, p.x, p.y, w * zoom, h * zoom, flipMode, 0.45, flipYMode);
 
   ctx.strokeStyle = 'rgba(34,197,94,0.8)';
   ctx.lineWidth = 2;
@@ -1145,8 +1244,11 @@ function draw() {
 
   drawFloorBackground(width, height);
   drawFixedGroundTiles();
+  drawFixedAnimals();
   drawGrid(width, height);
   drawItems();
+  drawNightFilter(width, height);
+  drawLights();
   drawGhostTile();
   drawSelectionBox();
   drawOnlinePlayers();
@@ -1190,6 +1292,9 @@ function initUI() {
   bind('settingsHelpBtn', 'click', showSettingsHelp);
   bind('shortcutsBtn', 'click', showShortcuts);
   bind('flipBtn', 'click', toggleFlip);
+  bind('flipYBtn', 'click', toggleFlipY);
+  bind('homeBtn', 'click', toggleHomeCamera);
+  bind('autoAlignBtn', 'click', toggleAutoAlign);
   bind('deleteAllBtn', 'click', deleteMyItems);
 
   bind('confirmYesBtn', 'click', () => closeConfirm(true));
@@ -1216,6 +1321,7 @@ function initUI() {
   bind('mobileEraseBtn', 'click', toggleEraser);
   bind('mobileBlockBtn', 'click', toggleBlocking);
   bind('mobileFlipBtn', 'click', toggleFlip);
+  bind('mobileFlipYBtn', 'click', toggleFlipY);
   bind('mobileDeleteBtn', 'click', deleteSelectedItems);
 
   bind('zoomInBtn', 'click', () => {
@@ -1280,7 +1386,10 @@ function initUI() {
   }
 
   const scaleInput = document.getElementById('itemScale');
-  if (scaleInput) scaleInput.oninput = updateItemScale;
+  if (scaleInput) {
+    scaleInput.value = itemScale;
+    scaleInput.oninput = updateItemScale;
+  }
 
   document.querySelectorAll('.layerBtn').forEach(button => {
     button.onclick = () => setActiveLayer(Number(button.dataset.layer));
@@ -1290,6 +1399,7 @@ function initUI() {
   setActiveLayer(activeLayer);
   updateAuthUI();
   updateToolButtons();
+  updateHomeButton();
   updatePreviewToggle();
   updateInfoPanel();
 }
@@ -1469,21 +1579,30 @@ function updateToolButtons() {
   const eraseText = `ممحاة: ${eraser ? 'تشغيل' : 'إيقاف'}`;
   const blockText = `جعل العنصر عائق: ${blockingMode ? 'تشغيل' : 'إيقاف'}`;
   const flipText = `عكس العنصر: ${flipMode ? 'تشغيل' : 'إيقاف'}`;
+  const flipYText = `عكس علوي وسفلي: ${flipYMode ? 'تشغيل' : 'إيقاف'}`;
+  const autoAlignText = `الترتيب التلقائي: ${autoAlignMode ? 'تشغيل' : 'إيقاف'}`;
 
   const eraseBtn = document.getElementById('eraseBtn');
   const blockBtn = document.getElementById('blockBtn');
   const flipBtn = document.getElementById('flipBtn');
+  const flipYBtn = document.getElementById('flipYBtn');
+  const autoAlignBtn = document.getElementById('autoAlignBtn');
   const mobileEraseBtn = document.getElementById('mobileEraseBtn');
   const mobileBlockBtn = document.getElementById('mobileBlockBtn');
   const mobileFlipBtn = document.getElementById('mobileFlipBtn');
+  const mobileFlipYBtn = document.getElementById('mobileFlipYBtn');
 
   if (eraseBtn) eraseBtn.innerHTML = `<i class="fa-solid fa-eraser"></i> ${eraseText}`;
   if (blockBtn) blockBtn.innerHTML = `<i class="fa-solid fa-ban"></i> ${blockText}`;
   if (flipBtn) flipBtn.innerHTML = `<i class="fa-solid fa-left-right"></i> ${flipText}`;
+  if (flipYBtn) flipYBtn.innerHTML = `<i class="fa-solid fa-up-down"></i> ${flipYText}`;
+  if (autoAlignBtn) autoAlignBtn.innerHTML = `<i class="fa-solid fa-border-all"></i> ${autoAlignText}`;
 
   if (mobileEraseBtn) mobileEraseBtn.classList.toggle('active', eraser);
   if (mobileBlockBtn) mobileBlockBtn.classList.toggle('active', blockingMode);
   if (mobileFlipBtn) mobileFlipBtn.classList.toggle('active', flipMode);
+  if (mobileFlipYBtn) mobileFlipYBtn.classList.toggle('active', flipYMode);
+  if (autoAlignBtn) autoAlignBtn.classList.toggle('active', autoAlignMode);
 }
 
 function updateInfoPanel() {
@@ -1592,8 +1711,70 @@ function toggleFlip() {
   updateToolButtons();
 }
 
+
+function toggleFlipY() {
+  if (!requireLogin()) return;
+
+  if (selectedIds.size) {
+    pushUndo();
+
+    const changedCells = new Set();
+
+    for (const item of getItems()) {
+      if (selectedIds.has(item.uid) && canEditCell(item.cell)) {
+        item.flipY = !item.flipY;
+        changedCells.add(item.cell);
+      }
+    }
+
+    saveLocalWorld();
+    changedCells.forEach(saveCellToFirebase);
+    showToast('تم عكس العنصر علوي وسفلي');
+    return;
+  }
+
+  flipYMode = !flipYMode;
+  updateToolButtons();
+}
+
+function toggleAutoAlign() {
+  if (!requireLogin()) return;
+
+  autoAlignMode = !autoAlignMode;
+  updateToolButtons();
+  showToast(autoAlignMode ? 'تم تشغيل الترتيب التلقائي' : 'تم إيقاف الترتيب التلقائي');
+}
+
+function toggleHomeCamera() {
+  if (!requireLogin()) return;
+
+  const saved = JSON.parse(localStorage.getItem(HOME_KEY) || 'null');
+  const btn = document.getElementById('homeBtn');
+
+  if (!saved || typeof saved.camX !== 'number' || typeof saved.camY !== 'number') {
+    localStorage.setItem(HOME_KEY, JSON.stringify({ camX, camY, zoom }));
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-house-chimney"></i> العودة للمنزل';
+    showToast('تم تحديد المنزل');
+    return;
+  }
+
+  camX = saved.camX;
+  camY = saved.camY;
+  if (typeof saved.zoom === 'number') zoom = saved.zoom;
+  clampCam();
+  showToast('تمت العودة للمنزل');
+}
+
+function updateHomeButton() {
+  const btn = document.getElementById('homeBtn');
+  if (!btn) return;
+
+  const saved = JSON.parse(localStorage.getItem(HOME_KEY) || 'null');
+  btn.innerHTML = saved ? '<i class="fa-solid fa-house-chimney"></i> العودة للمنزل' : '<i class="fa-solid fa-house"></i> تحديد المنزل';
+}
+
 function changeItemScale(delta) {
-  itemScale = Math.max(0.2, Math.min(3, itemScale + delta));
+  itemScale = Math.max(0.85, Math.min(1.35, Number((itemScale + delta).toFixed(2))));
 
   const scaleInput = document.getElementById('itemScale');
   if (scaleInput) scaleInput.value = itemScale;
@@ -1604,7 +1785,7 @@ function changeItemScale(delta) {
 }
 
 function updateItemScale(event) {
-  const newScale = Number(event.target.value || 1);
+  const newScale = Math.max(0.85, Math.min(1.35, Number(event.target.value || 1.10)));
   const factor = newScale / itemScale;
   itemScale = newScale;
 
@@ -1661,6 +1842,37 @@ function paintAt(x, y) {
   }
 }
 
+
+function applyAutoAlign(item, cellKey) {
+  if (!autoAlignMode) return;
+
+  const cellData = world[cellKey];
+  if (!cellData || !Array.isArray(cellData.items)) return;
+
+  const near = 22;
+
+  for (const other of cellData.items) {
+    if (!other || other.uid === item.uid || other.tileId !== item.tileId) continue;
+    if (Math.abs((other.layer || 1) - (item.layer || 1)) > 1) continue;
+
+    const sameHeight = Math.abs(other.h - item.h) <= 8;
+    const sameWidth = Math.abs(other.w - item.w) <= 8;
+
+    if (sameHeight && Math.abs(item.y - other.y) <= near) item.y = other.y;
+    if (sameWidth && Math.abs(item.x - other.x) <= near) item.x = other.x;
+
+    const rightEdge = other.x + other.w;
+    const leftEdge = other.x - item.w;
+    const bottomEdge = other.y + other.h;
+    const topEdge = other.y - item.h;
+
+    if (sameHeight && Math.abs(item.x - rightEdge) <= near) item.x = rightEdge;
+    if (sameHeight && Math.abs(item.x - leftEdge) <= near) item.x = leftEdge;
+    if (sameWidth && Math.abs(item.y - bottomEdge) <= near) item.y = bottomEdge;
+    if (sameWidth && Math.abs(item.y - topEdge) <= near) item.y = topEdge;
+  }
+}
+
 function paintOne(x, y) {
   const cell = cellFromWorld(x, y);
   if (!cell) return;
@@ -1700,11 +1912,13 @@ function paintOne(x, y) {
     w: scaledW,
     h: scaledH,
     flipX: flipMode,
+    flipY: flipYMode,
     layer: activeLayer,
     blocking: blockingMode || !!selectedTile.blocking,
     owner: currentOwner()
   };
 
+  applyAutoAlign(item, cell.key);
   cellData.items.push(item);
 
   saveLocalWorld();
@@ -1839,7 +2053,7 @@ canvas.addEventListener('mousedown', event => {
 
   if (event.button === 1 || event.altKey) {
     dragMode = 'pan';
-  } else if (hit && !eraser) {
+  } else if (hit && !eraser && !selectedTile) {
     if (!requireLogin()) return;
 
     dragMode = 'move';
@@ -1924,6 +2138,16 @@ canvas.addEventListener('wheel', event => {
   clampCam();
 }, { passive: false });
 
+
+function closeAllModals() {
+  ['authModal', 'confirmModal', 'characterModal', 'infoModal'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+
+  hideBigTilePreview();
+  showAuthMessage('');
+}
+
 /* ===== Keyboard ===== */
 
 window.addEventListener('keydown', event => {
@@ -1936,6 +2160,11 @@ window.addEventListener('keydown', event => {
   const key = event.key.toLowerCase();
   const code = event.code;
 
+  if (event.key === 'Escape') {
+    closeAllModals();
+    return;
+  }
+
   if (!walkMode && /^[1-5]$/.test(event.key)) {
     setActiveLayer(Number(event.key));
     return;
@@ -1943,13 +2172,13 @@ window.addEventListener('keydown', event => {
 
   if (!walkMode && (event.key === '+' || event.key === '=' || code === 'NumpadAdd')) {
     event.preventDefault();
-    changeItemScale(0.08);
+    changeItemScale(0.05);
     return;
   }
 
   if (!walkMode && (event.key === '-' || code === 'NumpadSubtract')) {
     event.preventDefault();
-    changeItemScale(-0.08);
+    changeItemScale(-0.05);
     return;
   }
 
@@ -2160,11 +2389,26 @@ function undo() {
   }
 
   try {
-    world = JSON.parse(undoStack.pop()) || {};
-    world = normalizeWorldData(world);
+    const oldWorld = world;
+    const restoredWorld = normalizeWorldData(JSON.parse(undoStack.pop()) || {});
+    const changedCells = new Set();
+    const owner = currentOwner();
 
+    for (const cellKey in oldWorld) {
+      if (oldWorld[cellKey]?.owner === owner) changedCells.add(cellKey);
+    }
+
+    for (const cellKey in restoredWorld) {
+      if (restoredWorld[cellKey]?.owner === owner) changedCells.add(cellKey);
+    }
+
+    world = restoredWorld;
     saveLocalWorld();
-    saveWorldToFirebaseFull();
+
+    changedCells.forEach(cellKey => {
+      if (world[cellKey]) saveCellToFirebase(cellKey);
+      else removeCellFromFirebase(cellKey);
+    });
 
     selectedIds.clear();
     clearPaintState();
@@ -2212,47 +2456,21 @@ Ctrl + عجلة الماوس : تكبير وتصغير الشاشة
 function showSettingsHelp() {
   showInfo(
     'شرح الإعدادات',
-    `عدد عناصرك:
-يعرض عدد العناصر التي وضعتها في العالم.
-
-موقعك الحالي:
-يعرض الخلية الحالية مثل AY51.
-
-القسم:
-اختيار نوع العناصر، وعند الضغط مرة ثانية على نفس القسم يتم إخفاء العناصر.
-
-تكبير العناصر عند المرور:
-يعرض معاينة كبيرة للعنصر عند مرور الماوس عليه.
-
-الطبقة:
-تحدد ترتيب ظهور العناصر فوق بعض. الأرقام 1 إلى 5 تعمل من الكيبورد أيضًا.
-
-شفافية الجدول:
-تتحكم في ظهور خطوط الشبكة أثناء البناء فقط.
-
-حجم ريشة الرسم:
-تحدد مساحة وضع العناصر.
-
-حجم العنصر:
-يكبر أو يصغر العنصر قبل وضعه، أو العنصر المحدد بعد تحديده.
-
-الممحاة:
-تحذف العناصر بالضغط عليها.
-
-استعادة:
-ترجع آخر تغيير.
-
-جعل العنصر عائق:
-يجعل العنصر يمنع مرور الشخصية.
-
-عكس العنصر:
-يقلب العنصر يمين ويسار.
-
-حذف العنصر المحدد:
-يحذف ما تم تحديده.
-
-حذف جميع عناصري:
-يحذف فقط العناصر التي تملكها.`
+    `<div class="helpList">
+      <div class="helpItem"><button class="sampleBtn walkColorBtn"><i class="fa-solid fa-person-walking"></i> تجول</button><p>يدخل وضع التجول بالشخصية داخل العالم.</p></div>
+      <div class="helpItem"><button class="sampleBtn characterColorBtn"><i class="fa-solid fa-user-pen"></i> تغيير الشخصية</button><p>يفتح نافذة اختيار الشخصية.</p></div>
+      <div class="helpItem"><button class="sampleBtn homeColorBtn"><i class="fa-solid fa-house"></i> تحديد المنزل</button><p>يحفظ مكان الكاميرا، وبعدها يتحول إلى العودة للمنزل.</p></div>
+      <div class="helpItem"><button class="sampleBtn previewColorBtn"><i class="fa-solid fa-eye"></i> تكبير العناصر</button><p>يعرض معاينة كبيرة عند المرور على عنصر.</p></div>
+      <div class="helpItem"><button class="sampleBtn autoAlignColorBtn"><i class="fa-solid fa-border-all"></i> الترتيب التلقائي</button><p>يساعد في محاذاة العناصر المتشابهة بجانب بعض بشكل خفيف.</p></div>
+      <div class="helpItem"><button class="sampleBtn eraseColorBtn"><i class="fa-solid fa-eraser"></i> ممحاة</button><p>تحذف العنصر الذي تضغط عليه.</p></div>
+      <div class="helpItem"><button class="sampleBtn undoColorBtn"><i class="fa-solid fa-rotate-left"></i> استعادة</button><p>يرجع آخر تعديل.</p></div>
+      <div class="helpItem"><button class="sampleBtn blockColorBtn"><i class="fa-solid fa-ban"></i> عائق</button><p>يجعل العنصر يمنع مرور الشخصية.</p></div>
+      <div class="helpItem"><button class="sampleBtn flipColorBtn"><i class="fa-solid fa-left-right"></i> يمين/يسار</button><p>يعكس العنصر أفقيًا.</p></div>
+      <div class="helpItem"><button class="sampleBtn flipYColorBtn"><i class="fa-solid fa-up-down"></i> فوق/تحت</button><p>يعكس العنصر عموديًا.</p></div>
+      <div class="helpItem"><button class="sampleBtn deleteOneColorBtn"><i class="fa-solid fa-trash"></i> حذف المحدد</button><p>يحذف العنصر المحدد فقط.</p></div>
+      <div class="helpItem"><button class="sampleBtn dangerBtn"><i class="fa-solid fa-trash-can"></i> حذف جميع عناصري</button><p>يحذف فقط العناصر التي تملكها.</p></div>
+    </div>`,
+    true
   );
 }
 
@@ -2332,6 +2550,14 @@ function loadProfileData() {
   });
 }
 
+
+function showSettingsHelpOnce() {
+  if (localStorage.getItem(SETTINGS_HELP_SEEN_KEY) === '1') return;
+
+  localStorage.setItem(SETTINGS_HELP_SEEN_KEY, '1');
+  setTimeout(showSettingsHelp, 700);
+}
+
 function signup() {
   const email = document.getElementById('signupEmailInput')?.value.trim();
   const pass = document.getElementById('signupPassInput')?.value;
@@ -2350,6 +2576,7 @@ function signup() {
     saveProfileData();
     updateAuthUI();
     showCharacterModal(true);
+    showSettingsHelpOnce();
   }).catch(error => {
     showAuthMessage(authErrorMessage(error));
   });
@@ -2500,7 +2727,7 @@ function toggleWalk() {
 
   if (walkMode) {
     previousBuildZoom = zoom;
-    zoom = 1.25;
+    zoom = 1.85;
     selectedIds.clear();
     clearPaintState();
 
