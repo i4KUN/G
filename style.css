@@ -1,7 +1,11 @@
-/* GameNjd v12.5 */
+/* GameNjd v12.6 */
 
 * {
   box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  image-rendering: pixelated;
 }
 
 html,
@@ -230,7 +234,7 @@ body.loaded #loadingScreen {
   height: calc(100vh - 58px);
   display: grid;
   grid-template-columns: 1fr 340px;
-  direction: ltr;
+  direction: rtl;
   background: #0b1120;
 }
 
@@ -603,13 +607,13 @@ body.loaded #loadingScreen {
   right: 12px;
   top: 12px;
   display: none;
-  grid-template-columns: repeat(3, 44px);
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
   gap: 8px;
 }
 
 .mobileToolBtn {
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  min-height: 52px;
   padding: 0;
   border-radius: 50%;
   background: #2563eb;
@@ -1187,7 +1191,7 @@ body.walking .worldWrap {
   }
 }
 
-/* ===== GameNjd v12.5 additions - keep original design ===== */
+/* ===== GameNjd v12.6 additions - keep original design ===== */
 
 /* 02: Pixelated على اللعبة كاملة */
 img,
