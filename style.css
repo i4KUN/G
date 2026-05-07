@@ -271,7 +271,7 @@ background: #0b1120;
   background: #1f2937;
   border: 1px solid #374151;
   border-radius: 16px;
-  padding: 12px;
+  padding: 6px;
   margin-bottom: 10px;
 }
 
@@ -440,7 +440,7 @@ background: #0b1120;
 
 .categoryButtons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 7px;
   margin-bottom: 10px;
 }
@@ -509,7 +509,7 @@ background: #0b1120;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 7px;
-  max-height: 420px;
+  max-height: 295px;
   overflow-y: auto;
   padding-left: 4px;
 }
