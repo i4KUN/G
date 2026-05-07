@@ -925,13 +925,13 @@ function drawFixedAnimals() {
 }
 
 function isNightActive() {
-  return Math.floor(Date.now() / (60 * 60 * 1000)) % 2 === 1;
+  return Math.floor(Date.now() / (1 * 60 * 1000)) % 2 === 1;
 }
 
 function drawNightFilter(width, height) {
   if (!isNightActive()) return;
 
-  ctx.fillStyle = 'rgba(0, 20, 60, 0.50)';
+  ctx.fillStyle = 'rgba(0, 20, 60, 0.40)';
   ctx.fillRect(0, 0, width, height);
 }
 
