@@ -925,7 +925,7 @@ function drawFixedAnimals() {
 }
 
 function isNightActive() {
-  return Math.floor(Date.now() / (1 * 60 * 1000)) % 2 === 1;
+  return Math.floor(Date.now() / (0.5 * 60 * 1000)) % 2 === 1;
 }
 
 function drawNightFilter(width, height) {
