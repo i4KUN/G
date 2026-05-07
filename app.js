@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v12.5
+// GameNjd v12.6
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -903,7 +903,7 @@ function drawFixedAnimals() {
     if (!cell) continue;
 
     const img = getTileImage(animal.src);
-    const sizeWorld = CELL * 0.28;
+    const sizeWorld = CELL * 0.22;
     const x = (cell.col - 1) * CELL + CELL / 2 - sizeWorld / 2;
     const y = (cell.row - 1) * CELL + CELL / 2 - sizeWorld / 2;
     const point = worldToScreen(x, y);
@@ -2904,3 +2904,45 @@ initUI();
 waitFirebaseReady();
 centerStartOnce();
 updateToolButtons();
+
+
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+
+  document.querySelectorAll('.modal,.characterModal,.infoModal,.confirmModal').forEach(el => {
+    el.classList.add('hidden');
+  });
+
+  selectedTile = null;
+  selectedIds.clear();
+
+  const tileset = document.getElementById('tileset');
+  if (tileset) {
+    tileset.querySelectorAll('.tile').forEach(tile => {
+      tile.classList.remove('active');
+    });
+  }
+
+  showToast('تم إلغاء التحديد');
+});
+
+
+
+function autoAlignPosition(x, y, currentCellKey) {
+  if (!autoAlignMode) return { x, y };
+
+  const SNAP_DISTANCE = 18;
+
+  const nearby = getItems().filter(item => item.cell === currentCellKey);
+
+  for (const item of nearby) {
+    const rect = itemRect(item);
+
+    if (Math.abs(x - rect.x) <= SNAP_DISTANCE) x = rect.x;
+    if (Math.abs(y - rect.y) <= SNAP_DISTANCE) y = rect.y;
+    if (Math.abs(x - (rect.x + rect.w)) <= SNAP_DISTANCE) x = rect.x + rect.w;
+    if (Math.abs(y - (rect.y + rect.h)) <= SNAP_DISTANCE) y = rect.y + rect.h;
+  }
+
+  return { x, y };
+}
