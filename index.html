@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v12.3</title>
+  <title>GameNjd v12.5</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="https://n4anime.github.io/bon/icon/cover2.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v12.3" />
+  <meta property="og:title" content="GameNjd v12.5" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
   <meta property="og:url" content="https://i4kun.github.io/G/" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v12.3" />
+  <meta name="twitter:title" content="GameNjd v12.5" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
 
@@ -91,28 +91,39 @@
         </div>
 
         <div id="mobileQuickTools" class="mobileQuickTools">
-          <button id="mobileGearBtn" class="mobileToolBtn" type="button" title="الإعدادات">
+          <button id="mobileGearBtn" class="mobileToolBtn mobileGearColor" type="button" title="الإعدادات">
             <i class="fa-solid fa-gear"></i>
+            <span>إعدادات</span>
           </button>
 
-          <button id="mobileUndoBtn" class="mobileToolBtn" type="button" title="استعادة">
+          <button id="mobileUndoBtn" class="mobileToolBtn mobileUndoColor" type="button" title="استعادة">
             <i class="fa-solid fa-rotate-left"></i>
+            <span>استعادة</span>
           </button>
 
-          <button id="mobileEraseBtn" class="mobileToolBtn" type="button" title="ممحاة">
+          <button id="mobileEraseBtn" class="mobileToolBtn mobileEraseColor" type="button" title="ممحاة">
             <i class="fa-solid fa-eraser"></i>
+            <span>ممحاة</span>
           </button>
 
-          <button id="mobileBlockBtn" class="mobileToolBtn" type="button" title="عائق">
+          <button id="mobileBlockBtn" class="mobileToolBtn mobileBlockColor" type="button" title="عائق">
             <i class="fa-solid fa-ban"></i>
+            <span>عائق</span>
           </button>
 
-          <button id="mobileFlipBtn" class="mobileToolBtn" type="button" title="عكس">
+          <button id="mobileFlipBtn" class="mobileToolBtn mobileFlipColor" type="button" title="عكس يمين ويسار">
             <i class="fa-solid fa-left-right"></i>
+            <span>يمين/يسار</span>
+          </button>
+
+          <button id="mobileFlipYBtn" class="mobileToolBtn mobileFlipYColor" type="button" title="عكس علوي وسفلي">
+            <i class="fa-solid fa-up-down"></i>
+            <span>فوق/تحت</span>
           </button>
 
           <button id="mobileDeleteBtn" class="mobileToolBtn dangerMobileBtn" type="button" title="حذف">
             <i class="fa-solid fa-trash"></i>
+            <span>حذف</span>
           </button>
         </div>
       </section>
@@ -154,15 +165,20 @@
           </div>
         </div>
 
-        <div class="section">
-          <button id="walkBtn" class="mainBtn" type="button">
+        <div class="section mainActionsBox">
+          <button id="walkBtn" class="mainBtn walkColorBtn" type="button">
             <i class="fa-solid fa-person-walking"></i>
             تجول
           </button>
 
-          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">
+          <button id="changeCharacterBtn" class="mainBtn secondaryBtn characterColorBtn" type="button">
             <i class="fa-solid fa-user-pen"></i>
             تغيير الشخصية
+          </button>
+
+          <button id="homeBtn" class="mainBtn homeColorBtn" type="button">
+            <i class="fa-solid fa-house"></i>
+            تحديد المنزل
           </button>
         </div>
 
@@ -173,49 +189,124 @@
           </label>
 
           <div id="categoryButtons" class="categoryButtons">
-            <button data-category="furniture" class="categoryBtn" type="button">
-              <i class="fa-solid fa-couch"></i>
-              أثاث
+            <button data-category="bag" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bag-shopping"></i>
+              أكياس
             </button>
 
-            <button data-category="storage" class="categoryBtn" type="button">
-              <i class="fa-solid fa-box"></i>
-              تخزين
+            <button data-category="lighting" class="categoryBtn" type="button">
+              <i class="fa-solid fa-lightbulb"></i>
+              إنارات
             </button>
 
-            <button data-category="kitchenware" class="categoryBtn" type="button">
-              <i class="fa-solid fa-utensils"></i>
-              أدوات وأواني
-            </button>
-
-            <button data-category="floors" class="categoryBtn" type="button">
-              <i class="fa-solid fa-border-all"></i>
-              أرضيات
-            </button>
-
-            <button data-category="carpets" class="categoryBtn" type="button">
-              <i class="fa-solid fa-rug"></i>
-              سجاد ومنسوجات
-            </button>
-
-            <button data-category="plants" class="categoryBtn" type="button">
-              <i class="fa-solid fa-seedling"></i>
-              نباتات
-            </button>
-
-            <button data-category="walls" class="categoryBtn" type="button">
-              <i class="fa-solid fa-dungeon"></i>
-              جدران ومباني
-            </button>
-
-            <button data-category="doors" class="categoryBtn" type="button">
+            <button data-category="door" class="categoryBtn" type="button">
               <i class="fa-solid fa-door-open"></i>
-              أبواب ونوافذ
+              باب
             </button>
 
-            <button data-category="decorations" class="categoryBtn" type="button">
+            <button data-category="coffee_pot" class="categoryBtn" type="button">
+              <i class="fa-solid fa-mug-hot"></i>
+              دلة
+            </button>
+
+            <button data-category="cabinet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-box-archive"></i>
+              دولاب
+            </button>
+
+            <button data-category="decor" class="categoryBtn" type="button">
               <i class="fa-solid fa-star"></i>
-              ديكور
+              ديكورات
+            </button>
+
+            <button data-category="carpet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-rug"></i>
+              زولية
+            </button>
+
+            <button data-category="curtain" class="categoryBtn" type="button">
+              <i class="fa-solid fa-grip-lines-vertical"></i>
+              ستارة
+            </button>
+
+            <button data-category="bed" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bed"></i>
+              سرير
+            </button>
+
+            <button data-category="plant" class="categoryBtn" type="button">
+              <i class="fa-solid fa-tree"></i>
+              شجرة
+            </button>
+
+            <button data-category="bedsheet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-layer-group"></i>
+              شرشف
+            </button>
+
+            <button data-category="plate" class="categoryBtn" type="button">
+              <i class="fa-solid fa-circle-dot"></i>
+              صحن
+            </button>
+
+            <button data-category="box" class="categoryBtn" type="button">
+              <i class="fa-solid fa-box"></i>
+              صندوق
+            </button>
+
+            <button data-category="table" class="categoryBtn" type="button">
+              <i class="fa-solid fa-table"></i>
+              طاولة
+            </button>
+
+            <button data-category="pottery" class="categoryBtn" type="button">
+              <i class="fa-solid fa-jar"></i>
+              فخار
+            </button>
+
+            <button data-category="cooking_pot" class="categoryBtn" type="button">
+              <i class="fa-solid fa-fire-burner"></i>
+              قدر
+            </button>
+
+            <button data-category="chair" class="categoryBtn" type="button">
+              <i class="fa-solid fa-chair"></i>
+              كرسي
+            </button>
+
+            <button data-category="cup" class="categoryBtn" type="button">
+              <i class="fa-solid fa-mug-saucer"></i>
+              كوب
+            </button>
+
+            <button data-category="painting" class="categoryBtn" type="button">
+              <i class="fa-solid fa-image"></i>
+              لوحة
+            </button>
+
+            <button data-category="pillow" class="categoryBtn" type="button">
+              <i class="fa-solid fa-cloud"></i>
+              مخدة
+            </button>
+
+            <button data-category="floor_mattress" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bed"></i>
+              مرتبة
+            </button>
+
+            <button data-category="window" class="categoryBtn" type="button">
+              <i class="fa-solid fa-border-top-left"></i>
+              نافذة
+            </button>
+
+            <button data-category="floor" class="categoryBtn" type="button">
+              <i class="fa-solid fa-border-all"></i>
+              ارضيات
+            </button>
+
+            <button data-category="wall" class="categoryBtn" type="button">
+              <i class="fa-solid fa-dungeon"></i>
+              جدران
             </button>
           </div>
 
@@ -223,9 +314,16 @@
           <input id="sizeFilter" class="hidden" type="hidden" value="all" />
 
           <div class="previewToggleBox">
-            <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
+            <button id="tilePreviewToggle" class="toggleFeatureBtn previewColorBtn" type="button">
               <i class="fa-solid fa-eye"></i>
               تكبير العناصر عند المرور: تشغيل
+            </button>
+          </div>
+
+          <div class="previewToggleBox">
+            <button id="autoAlignBtn" class="toggleFeatureBtn autoAlignColorBtn" type="button">
+              <i class="fa-solid fa-border-all"></i>
+              الترتيب التلقائي: إيقاف
             </button>
           </div>
 
@@ -284,36 +382,43 @@
             <i class="fa-solid fa-maximize"></i>
             حجم العنصر
           </label>
-          <input id="itemScale" type="range" min="0.5" max="2.5" step="0.05" value="1" />
+          <input id="itemScale" type="range" min="0.85" max="1.35" step="0.05" value="1.10" />
         </div>
 
         <div class="desktopTools">
           <div class="section two">
-            <button id="eraseBtn" type="button">
+            <button id="eraseBtn" class="eraseColorBtn" type="button">
               <i class="fa-solid fa-eraser"></i>
               ممحاة: إيقاف
             </button>
 
-            <button id="undoBtn" type="button">
+            <button id="undoBtn" class="undoColorBtn" type="button">
               <i class="fa-solid fa-rotate-left"></i>
               استعادة
             </button>
           </div>
 
           <div class="section">
-            <button id="blockBtn" type="button">
+            <button id="blockBtn" class="blockColorBtn" type="button">
               <i class="fa-solid fa-ban"></i>
               جعل العنصر عائق: إيقاف
             </button>
           </div>
 
           <div class="section two">
-            <button id="flipBtn" type="button">
+            <button id="flipBtn" class="flipColorBtn" type="button">
               <i class="fa-solid fa-left-right"></i>
               عكس العنصر: إيقاف
             </button>
 
-            <button id="deleteSelectedBtn" type="button">
+            <button id="flipYBtn" class="flipYColorBtn" type="button">
+              <i class="fa-solid fa-up-down"></i>
+              عكس علوي وسفلي: إيقاف
+            </button>
+          </div>
+
+          <div class="section">
+            <button id="deleteSelectedBtn" class="deleteOneColorBtn" type="button">
               <i class="fa-solid fa-trash"></i>
               حذف العنصر المحدد
             </button>
@@ -335,26 +440,26 @@
 
           <input id="jumpInput" type="text" placeholder="مثال K90" />
 
-          <button id="jumpBtn" type="button">
+          <button id="jumpBtn" class="jumpColorBtn" type="button">
             <i class="fa-solid fa-paper-plane"></i>
             سافر
           </button>
         </div>
 
         <div class="section two">
-          <button id="shortcutsBtn" type="button">
+          <button id="shortcutsBtn" class="helpColorBtn" type="button">
             <i class="fa-solid fa-keyboard"></i>
             شرح الاختصارات
           </button>
 
-          <button id="settingsHelpBtn" type="button">
+          <button id="settingsHelpBtn" class="settingsHelpColorBtn" type="button">
             <i class="fa-solid fa-circle-info"></i>
             شرح الإعدادات
           </button>
         </div>
 
         <div class="section">
-          <button id="aboutBtn" type="button">
+          <button id="aboutBtn" class="aboutColorBtn" type="button">
             <i class="fa-solid fa-circle-question"></i>
             من نحن
           </button>
@@ -474,15 +579,16 @@
       </h2>
 
       <p>اختر شخصية واحدة، وسيتم ربطها بحسابك.</p>
+      <p class="characterLaterText">تستطيع تغيير شخصيتك لاحقًا</p>
 
       <div id="characterChoices"></div>
     </div>
   </div>
 
   <div id="infoModal" class="characterModal hidden">
-    <div class="characterBox smallBox">
+    <div class="characterBox smallBox infoModalBox">
       <h2 id="infoTitle">تنبيه</h2>
-      <p id="infoText"></p>
+      <div id="infoText"></div>
 
       <button id="infoCloseBtn" class="mainBtn" type="button">
         <i class="fa-solid fa-check"></i>
