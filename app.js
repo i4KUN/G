@@ -931,7 +931,7 @@ function isNightActive() {
 function drawNightFilter(width, height) {
   if (!isNightActive()) return;
 
-  ctx.fillStyle = 'rgba(0, 20, 60, 0.45)';
+  ctx.fillStyle = 'rgba(0, 20, 60, 0)';
   ctx.fillRect(0, 0, width, height);
 }
 
