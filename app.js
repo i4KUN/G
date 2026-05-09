@@ -1,17 +1,17 @@
 'use strict';
-// GameNjd v12.7
+// GameNjd v13.1
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
 const panel = document.getElementById('panel');
 const toast = document.getElementById('toast');
 
-const WORLD_COLS = 100;
-const WORLD_ROWS = 100;
+const WORLD_COLS = 50;
+const WORLD_ROWS = 50;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '1.1';
+const VERSION = '13.1';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -45,39 +45,40 @@ const VISITED_CELLS_KEY = storageKey('visited_cells');
   ['GameNjd_v125_settings_help_seen', SETTINGS_HELP_SEEN_KEY]
 ].forEach(pair => migrateStorageKey(pair[0], pair[1]));
 
-const MAX_ITEMS_PER_CELL = 300;
+const MAX_ITEMS_PER_CELL = 150;
 // تم إلغاء منع السفر البعيد حتى لا يمنع الانتقال بين المناطق
 const MAX_PLAYER_JUMP = Infinity;
 const CHUNK_RADIUS = 3; // نطاق الخلايا القريبة عند الحاجة
-const USE_NEARBY_WORLD_LOADING = false; // إيقاف التحميل الجزئي مؤقتًا لضمان مزامنة الأونلاين مباشرة
+const USE_NEARBY_WORLD_LOADING = true; // تفعيل تحميل الخلايا القريبة لتخفيف اللاق
 const TILE_IMAGE_EXT = 'png'; // استخدام PNG حتى لا تختفي العناصر القديمة
 
 // عدد خلايا البناء المسموحة حول البيت
-const HOME_BUILD_RADIUS_CELLS = 5;
+const HOME_BUILD_RADIUS_CELLS = 4;
 
 // حدود الزوم: التبعيد محدود، والتقريب واسع
 const BASE_ZOOM = 0.55;
 const ZOOM_STEP = 1.12;
-const ZOOM_OUT_STEPS = 7;
-const WALK_ZOOM_STEPS = 5; // وضع التجول: 5 تقريب و5 تبعيد فقط
-const ZOOM_IN_STEPS = 10;
-const WALK_BASE_ZOOM = 1.85;
+const ZOOM_OUT_STEPS = 8;
+const WALK_ZOOM_IN_STEPS = 5;
+const WALK_ZOOM_OUT_STEPS = 3; // وضع التجول: 5 تقريب و3 تبعيد فقط
+const ZOOM_IN_STEPS = 5;
+const WALK_BASE_ZOOM = 1.80;
 const MIN_ZOOM = BASE_ZOOM / Math.pow(ZOOM_STEP, ZOOM_OUT_STEPS);
 const MAX_ZOOM = BASE_ZOOM * Math.pow(ZOOM_STEP, ZOOM_IN_STEPS);
 
 // أوقات النقصان والزيادة
-const HUNGER_DECAY_MS = 5 * 60 * 1000; // الجوع ينقص 1% كل 5 دقائق
+const HUNGER_DECAY_MS = 10 * 60 * 1000; // الجوع ينقص 1% كل 10 دقائق
 const HEALTH_DECAY_MS = 20 * 60 * 1000; // الصحة تنقص 1% كل 20 دقيقة
 const LEVEL_POINT_MS = 60 * 1000; // نقطة لفل كل دقيقة
-const POINTS_PER_RIYAL = 5; // كل 5 نقاط = 1 ريال
+const POINTS_PER_RIYAL = 10; // كل 10 نقاط = 1 ريال
 
 const CHARACTER_BASE = 'Characters';
 const ASSET_BASE = 'All-Pic/tiles';
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
-const PLAYER_DRAW_W = 92;
-const PLAYER_DRAW_H = 92;
+const PLAYER_DRAW_W = 80;
+const PLAYER_DRAW_H = 80;
 
 const DEFAULT_FLOOR_SRC = 'All-Pic/map-pic/00.png';
 
@@ -96,24 +97,20 @@ const fixedGroundTiles = [
   { cell: 'H12', src: 'All-Pic/map-pic/09.png' },
   { cell: 'R18', src: 'All-Pic/map-pic/09.png' },
   { cell: 'AF15', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'BQ20', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'CN14', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'J76', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AD84', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'BK78', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'CV86', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'CX35', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AX20', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'J31', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AD38', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AX45', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'C41', src: 'All-Pic/map-pic/09.png' },
 
   { cell: 'M28', src: 'All-Pic/map-pic/10.png' },
   { cell: 'X9', src: 'All-Pic/map-pic/10.png' },
   { cell: 'AL31', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'BA11', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'CS25', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'F63', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AH69', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'BP90', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'CD72', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'CJ54', src: 'All-Pic/map-pic/10.png' }
+  { cell: 'AW11', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'F44', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AH42', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AV48', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AS6', src: 'All-Pic/map-pic/10.png' }
 ];
 
 
@@ -122,12 +119,10 @@ const fixedAnimalTiles = [
   { cell: 'P17', src: 'All-Pic/animal/animal-01.gif' },
   { cell: 'AB9', src: 'All-Pic/animal/animal-01.gif' },
   { cell: 'AO25', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'BH13', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'CS31', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'K64', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'AD77', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'BP88', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'CV55', src: 'All-Pic/animal/animal-01.gif' }
+  { cell: 'AX13', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'K42', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AD37', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AV46', src: 'All-Pic/animal/animal-01.gif' }
 ];
 
 const SIZE_DATA = {
@@ -138,30 +133,30 @@ const SIZE_DATA = {
 };
 
 const tileGroups = [
-  { key: 'bag', name: 'أكياس', folder: 'Bag', prefix: 'Bag', count: 10, w: 75, h: 75, blocking: false },
-  { key: 'lighting', name: 'إنارات', folder: 'Lighting', prefix: 'Lighting', count: 10, w: 70, h: 90, blocking: false },
-  { key: 'door', name: 'باب', folder: 'Door', prefix: 'Door', count: 11, w: 100, h: 120, blocking: true },
-  { key: 'coffee_pot', name: 'دلة', folder: 'teapot', prefix: 'teapot', count: 18, w: 70, h: 70, blocking: false },
-  { key: 'cabinet', name: 'دولاب', folder: 'Cabinet', prefix: 'Cabinet', count: 16, w: 120, h: 120, blocking: false },
-  { key: 'decor', name: 'ديكورات', folder: 'Decor', prefix: 'Decor', count: 74, w: 70, h: 70, blocking: false },
-  { key: 'carpet', name: 'زولية', folder: 'Carpet', prefix: 'Carpet', count: 13, w: 150, h: 120, blocking: false },
-  { key: 'curtain', name: 'ستارة', folder: 'Curtain', prefix: 'Curtain', count: 14, w: 100, h: 120, blocking: false },
-  { key: 'bed', name: 'سرير', folder: 'Bed', prefix: 'Bed', count: 5, w: 150, h: 110, blocking: false },
-  { key: 'plant', name: 'شجرة', folder: 'Plant', prefix: 'Plant', count: 106, w: 80, h: 80, blocking: false },
-  { key: 'bedsheet', name: 'شرشف', folder: 'Bedsheet', prefix: 'Bedsheet', count: 24, w: 130, h: 100, blocking: false },
-  { key: 'plate', name: 'صحن', folder: 'Plate', prefix: 'Plate', count: 83, w: 65, h: 65, blocking: false },
-  { key: 'box', name: 'صندوق', folder: 'Box', prefix: 'Box', count: 8, w: 80, h: 80, blocking: false },
-  { key: 'table', name: 'طاولة', folder: 'Table', prefix: 'Table', count: 49, w: 120, h: 90, blocking: false },
-  { key: 'pottery', name: 'فخار', folder: 'Pottery', prefix: 'Pottery', count: 25, w: 75, h: 75, blocking: false },
-  { key: 'cooking_pot', name: 'قدر', folder: 'Pot', prefix: 'Pot', count: 12, w: 75, h: 75, blocking: false },
-  { key: 'chair', name: 'كرسي', folder: 'Chair', prefix: 'Chair', count: 15, w: 95, h: 95, blocking: false },
-  { key: 'cup', name: 'كوب', folder: 'Cup', prefix: 'Cup', count: 18, w: 55, h: 55, blocking: false },
-  { key: 'painting', name: 'لوحة', folder: 'Painting', prefix: 'Painting', count: 20, w: 90, h: 75, blocking: false },
-  { key: 'pillow', name: 'مخدة', folder: 'Pillow', prefix: 'Pillow', count: 41, w: 70, h: 55, blocking: false },
-  { key: 'floor_mattress', name: 'مرتبة', folder: 'Mattress', prefix: 'Mattress', count: 12, w: 130, h: 100, blocking: false },
-  { key: 'window', name: 'نافذة', folder: 'Window', prefix: 'Window', count: 15, w: 95, h: 95, blocking: false },
-  { key: 'floor', name: 'ارضيات', folder: 'Floof', prefix: 'Floof', count: 86, w: 220, h: 220, blocking: false },
-  { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 160, h: 160, blocking: true }
+  { key: 'bag', name: 'أكياس', folder: 'Bag', prefix: 'Bag', count: 10, w: 23, h: 23, blocking: false },
+  { key: 'lighting', name: 'إنارات', folder: 'Lighting', prefix: 'Lighting', count: 10, w: 21, h: 27, blocking: false },
+  { key: 'door', name: 'باب', folder: 'Door', prefix: 'Door', count: 11, w: 30, h: 36, blocking: true },
+  { key: 'coffee_pot', name: 'دلة', folder: 'teapot', prefix: 'teapot', count: 18, w: 21, h: 21, blocking: false },
+  { key: 'cabinet', name: 'دولاب', folder: 'Cabinet', prefix: 'Cabinet', count: 16, w: 36, h: 36, blocking: false },
+  { key: 'decor', name: 'ديكورات', folder: 'Decor', prefix: 'Decor', count: 74, w: 21, h: 21, blocking: false },
+  { key: 'carpet', name: 'زولية', folder: 'Carpet', prefix: 'Carpet', count: 13, w: 45, h: 36, blocking: false },
+  { key: 'curtain', name: 'ستارة', folder: 'Curtain', prefix: 'Curtain', count: 14, w: 30, h: 36, blocking: false },
+  { key: 'bed', name: 'سرير', folder: 'Bed', prefix: 'Bed', count: 5, w: 45, h: 33, blocking: false },
+  { key: 'plant', name: 'شجرة', folder: 'Plant', prefix: 'Plant', count: 106, w: 24, h: 24, blocking: false },
+  { key: 'bedsheet', name: 'شرشف', folder: 'Bedsheet', prefix: 'Bedsheet', count: 24, w: 39, h: 30, blocking: false },
+  { key: 'plate', name: 'صحن', folder: 'Plate', prefix: 'Plate', count: 83, w: 20, h: 20, blocking: false },
+  { key: 'box', name: 'صندوق', folder: 'Box', prefix: 'Box', count: 8, w: 24, h: 24, blocking: false },
+  { key: 'table', name: 'طاولة', folder: 'Table', prefix: 'Table', count: 49, w: 36, h: 27, blocking: false },
+  { key: 'pottery', name: 'فخار', folder: 'Pottery', prefix: 'Pottery', count: 25, w: 23, h: 23, blocking: false },
+  { key: 'cooking_pot', name: 'قدر', folder: 'Pot', prefix: 'Pot', count: 12, w: 23, h: 23, blocking: false },
+  { key: 'chair', name: 'كرسي', folder: 'Chair', prefix: 'Chair', count: 15, w: 29, h: 29, blocking: false },
+  { key: 'cup', name: 'كوب', folder: 'Cup', prefix: 'Cup', count: 18, w: 17, h: 17, blocking: false },
+  { key: 'painting', name: 'لوحة', folder: 'Painting', prefix: 'Painting', count: 20, w: 27, h: 23, blocking: false },
+  { key: 'pillow', name: 'مخدة', folder: 'Pillow', prefix: 'Pillow', count: 41, w: 21, h: 17, blocking: false },
+  { key: 'floor_mattress', name: 'مرتبة', folder: 'Mattress', prefix: 'Mattress', count: 12, w: 39, h: 30, blocking: false },
+  { key: 'window', name: 'نافذة', folder: 'Window', prefix: 'Window', count: 15, w: 29, h: 29, blocking: false },
+  { key: 'floor', name: 'ارضيات', folder: 'Floof', prefix: 'Floof', count: 86, w: 66, h: 66, blocking: false },
+  { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 48, h: 48, blocking: true }
 ];
 
 let zoom = 0.55;
@@ -178,7 +173,7 @@ let blockingMode = false;
 let flipMode = false;
 let flipYMode = false;
 let autoAlignMode = false;
-let itemScale = 1.10;
+let itemScale = 0.80;
 
 let walkMode = false;
 let isDown = false;
@@ -285,8 +280,8 @@ function emailToUsername(email) {
 
 function clampZoomValue(value) {
   const base = walkMode ? WALK_BASE_ZOOM : BASE_ZOOM;
-  const outSteps = walkMode ? WALK_ZOOM_STEPS : ZOOM_OUT_STEPS;
-  const inSteps = walkMode ? WALK_ZOOM_STEPS : ZOOM_IN_STEPS;
+  const outSteps = walkMode ? WALK_ZOOM_OUT_STEPS : ZOOM_OUT_STEPS;
+  const inSteps = walkMode ? WALK_ZOOM_IN_STEPS : ZOOM_IN_STEPS;
   const min = base / Math.pow(ZOOM_STEP, outSteps);
   const max = base * Math.pow(ZOOM_STEP, inSteps);
   return Math.max(min, Math.min(max, value));
@@ -314,10 +309,11 @@ function loadGameState() {
       lastHungerAt: Number(saved.lastHungerAt) || now,
       lastHealthAt: Number(saved.lastHealthAt) || now,
       lastLevelAt: Number(saved.lastLevelAt) || now,
-      quests: saved.quests && typeof saved.quests === 'object' ? saved.quests : {}
+      quests: saved.quests && typeof saved.quests === 'object' ? saved.quests : {},
+      inventory: Array.isArray(saved.inventory) ? saved.inventory : []
     };
   } catch {
-    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, quests: {} };
+    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, quests: {}, inventory: [] };
   }
 }
 
@@ -351,15 +347,15 @@ function handleEmptyBars() {
   if (gameState.health <= 0) {
     gameState.levelPoints = Math.max(0, Math.floor(gameState.levelPoints * 0.5));
     gameState.money = Math.max(0, gameState.money - 5);
-    gameState.health = 50;
-    showToast('انتهت الصحة: تم خصم عقوبة وتمت تعبئتها للنصف');
+    gameState.health = 30;
+    showToast('انتهت الصحة: تم خصم عقوبة وتمت تعبئتها إلى 30%');
     changed = true;
   }
   if (gameState.hunger <= 0) {
     gameState.levelPoints = Math.max(0, Math.floor(gameState.levelPoints * 0.5));
     gameState.money = Math.max(0, gameState.money - 5);
-    gameState.hunger = 50;
-    showToast('انتهى الجوع: تم خصم عقوبة وتمت تعبئته للنصف');
+    gameState.hunger = 30;
+    showToast('انتهى الجوع: تم خصم عقوبة وتمت تعبئته إلى 30%');
     changed = true;
   }
   if (changed) saveGameState();
@@ -403,6 +399,7 @@ function updateStatsPanel() {
   document.querySelectorAll('[data-stat="hungerText"]').forEach(el => el.textContent = `${gameState.hunger}%`);
   document.querySelectorAll('[data-stat="levelPoints"]').forEach(el => el.textContent = String(gameState.levelPoints));
   document.querySelectorAll('[data-stat="money"]').forEach(el => el.textContent = `${gameState.money} ريال`);
+  updateBagPanel();
 }
 
 function spendMoney(price) {
@@ -471,7 +468,7 @@ function canUseBuildSettingsAtCell(cellKey, message = true) {
   }
   if (!isCellNearHome(cellKey)) {
     if (message) {
-      showToast('البناء مسموح حول بيتك فقط بمقدار 5 خلايا');
+      showToast('البناء مسموح حول بيتك فقط بمقدار 4 خلايا');
       flashBuildBoundary();
     }
     return false;
@@ -604,20 +601,177 @@ const SHOP_ITEMS = {
   ]
 };
 
+const BAG_SLOTS_BASE = 4;
+const BAG_SLOTS_LEVEL_BONUS = 4;
+const BAG_UNLOCK_LEVEL = 500;
+const BAG_STACK_LIMIT = 3;
+const QUEST_REWARD_MONEY = 20;
+const QUEST_REWARD_POINTS = 20;
+
+function getBagSlotsCount() {
+  return gameState.levelPoints >= BAG_UNLOCK_LEVEL ? BAG_SLOTS_BASE + BAG_SLOTS_LEVEL_BONUS : BAG_SLOTS_BASE;
+}
+
+function getInventory() {
+  if (!Array.isArray(gameState.inventory)) gameState.inventory = [];
+  return gameState.inventory;
+}
+
+function addInventoryItem(item) {
+  const inv = getInventory();
+  const unlocked = getBagSlotsCount();
+  const existing = inv.find(slot => slot && slot.id === item.id && (slot.qty || 1) < BAG_STACK_LIMIT);
+  if (existing) {
+    existing.qty = Math.min(BAG_STACK_LIMIT, (existing.qty || 1) + (item.qty || 1));
+    saveGameState();
+    updateBagPanel();
+    return true;
+  }
+  if (inv.filter(Boolean).length >= unlocked) {
+    showToast('الحقيبة ممتلئة');
+    return false;
+  }
+  inv.push(Object.assign({ qty: 1 }, item));
+  saveGameState();
+  updateBagPanel();
+  return true;
+}
+
+function removeInventoryItem(id, count = 1) {
+  const inv = getInventory();
+  const item = inv.find(slot => slot && slot.id === id);
+  if (!item) return false;
+  item.qty = (item.qty || 1) - count;
+  if (item.qty <= 0) gameState.inventory = inv.filter(slot => slot && slot.id !== id);
+  saveGameState();
+  updateBagPanel();
+  return true;
+}
+
+function hasInventoryItem(id) {
+  return getInventory().some(slot => slot && slot.id === id && (slot.qty || 0) > 0);
+}
+
+function updateBagPanel() {
+  const box = document.getElementById('topBagSlots');
+  if (!box) return;
+  const inv = getInventory();
+  const unlocked = getBagSlotsCount();
+  const total = BAG_SLOTS_BASE + BAG_SLOTS_LEVEL_BONUS;
+  box.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const item = inv[i];
+    const btn = document.createElement('button');
+    btn.className = 'bagSlot' + (i >= unlocked ? ' locked' : '');
+    btn.type = 'button';
+    btn.dataset.index = String(i);
+    if (i >= unlocked) {
+      btn.innerHTML = '<i class="fa-solid fa-lock"></i>';
+      btn.title = 'تفتح عند المستوى 500';
+    } else if (item) {
+      btn.innerHTML = item.img ? `<img src="${item.img}" alt="${item.name || 'عنصر'}"><span>${item.qty || 1}x</span>` : `<i class="fa-solid fa-box"></i><span>${item.qty || 1}x</span>`;
+      btn.onclick = () => openBagItemOptions(i);
+    } else {
+      btn.innerHTML = '<i class="fa-regular fa-square"></i>';
+    }
+    box.appendChild(btn);
+  }
+}
+
+function openBagItemOptions(index) {
+  const item = getInventory()[index];
+  if (!item) return;
+  const modal = document.getElementById('npcModal');
+  const titleBox = document.getElementById('npcTitle');
+  const textBox = document.getElementById('npcText');
+  const listBox = document.getElementById('npcShopList');
+  if (!modal || !titleBox || !textBox || !listBox) return;
+  titleBox.textContent = item.name || 'عنصر في الحقيبة';
+  textBox.textContent = 'اختر الإجراء المناسب.';
+  const actions = [];
+  if (item.type === 'food') actions.push(`<button class="mainBtn bagUseBtn" data-action="eat" type="button"><i class="fa-solid fa-utensils"></i> أكل</button>`);
+  if (item.type === 'medicine') actions.push(`<button class="mainBtn bagUseBtn" data-action="heal" type="button"><i class="fa-solid fa-heart-pulse"></i> علاج</button>`);
+  if (item.type === 'quest') actions.push(`<button class="mainBtn bagUseBtn" data-action="return" type="button"><i class="fa-solid fa-hand-holding-hand"></i> إرجاع</button>`);
+  actions.push(`<button class="bagCancelBtn" type="button"><i class="fa-solid fa-xmark"></i> إلغاء</button>`);
+  listBox.innerHTML = `<div class="bagOptions">${actions.join('')}</div>`;
+  listBox.querySelectorAll('.bagUseBtn').forEach(btn => btn.onclick = () => useBagItem(index, btn.dataset.action));
+  listBox.querySelector('.bagCancelBtn').onclick = () => modal.classList.add('hidden');
+  modal.classList.remove('hidden');
+}
+
+function useBagItem(index, action) {
+  const item = getInventory()[index];
+  if (!item) return;
+  if (action === 'eat') {
+    addHunger(item.value || 5);
+    removeInventoryItem(item.id, 1);
+    showToast('تم الأكل');
+  } else if (action === 'heal') {
+    addHealth(item.value || 5);
+    removeInventoryItem(item.id, 1);
+    showToast('تم العلاج');
+  } else if (action === 'return') {
+    showToast('ارجع لصاحب المهمة المناسب لتسليم هذا العنصر');
+  }
+  document.getElementById('npcModal')?.classList.add('hidden');
+}
+
+function rewardQuest(key) {
+  gameState.quests[key] = Object.assign({}, gameState.quests[key] || {}, { completed: true });
+  gameState.money += QUEST_REWARD_MONEY;
+  gameState.levelPoints += QUEST_REWARD_POINTS;
+  saveGameState();
+  updateStatsPanel();
+  updateBagPanel();
+  updateMissionsPanel();
+}
+
+
 // أماكن NPC ثابتة ومتفرقة داخل الخريطة بعيدًا عن الحواف
 const NPC_STARTS = {
-  grocery: ['H12', 'BR73'], spookyMan: ['L22','Q45','AB18','AH66','AR33','BE84','BT21','CD58','CK77','CV39'], pharmacy: ['M78','CJ15'], oryx: ['AF41','BX64'], wolf: ['J35','P82','Y24','AL72','AZ44','BI27','BO91','CC52','CR18','CU70'], caracal: ['F57','N15','U88','AG36','AT61','BB13','BL48','CA83','CG29','CW55'], shepherd: ['R68'], camel: ['BQ28']
+  grocery: ['H12', 'AR38'],
+  pharmacy: ['M42', 'AX14'],
+  spookyMan: ['L22','Q45','AB18','AH36','AR33','AW44','AT21','AO47','C39','AX6'],
+  wolf: ['J35','P42','Y24','AL39','AX44','AI27','AO48','AC32','V18','AU46'],
+  caracal: ['F37','N15','U48','AG36','AT41','AD13','AJ28','AP43','AG29','AW49'],
+  oryx: ['AF41','AX34'],
+  shepherd: ['R34'],
+  camel: ['AQ28'],
+  archaeologist: ['D12'],
+  ruins: ['AV40'],
+  herbalist: ['AK10'],
+  rarePlant: ['F46','AX22','AR47'],
+  messenger: ['T9'],
+  messengerFriend: ['AE37'],
+  fireMan: ['AE18'],
+  burningTent: ['AF18'],
+  well: ['C31'],
+  dateWoman: ['AJ12'],
+  dateHouse: ['AK12'],
+  palm: ['AP7','AQ7','AR7']
 };
 
 const NPC_CONFIG = {
   grocery: { label: 'صاحب البقالة', src: 'All-Pic/npc/q5.png', mode: 'always', type: 'shop' },
-  spookyMan: { label: 'الرجل المرعب', src: 'All-Pic/npc/q8.png', mode: 'night', type: 'enemy' },
+  spookyMan: { label: 'أبو فانوس', src: 'All-Pic/npc/q8.png', mode: 'night', type: 'enemy' },
   pharmacy: { label: 'الصيدلي', src: 'All-Pic/npc/q6.png', mode: 'always', type: 'shop' },
   oryx: { label: 'المها العربية', src: 'All-Pic/npc/q2.png', mode: 'always', type: 'animal' },
   wolf: { label: 'ذيب صحراوي', src: 'All-Pic/npc/q4.png', mode: 'night', type: 'enemy' },
-  caracal: { label: 'وشق', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
-  shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest' },
-  camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest' }
+  caracal: { label: 'القط البري', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
+  shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest', quest: 'shepherdCamel' },
+  camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest', quest: 'shepherdCamel' },
+  archaeologist: { label: 'الباحثة الأثرية', src: 'All-Pic/npc/q09.png', mode: 'always', type: 'quest', quest: 'archaeology' },
+  ruins: { label: 'الآثار', src: 'All-Pic/npc/q10.png', mode: 'always', type: 'quest', quest: 'archaeology', fixed: true, staticImage: true },
+  herbalist: { label: 'العطارة', src: 'All-Pic/npc/q11.png', mode: 'always', type: 'quest', quest: 'herbalist' },
+  rarePlant: { label: 'النبتة النادرة', src: 'All-Pic/npc/q12.png', mode: 'always', type: 'quest', quest: 'herbalist', fixed: true, staticImage: true },
+  messenger: { label: 'صاحب الرسالة', src: 'All-Pic/npc/q13.png', mode: 'always', type: 'quest', quest: 'message' },
+  messengerFriend: { label: 'صديق صاحب الرسالة', src: 'All-Pic/npc/q14.png', mode: 'always', type: 'quest', quest: 'message' },
+  fireMan: { label: 'صاحب الخيمة', src: 'All-Pic/npc/q15.png', mode: 'always', type: 'quest', quest: 'fire' },
+  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', quest: 'fire', fixed: true, staticImage: true },
+  well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', quest: 'fire', fixed: true, staticImage: true },
+  dateWoman: { label: 'صاحبة الضيوف', src: 'All-Pic/npc/q18.png', mode: 'always', type: 'quest', quest: 'dates' },
+  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', quest: 'dates', fixed: true, staticImage: true },
+  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', quest: 'dates', fixed: true, staticImage: true }
 };
 
 const npcImageCache = {};
@@ -767,15 +921,21 @@ function updateNpcs() {
       continue;
     }
 
+    const config = NPC_CONFIG[npc.kind];
+
     if (activeTalkingNpc && activeTalkingNpc.id === npc.id) {
       npc.moving = false;
       npc.chasing = false;
       continue;
     }
 
-    if (!controller) continue;
+    if (config.fixed) {
+      npc.moving = false;
+      npc.chasing = false;
+      continue;
+    }
 
-    const config = NPC_CONFIG[npc.kind];
+    if (!controller) continue;
     const distToPlayer = Math.hypot(player.x - npc.x, player.y - npc.y);
     const canChase = walkMode && config.type === 'enemy' && distToPlayer <= chaseDistance;
 
@@ -817,7 +977,11 @@ function updateNpcs() {
       handleEmptyBars();
       saveGameState();
       updateStatsPanel();
-      showToast('تم نقص الصحة 10%');
+      gameState.hunger = Math.max(0, gameState.hunger - 5);
+      handleEmptyBars();
+      saveGameState();
+      updateStatsPanel();
+      showToast('تم نقص الصحة 10% والجوع 5%');
     }
   }
 }
@@ -845,10 +1009,14 @@ function drawNpcSprite(npc) {
   ctx.fill();
 
   if (img.complete && img.naturalWidth) {
-    const frameW = img.naturalWidth / SPRITE_COLS;
-    const frameH = img.naturalHeight / SPRITE_ROWS;
-    const yOffset = npc.kind === 'caracal' ? 30 * zoom : 18 * zoom;
-    ctx.drawImage(img, frame * frameW, row * frameH, frameW, frameH, point.x - drawW / 2, point.y - drawH + yOffset, drawW, drawH);
+    if (config.staticImage) {
+      ctx.drawImage(img, point.x - drawW / 2, point.y - drawH + 18 * zoom, drawW, drawH);
+    } else {
+      const frameW = img.naturalWidth / SPRITE_COLS;
+      const frameH = img.naturalHeight / SPRITE_ROWS;
+      const yOffset = npc.kind === 'caracal' ? 30 * zoom : 18 * zoom;
+      ctx.drawImage(img, frame * frameW, row * frameH, frameW, frameH, point.x - drawW / 2, point.y - drawH + yOffset, drawW, drawH);
+    }
   } else {
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(point.x - 12, point.y - 30, 24, 30);
@@ -906,7 +1074,7 @@ function openNpcInteraction(npc = lastNearbyNpc) {
 
   if (npc.kind === 'grocery') return openShop('صاحب البقالة', 'grocery', 'hunger');
   if (npc.kind === 'pharmacy') return openShop('الصيدلي', 'pharmacy', 'health');
-  if (npc.kind === 'shepherd' || npc.kind === 'camel') return openShepherdQuest(npc.kind);
+  return openQuestNpc(npc.kind);
 }
 
 function openShop(title, shopKey, target) {
@@ -945,7 +1113,7 @@ function showShopConfirm(btn, shopKey, index, target) {
   if (target === 'health' && gameState.health >= 100) { box.classList.remove('hidden'); box.textContent = 'الصحة ممتلئة، لا تحتاج الشراء.'; return; }
   if (gameState.money < item.price) { box.classList.remove('hidden'); box.textContent = 'لا تستطيع الشراء، المال لا يكفي.'; return; }
   box.classList.remove('hidden');
-  box.innerHTML = `<span>هل أنت متأكد من الشراء؟</span><button type="button" class="confirmBuyYes">نعم</button><button type="button" class="confirmBuyNo">لا</button>`;
+  box.innerHTML = `<span>هل أنت متأكد من الشراء؟</span><button type="button" class="confirmBuyYes">نعم</button><button type="button" class="confirmBuyNo">لا</button><small class="shopDoneMsg hidden">تم الشراء</small>`;
   box.querySelector('.confirmBuyYes').onclick = () => buyShopItem(shopKey, index, target);
   box.querySelector('.confirmBuyNo').onclick = () => { box.classList.add('hidden'); box.innerHTML = ''; };
 }
@@ -953,48 +1121,171 @@ function showShopConfirm(btn, shopKey, index, target) {
 function buyShopItem(shopKey, index, target) {
   const item = SHOP_ITEMS[shopKey][index];
   if (!item) return;
-  if (target === 'hunger' && gameState.hunger >= 100) return showToast('لا تشتري، الجوع ممتلئ أساسًا');
-  if (target === 'health' && gameState.health >= 100) return showToast('لا تشتري، الصحة ممتلئة أساسًا');
-  if (!spendMoney(item.price)) return;
-  if (target === 'hunger') addHunger(item.value);
-  if (target === 'health') addHealth(item.value);
+  const confirmBox = document.querySelector(`.shopItemBtn[data-shop="${shopKey}"][data-index="${index}"]`)?.parentElement?.querySelector('.shopConfirm');
+  const yesBtn = confirmBox?.querySelector('.confirmBuyYes');
+  if (yesBtn) yesBtn.disabled = true;
+  if (!spendMoney(item.price)) { if (yesBtn) yesBtn.disabled = false; return; }
+  const type = target === 'hunger' ? 'food' : 'medicine';
+  const added = addInventoryItem({ id: `${shopKey}_${index}`, name: item.name, type, value: item.value, img: item.img });
+  if (!added) {
+    gameState.money += item.price;
+    saveGameState();
+    updateStatsPanel();
+    if (yesBtn) yesBtn.disabled = false;
+    return;
+  }
   gameState.quests.usedShop = true;
   saveGameState();
   updateMissionsPanel();
+  const msg = confirmBox?.querySelector('.shopDoneMsg');
+  if (msg) {
+    msg.classList.remove('hidden');
+    setTimeout(() => { confirmBox.classList.add('hidden'); confirmBox.innerHTML = ''; }, 2000);
+  } else {
+    showToast('تم الشراء');
+  }
 }
 
-function openShepherdQuest(kind) {
+function setNpcModal(title, text, html = '') {
   const modal = document.getElementById('npcModal');
   const titleBox = document.getElementById('npcTitle');
   const textBox = document.getElementById('npcText');
   const listBox = document.getElementById('npcShopList');
   if (!modal || !titleBox || !textBox || !listBox) return;
+  titleBox.textContent = title;
+  textBox.textContent = text;
+  listBox.innerHTML = html;
+  modal.classList.remove('hidden');
+}
 
-  const q = gameState.quests.shepherdCamel || {};
-  titleBox.textContent = kind === 'shepherd' ? 'الراعي' : 'الجمل الضائع';
-  listBox.innerHTML = '';
+function completeTwoPartQuest(key, firstFlag, secondFlag, title, completeText, firstText) {
+  const q = gameState.quests[key] || {};
+  if (q.completed) return setNpcModal(title, 'أنت أكملت هذه المهمة خلاص.');
+  if (q[secondFlag]) {
+    rewardQuest(key);
+    return setNpcModal(title, completeText);
+  }
+  gameState.quests[key] = Object.assign({}, q, { [firstFlag]: true });
+  saveGameState();
+  setNpcModal(title, firstText);
+}
 
-  if (q.completed) {
-    textBox.textContent = 'أنت أكملت هذه المهمة خلاص.';
-  } else if (kind === 'shepherd' && q.foundCamel) {
-    textBox.textContent = 'وجدت الجمل والراعي، حصلت على مكافأة 50 ريال.';
-    gameState.quests.shepherdCamel = { completed: true };
-    addMoney(50);
-  } else if (kind === 'camel' && q.foundShepherd) {
-    textBox.textContent = 'رجّعت خبر الجمل للراعي، حصلت على مكافأة 50 ريال.';
-    gameState.quests.shepherdCamel = { completed: true };
-    addMoney(50);
-  } else if (kind === 'shepherd') {
-    textBox.textContent = 'الراعي يبحث عن جمله الضائع. ابحث عن الجمل ثم ارجع له.';
-    gameState.quests.shepherdCamel = Object.assign({}, q, { foundShepherd: true });
+function openQuestNpc(kind) {
+  const q = gameState.quests || {};
+  if (kind === 'shepherd') return completeTwoPartQuest('shepherdCamel', 'foundShepherd', 'foundCamel', 'الراعي', 'وجدت الجمل والراعي، حصلت على 20 ريال و20 نقطة مستوى.', 'الراعي يبحث عن جمله الضائع. ابحث عن الجمل ثم ارجع له.');
+  if (kind === 'camel') return completeTwoPartQuest('shepherdCamel', 'foundCamel', 'foundShepherd', 'الجمل الضائع', 'رجّعت خبر الجمل للراعي، حصلت على 20 ريال و20 نقطة مستوى.', 'وجدت الجمل الضائع. ابحث عن الراعي لتحصل على المكافأة.');
+
+  if (kind === 'archaeologist') return completeTwoPartQuest('archaeology', 'foundResearcher', 'foundRuins', 'الباحثة الأثرية', 'أخبرت الباحثة بموقع الآثار، حصلت على 20 ريال و20 نقطة مستوى.', 'هناك آثار قديمة في مكان بعيد. ابحث عنها ثم ارجع لي.');
+  if (kind === 'ruins') return completeTwoPartQuest('archaeology', 'foundRuins', 'foundResearcher', 'الآثار', 'وجدت الآثار وأخبرت الباحثة، حصلت على 20 ريال و20 نقطة مستوى.', 'وجدت الآثار. ابحث عن الباحثة الأثرية وأخبرها بمكانها.');
+
+  if (kind === 'herbalist') {
+    if (q.herbalist?.completed) return setNpcModal('العطارة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('rare_plant')) {
+      removeInventoryItem('rare_plant', 1);
+      rewardQuest('herbalist');
+      return setNpcModal('العطارة', 'أحضرت النبتة النادرة، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.herbalist = Object.assign({}, q.herbalist || {}, { metHerbalist: true });
     saveGameState();
-  } else {
-    textBox.textContent = 'وجدت الجمل الضائع. ابحث عن الراعي لتحصل على 50 ريال.';
-    gameState.quests.shepherdCamel = Object.assign({}, q, { foundCamel: true });
+    return setNpcModal('العطارة', 'أبحث عن نباتات نادرة في العالم. إذا وجدت نبتة أحضرها لي.');
+  }
+  if (kind === 'rarePlant') {
+    if (q.herbalist?.completed) return setNpcModal('النبتة النادرة', 'لقد أكملت مهمة العطارة خلاص.');
+    addInventoryItem({ id: 'rare_plant', name: 'نبتة نادرة', type: 'quest', img: 'All-Pic/npc/q12.png' });
+    gameState.quests.herbalist = Object.assign({}, q.herbalist || {}, { foundPlant: true });
     saveGameState();
+    return setNpcModal('النبتة النادرة', 'أخذت النبتة النادرة في الحقيبة. ارجع للعطارة.');
   }
 
-  modal.classList.remove('hidden');
+  if (kind === 'messenger') {
+    if (q.message?.completed) return setNpcModal('صاحب الرسالة', 'أنت أكملت هذه المهمة خلاص.');
+    addInventoryItem({ id: 'message_note', name: 'رسالة', type: 'quest', img: '' });
+    gameState.quests.message = Object.assign({}, q.message || {}, { gotMessage: true, metSender: true });
+    saveGameState();
+    return setNpcModal('صاحب الرسالة', 'خذ هذه الرسالة وأوصلها إلى صديقي.');
+  }
+  if (kind === 'messengerFriend') {
+    if (q.message?.completed) return setNpcModal('صديق صاحب الرسالة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('message_note')) {
+      removeInventoryItem('message_note', 1);
+      rewardQuest('message');
+      return setNpcModal('صديق صاحب الرسالة', 'وصلت الرسالة، شكرًا لك. حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.message = Object.assign({}, q.message || {}, { metFriend: true });
+    saveGameState();
+    return setNpcModal('صديق صاحب الرسالة', 'سمعت أن هناك رجلًا يريد إرسال رسالة. ابحث عنه ثم ارجع لي.');
+  }
+
+  if (kind === 'fireMan') {
+    if (q.fire?.completed) return setNpcModal('صاحب الخيمة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('water_bucket')) {
+      removeInventoryItem('water_bucket', 1);
+      rewardQuest('fire');
+      return setNpcModal('صاحب الخيمة', 'أطفأت النار، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.fire = Object.assign({}, q.fire || {}, { metFireMan: true });
+    saveGameState();
+    return setNpcModal('صاحب الخيمة', 'خيمتي تحترق! ابحث عن بئر وخذ ماءً في سطل.');
+  }
+  if (kind === 'well') {
+    if (q.fire?.completed) return setNpcModal('البئر', 'أنت أكملت مهمة الخيمة خلاص.');
+    addInventoryItem({ id: 'water_bucket', name: 'سطل ماء', type: 'quest', img: '' });
+    gameState.quests.fire = Object.assign({}, q.fire || {}, { gotWater: true });
+    saveGameState();
+    return setNpcModal('البئر', 'أخذت ماءً في السطل. ارجع لصاحب الخيمة.');
+  }
+  if (kind === 'burningTent') return setNpcModal('الخيمة المحترقة', q.fire?.completed ? 'تم إطفاء النار خلاص.' : 'الخيمة تحترق. ابحث عن صاحبها أو عن البئر.');
+
+  if (kind === 'dateWoman') {
+    if (q.dates?.completed) return setNpcModal('صاحبة الضيوف', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('dates_item')) {
+      removeInventoryItem('dates_item', 1);
+      rewardQuest('dates');
+      return setNpcModal('صاحبة الضيوف', 'أحضرت التمر للضيوف، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.dates = Object.assign({}, q.dates || {}, { metWoman: true });
+    saveGameState();
+    return setNpcModal('صاحبة الضيوف', 'سيأتيني ضيوف وقد خلص التمر. ابحث عن نخلة وأحضر لي تمرًا.');
+  }
+  if (kind === 'palm') {
+    if (q.dates?.completed) return setNpcModal('النخلة', 'أنت أكملت مهمة التمر خلاص.');
+    addInventoryItem({ id: 'dates_item', name: 'تمر', type: 'quest', img: '' });
+    gameState.quests.dates = Object.assign({}, q.dates || {}, { gotDates: true });
+    saveGameState();
+    return setNpcModal('النخلة', 'أخذت التمر في الحقيبة. ارجع لصاحبة الضيوف.');
+  }
+  if (kind === 'dateHouse') return setNpcModal('بيت صاحبة الضيوف', q.dates?.completed ? 'الضيوف وصلهم التمر خلاص.' : 'هذا بيت صاحبة الضيوف.');
+}
+
+
+function linkRealEmailToAccount() {
+  if (!isLoggedIn()) return showToast('سجل دخولك أولًا');
+  const email = document.getElementById('realEmailInput')?.value.trim();
+  const pass = document.getElementById('realEmailPassInput')?.value || '';
+  const msg = document.getElementById('settingsEmailMsg');
+  if (msg) msg.textContent = '';
+  if (!email || !email.includes('@')) return showToast('اكتب إيميل صحيح');
+  if (pass.length < 6) return showToast('اكتب كلمة المرور الحالية');
+  if (!window.EmailAuthProvider || !window.reauthenticateWithCredential || !window.updateEmail) {
+    return showToast('أدوات ربط الإيميل غير جاهزة');
+  }
+  const user = window.auth.currentUser;
+  const oldEmail = user.email || usernameToEmail(emailToUsername(currentUserEmail || 'player'));
+  const credential = window.EmailAuthProvider.credential(oldEmail, pass);
+  window.reauthenticateWithCredential(user, credential)
+    .then(() => window.updateEmail(user, email))
+    .then(() => {
+      currentUserEmail = email;
+      localStorage.setItem(LAST_EMAIL_KEY, email);
+      if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي بنجاح.';
+      showToast('تم ربط الإيميل');
+      updateAuthUI();
+    })
+    .catch(error => {
+      console.error(error);
+      if (msg) msg.textContent = 'فشل ربط الإيميل. تأكد من كلمة المرور أو جرّب تسجيل الدخول من جديد.';
+      showToast('فشل ربط الإيميل');
+    });
 }
 
 function loadCollectedMoney() {
@@ -1005,9 +1296,9 @@ function loadCollectedMoney() {
 }
 
 let collectedMoneyIds = loadCollectedMoney();
-const mapMoney = Array.from({ length: 80 }, (_, i) => {
-  const col = 4 + ((i * 37) % 92);
-  const row = 4 + ((i * 53) % 92);
+const mapMoney = Array.from({ length: 50 }, (_, i) => {
+  const col = 3 + ((i * 17) % 46);
+  const row = 3 + ((i * 23) % 46);
   return { id: 'money_' + i, x: (col - 0.5) * CELL, y: (row - 0.5) * CELL, amount: 1 + (i % 5) };
 });
 
@@ -1078,8 +1369,8 @@ function loadLastPlayer() {
   } catch {}
 
   return {
-    x: (50 - 0.5) * CELL,
-    y: (50 - 0.5) * CELL,
+    x: (25 - 0.5) * CELL,
+    y: (25 - 0.5) * CELL,
     speed: 5,
     dir: 'down'
   };
@@ -1094,14 +1385,8 @@ function saveLastPlayer() {
 }
 
 function getTileSize(groupKey, size) {
-  if (groupKey === 'floor') return { w: 220, h: 220 };
-  if (groupKey === 'wall' && size === 'Big') return { w: 190, h: 190 };
-  if (groupKey === 'wall' && size === 'Medium') return { w: 145, h: 145 };
-  if (groupKey === 'carpet' && size === 'Medium') return { w: 145, h: 145 };
-  if (groupKey === 'carpet' && size === 'Small') return { w: 85, h: 85 };
-  if (groupKey === 'door' && size === 'Medium') return { w: 95, h: 95 };
-  if (groupKey === 'door' && size === 'Precise') return { w: 45, h: 45 };
-
+  const group = tileGroups.find(g => g.key === groupKey);
+  if (group) return { w: group.w, h: group.h };
   const data = SIZE_DATA[size] || SIZE_DATA.Medium;
   return { w: data.w, h: data.h };
 }
@@ -1168,6 +1453,7 @@ function normalizeWorldData(data) {
   const result = {};
 
   for (const key in data || {}) {
+    if (!parseCell(key)) continue;
     const cell = data[key];
 
     if (!cell || typeof cell !== 'object' || cell === true) continue;
@@ -1261,8 +1547,8 @@ function sanitizeItemForSave(item, cellKey) {
     uid: String(item.uid),
     tileId: String(item.tileId),
     cell: String(cellKey || item.cell),
-    x: clampNumber(item.x, 0, CELL, 0),
-    y: clampNumber(item.y, 0, CELL, 0),
+    x: clampNumber(item.x, -CELL, CELL * 2, 0),
+    y: clampNumber(item.y, -CELL, CELL * 2, 0),
     w: clampNumber(item.w, 12, 1000, 55),
     h: clampNumber(item.h, 12, 1000, 55),
     layer: clampNumber(item.layer, 1, 5, 1),
@@ -1352,9 +1638,12 @@ function saveCellToFirebase(cellKey) {
     .map(item => sanitizeItemForSave(item, cellKey))
     .filter(Boolean);
 
+  const safeItemsObject = {};
+  safeItems.forEach((item, index) => { safeItemsObject[String(index)] = item; });
+
   window.set(window.ref(window.db, 'world/' + cellKey), {
     owner: cell.owner || currentOwner(),
-    items: safeItems
+    items: safeItemsObject
   }).catch(error => {
     console.error('Firebase cell save error:', error);
     showToast('فشل حفظ الخلية');
@@ -2529,6 +2818,12 @@ function initUI() {
   bind('saveNameBtn', 'click', saveDisplayName);
   bind('saveHouseNameBtn', 'click', saveHouseProfile);
   bind('npcInteractBtn', 'click', () => openNpcInteraction());
+  bind('openGameSettingsBtn', 'click', () => document.getElementById('gameSettingsModal')?.classList.remove('hidden'));
+  bind('settingsCloseBtn', 'click', () => document.getElementById('gameSettingsModal')?.classList.add('hidden'));
+  bind('settingsChangeCharacterBtn', 'click', () => { document.getElementById('gameSettingsModal')?.classList.add('hidden'); showCharacterModal(true); });
+  bind('linkRealEmailBtn', 'click', linkRealEmailToAccount);
+  bind('toggleElementsBtn', 'click', () => document.getElementById('elementsAccordionBody')?.classList.toggle('hidden'));
+
   bind('npcCloseBtn', 'click', () => { activeTalkingNpc = null; document.getElementById('npcModal')?.classList.add('hidden'); });
   bind('openMissionsBtn', 'click', () => { updateMissionsPanel(); document.getElementById('missionsModal')?.classList.remove('hidden'); });
   bind('missionsCloseBtn', 'click', () => document.getElementById('missionsModal')?.classList.add('hidden'));
@@ -2876,7 +3171,7 @@ function updateMissionsPanel() {
   const categoriesUsed = new Set(myItems.map(item => tileMap[item.tileId]?.category).filter(Boolean));
   const visitedCount = getVisitedCells().length;
   const hasHome = !!localStorage.getItem(HOME_KEY);
-  const shepherdDone = !!gameState.quests.shepherdCamel?.completed;
+  const q = gameState.quests || {};
 
   const missions = [
     { text: 'اختر شخصية', done: !!myCharacterId, money: 0, points: 5 },
@@ -2884,15 +3179,20 @@ function updateMissionsPanel() {
     { text: 'استخدم 3 أقسام مختلفة', done: categoriesUsed.size >= 3, money: 2, points: 10 },
     { text: 'حدد منزلك', done: hasHome, money: 1, points: 5 },
     { text: 'زر 3 خلايا مختلفة', done: visitedCount >= 3, money: 1, points: 5 },
-    { text: 'ابحث عن الراعي والجمل', done: shepherdDone, money: 50, points: 25 },
+    { text: 'ابحث عن الراعي والجمل', done: !!q.shepherdCamel?.completed, money: 20, points: 20 },
+    { text: 'ساعد الباحثة الأثرية', done: !!q.archaeology?.completed, money: 20, points: 20 },
+    { text: 'أحضر النبتة النادرة للعطارة', done: !!q.herbalist?.completed, money: 20, points: 20 },
+    { text: 'أوصل الرسالة إلى الصديق', done: !!q.message?.completed, money: 20, points: 20 },
+    { text: 'أطفئ نار الخيمة', done: !!q.fire?.completed, money: 20, points: 20 },
+    { text: 'أحضر التمر لصاحبة الضيوف', done: !!q.dates?.completed, money: 20, points: 20 },
     { text: 'اجمع أول ريال من الخريطة', done: collectedMoneyIds.size > 0, money: 0, points: 5 },
-    { text: 'تحدث مع صاحب البقالة أو الصيدلي', done: !!gameState.quests.usedShop, money: 0, points: 5 }
+    { text: 'اشترِ من البقالة أو الصيدلي', done: !!q.usedShop, money: 0, points: 5 }
   ];
 
   box.innerHTML = missions.map(mission => `
     <div class="missionItem ${mission.done ? 'done' : ''}">
-      <span>${mission.done ? '✅' : '⬜'} ${mission.text}</span>
-      <small>الجائزة: ${mission.money} ريال | ${mission.points} نقطة</small>
+      <span><i class="fa-solid ${mission.done ? 'fa-circle-check' : 'fa-circle'}"></i> ${mission.text}</span>
+      <small>الجائزة: ${mission.money} ريال | ${mission.points} نقطة مستوى</small>
     </div>
   `).join('');
 }
@@ -3070,7 +3370,7 @@ function updateHomeButton() {
 }
 
 function changeItemScale(delta) {
-  itemScale = Math.max(0.85, Math.min(1.35, Number((itemScale + delta).toFixed(2))));
+  itemScale = Math.max(0.35, Math.min(1.20, Number((itemScale + delta).toFixed(2))));
 
   const scaleInput = document.getElementById('itemScale');
   if (scaleInput) scaleInput.value = itemScale;
@@ -3081,7 +3381,7 @@ function changeItemScale(delta) {
 }
 
 function updateItemScale(event) {
-  const newScale = Math.max(0.85, Math.min(1.35, Number(event.target.value || 1.10)));
+  const newScale = Math.max(0.35, Math.min(1.20, Number(event.target.value || 0.80)));
   const factor = newScale / itemScale;
   itemScale = newScale;
 
@@ -3217,8 +3517,8 @@ function paintOne(x, y) {
   };
 
   applyAutoAlign(item, cell.key);
-  item.x = clampNumber(item.x, 0, CELL, 0);
-  item.y = clampNumber(item.y, 0, CELL, 0);
+  item.x = clampNumber(item.x, -item.w / 2, CELL - item.w / 2, 0);
+  item.y = clampNumber(item.y, -item.h / 2, CELL - item.h / 2, 0);
   cellData.items.push(item);
 
   saveLocalWorld();
@@ -3282,8 +3582,8 @@ function moveSelected(dx, dy) {
     if (selectedIds.has(item.uid) && canEditCell(item.cell) && canUseBuildSettingsAtCell(item.cell, false)) {
       item.x += dx;
       item.y += dy;
-      item.x = clampNumber(item.x, 0, CELL, item.x);
-      item.y = clampNumber(item.y, 0, CELL, item.y);
+      item.x = clampNumber(item.x, -item.w / 2, CELL - item.w / 2, item.x);
+      item.y = clampNumber(item.y, -item.h / 2, CELL - item.h / 2, item.y);
       changedCells.add(item.cell);
     }
   }
@@ -3303,7 +3603,7 @@ function resizeSelected(pos) {
   const centerY = rect.y + rect.h / 2;
   const distance = Math.hypot(pos.world.x - centerX, pos.world.y - centerY);
   const startDistance = selectedResize.startDistance || distance;
-  const factor = Math.max(0.2, Math.min(4, distance / startDistance));
+  const factor = Math.max(0.35, Math.min(1.20, distance / startDistance));
 
   const cell = parseCell(item.cell);
   if (!cell) return;
@@ -3779,7 +4079,7 @@ function deleteSelectedItems() {
 
   clearPaintState();
   updateInfoPanel();
-  showToast('تم حذف العنصر المحدد');
+  showToast(`تم حذف ${deletedCount} عنصر`);
 }
 
 function deleteMyItems() {
