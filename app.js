@@ -48,9 +48,9 @@ const VISITED_CELLS_KEY = storageKey('visited_cells');
 const MAX_ITEMS_PER_CELL = 300;
 // تم إلغاء منع السفر البعيد حتى لا يمنع الانتقال بين المناطق
 const MAX_PLAYER_JUMP = Infinity;
-const CHUNK_RADIUS = 1;
-const USE_NEARBY_WORLD_LOADING = true;
-const TILE_IMAGE_EXT = 'webp';
+const CHUNK_RADIUS = 3; // نطاق الخلايا القريبة عند الحاجة
+const USE_NEARBY_WORLD_LOADING = false; // إيقاف التحميل الجزئي مؤقتًا لضمان مزامنة الأونلاين مباشرة
+const TILE_IMAGE_EXT = 'png'; // استخدام PNG حتى لا تختفي العناصر القديمة
 
 // عدد خلايا البناء المسموحة حول البيت
 const HOME_BUILD_RADIUS_CELLS = 5;
@@ -58,7 +58,7 @@ const HOME_BUILD_RADIUS_CELLS = 5;
 // حدود الزوم: التبعيد محدود، والتقريب واسع
 const BASE_ZOOM = 0.55;
 const ZOOM_STEP = 1.12;
-const ZOOM_OUT_STEPS = 10;
+const ZOOM_OUT_STEPS = 7; // التبعيد 7 درجات فقط
 const ZOOM_IN_STEPS = 10;
 const MIN_ZOOM = BASE_ZOOM / Math.pow(ZOOM_STEP, ZOOM_OUT_STEPS);
 const MAX_ZOOM = BASE_ZOOM * Math.pow(ZOOM_STEP, ZOOM_IN_STEPS);
@@ -257,7 +257,7 @@ function clampNumber(value, min, max, fallback = min) {
 }
 
 function cleanPlayerName(name, max = 20) {
-  return String(name || '').replace(/[<>]/g, '').trim().slice(0, max);
+  return String(name || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
 function cleanHouseName(name, max = 30) {
@@ -1320,6 +1320,10 @@ function getTileImage(src) {
 
   if (!imageCache[src]) {
     const img = new Image();
+    img.onerror = () => {
+      // تجربة PNG تلقائيًا إذا كان المسار WebP وغير موجود
+      if (String(src).endsWith('.webp')) img.src = String(src).replace(/\.webp$/i, '.png');
+    };
     img.src = src;
     imageCache[src] = img;
   }
@@ -2287,32 +2291,37 @@ function draw() {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
 
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#0b1120';
-  ctx.fillRect(0, 0, width, height);
-  document.body.classList.toggle('nightActive', isNightActive());
+  try {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#0b1120';
+    ctx.fillRect(0, 0, width, height);
+    document.body.classList.toggle('nightActive', isNightActive());
 
-  drawFloorBackground(width, height);
-  drawFixedGroundTiles();
-  drawFixedAnimals();
-  drawMapMoney();
-  drawItems();
-  drawNpcs();
-  drawGrid(width, height);
-  drawBuildBoundaryFlash();
-  drawGhostTile();
-  drawSelectionBox();
-  drawOnlinePlayers();
+    drawFloorBackground(width, height);
+    drawFixedGroundTiles();
+    drawFixedAnimals();
+    drawMapMoney();
+    drawItems();
+    drawNpcs();
+    drawGrid(width, height);
+    drawBuildBoundaryFlash();
+    drawGhostTile();
+    drawSelectionBox();
+    drawOnlinePlayers();
 
-  if (walkMode) drawPlayer();
+    if (walkMode) drawPlayer();
 
-  // عتمة الليل فوق العناصر والحيوانات والـNPC حتى يتأثر كل شيء بالليل
-  drawNightFilter(width, height);
-  drawSnow(width, height);
+    // عتمة الليل فوق العناصر، ثم إضاءة إضافية فوق الفلتر حتى تظهر الإنارة ليلًا
+    drawNightFilter(width, height);
+    drawLights(1); drawLights(2); drawLights(3); drawLights(4); drawLights(5);
+    drawSnow(width, height);
 
-  if (Date.now() - lastUiUpdate > 300) {
-    updateInfoPanel();
-    lastUiUpdate = Date.now();
+    if (Date.now() - lastUiUpdate > 300) {
+      updateInfoPanel();
+      lastUiUpdate = Date.now();
+    }
+  } catch (error) {
+    console.error('draw error:', error);
   }
 
   requestAnimationFrame(draw);
@@ -2383,13 +2392,13 @@ function initUI() {
 
   bind('zoomInBtn', 'click', () => {
     // تكبير تدريجي: عشر ضغطات تقريبًا للوصول للتكبير العالي
-    zoom = Math.min(MAX_ZOOM, zoom * ZOOM_STEP);
+    zoom = clampZoomValue(zoom * ZOOM_STEP);
     clampCam();
   });
 
   bind('zoomOutBtn', 'click', () => {
     // تصغير تدريجي: عشر ضغطات تقريبًا مع حد للتبعيد
-    zoom = Math.max(MIN_ZOOM, zoom / ZOOM_STEP);
+    zoom = clampZoomValue(zoom / ZOOM_STEP);
     clampCam();
   });
 
@@ -2477,6 +2486,7 @@ function initUI() {
   updateAuthUI();
   updateToolButtons();
   updateHomeButton();
+  updateHomeCellText();
   updatePreviewToggle();
   updateInfoPanel();
 }
@@ -2588,6 +2598,11 @@ function showBigTilePreview(src) {
 
   img.src = src;
   box.classList.remove('hidden');
+
+  clearTimeout(showBigTilePreview.mobileTimer);
+  if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+    showBigTilePreview.mobileTimer = setTimeout(hideBigTilePreview, 3000);
+  }
 }
 
 function hideBigTilePreview() {
@@ -2688,6 +2703,14 @@ function updateToolButtons() {
   if (autoAlignBtn) autoAlignBtn.classList.toggle('active', autoAlignMode);
 }
 
+
+function updateHomeCellText() {
+  const key = getHomeCellKey();
+  document.querySelectorAll('[data-home-cell]').forEach(el => {
+    el.textContent = key ? `بيتك في: ${key}` : 'لم تحدد بيتك بعد';
+  });
+}
+
 function updateInfoPanel() {
   const countBox = document.getElementById('myItemsCount');
   const cellBox = document.getElementById('currentCellText');
@@ -2698,6 +2721,8 @@ function updateInfoPanel() {
   const cell = walkMode ? cellFromWorld(player.x, player.y) : cellFromWorld(center.x, center.y);
 
   if (cellBox) cellBox.textContent = cell ? cell.key : '--';
+  document.querySelectorAll('[data-stat="currentCell"]').forEach(el => el.textContent = cell ? cell.key : '--');
+  updateHomeCellText();
   if (cell) rememberVisitedCell(cell.key);
 
   updateSelectedPreview();
@@ -2913,6 +2938,7 @@ function setHomeCamera() {
 
   localStorage.setItem(HOME_KEY, JSON.stringify({ camX, camY, zoom, cell: cellFromWorld(camX + canvas.clientWidth / zoom / 2, camY + canvas.clientHeight / zoom / 2)?.key || '' }));
   updateHomeButton();
+  updateHomeCellText();
   showToast('تم تحديد منزل جديد');
 }
 
@@ -2984,13 +3010,8 @@ function paintAt(x, y) {
   const baseCell = cellFromWorld(x, y);
   if (!baseCell) return;
 
-  const half = Math.floor((brushSize - 1) / 2);
-
-  for (let dx = -half; dx <= half; dx++) {
-    for (let dy = -half; dy <= half; dy++) {
-      paintOne(x + dx * (CELL / MINI), y + dy * (CELL / MINI));
-    }
-  }
+  // وضع العنصر بضغطة واحدة فقط، بدون ريشة أو رسم مستمر
+  paintOne(x, y);
 }
 
 
@@ -3031,7 +3052,7 @@ function paintOne(x, y) {
   if (!canUseBuildSettingsAtCell(cell.key)) return;
 
   if (!canEditCell(cell.key)) {
-    showToast('ممنوع البناء في أرض لاعب آخر');
+    showToast('التعديل ممنوع داخل مكان لاعب آخر');
     return;
   }
 
@@ -3252,7 +3273,7 @@ canvas.addEventListener('mousedown', event => {
   } else {
     if (!requireLogin()) return;
 
-    dragMode = 'paint';
+    dragMode = null;
     pushUndo();
     paintAt(pos.world.x, pos.world.y);
   }
@@ -3264,7 +3285,7 @@ canvas.addEventListener('mousemove', event => {
 
   if (!isDown || walkMode) return;
 
-  if (dragMode === 'paint') paintAt(pos.world.x, pos.world.y);
+  // تم إلغاء الرسم المستمر بالعناصر لمنع السبام واللاق
 
   if (dragMode === 'resize') resizeSelected(pos);
 
@@ -3506,8 +3527,9 @@ canvas.addEventListener('touchmove', event => {
     const rect = canvas.getBoundingClientRect();
     mouseWorldPos = screenToWorld(touch.clientX - rect.left, touch.clientY - rect.top);
 
-    if (mobileCameraLocked && selectedIds.size) {
-      moveSelected(dx / zoom, dy / zoom);
+    if (mobileCameraLocked) {
+      // تثبيت الكاميرا يمنع تحريك الخريطة بالكامل، ومع وجود عنصر محدد يحرك العنصر فقط
+      if (selectedIds.size) moveSelected(dx / zoom, dy / zoom);
     } else if (longPressGhost && selectedTile) {
       // تحريك المعاينة الشفافة فقط
     } else {
@@ -3590,10 +3612,18 @@ function deleteSelectedItems() {
     return;
   }
 
+  const selectedItems = getItems().filter(item => selectedIds.has(item.uid));
+  const owner = currentOwner();
+
+  if (selectedItems.length && selectedItems.some(item => item.owner !== owner)) {
+    showToast('التعديل ممنوع داخل مكان لاعب آخر');
+    return;
+  }
+
   pushUndo();
 
   const changedCells = new Set();
-  const owner = currentOwner();
+  let deletedCount = 0;
 
   for (const cellKey in world) {
     const cell = world[cellKey];
@@ -3601,9 +3631,15 @@ function deleteSelectedItems() {
 
     const before = cell.items.length;
     cell.items = cell.items.filter(item => !(selectedIds.has(item.uid) && item.owner === owner));
+    deletedCount += before - cell.items.length;
 
     if (cell.items.length !== before) changedCells.add(cellKey);
     if (!cell.items.length) delete world[cellKey];
+  }
+
+  if (!deletedCount) {
+    showToast('لا يوجد عنصر تملكه للحذف');
+    return;
   }
 
   selectedIds.clear();
@@ -4024,12 +4060,14 @@ function toggleWalk() {
 
     document.body.classList.add('walking');
     panel?.classList.add('closed');
+    subscribeNearbyWorldCells(true);
 
     showCharacterModal(false);
   } else {
     npcs.forEach(npc => { npc.chasing = false; npc.moving = false; pickNpcTarget(npc); });
     zoom = clampZoomValue(previousBuildZoom || BASE_ZOOM);
     document.body.classList.remove('walking');
+    panel?.classList.remove('closed');
     resetJoystick();
     saveLastPlayer();
     saveProfileData();
@@ -4089,16 +4127,20 @@ function removePlayerFromFirebase() {
 let lastPlayerSave = 0;
 
 function gameLoop() {
-  updateGameTimers();
-  updateNpcs();
-  collectNearbyMoney();
-  movePlayer();
+  try {
+    updateGameTimers();
+    updateNpcs();
+    collectNearbyMoney();
+    movePlayer();
 
-  if (isLoggedIn() && Date.now() - lastPlayerSave > 700) {
-    if (walkMode) savePlayerToFirebase();
-    subscribeNearbyWorldCells();
-    saveLastPlayer();
-    lastPlayerSave = Date.now();
+    if (isLoggedIn() && Date.now() - lastPlayerSave > 700) {
+      if (walkMode) savePlayerToFirebase();
+      subscribeNearbyWorldCells();
+      saveLastPlayer();
+      lastPlayerSave = Date.now();
+    }
+  } catch (error) {
+    console.error('gameLoop error:', error);
   }
 
   requestAnimationFrame(gameLoop);
