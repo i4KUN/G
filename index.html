@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v12.7</title>
+  <title>GameNjd v13.1</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="All-Pic/logo/njd-white-black-ful.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v12.7" />
+  <meta property="og:title" content="GameNjd v13" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v12.7" />
+  <meta name="twitter:title" content="GameNjd v13" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
 
@@ -60,16 +60,24 @@
 
 
       <div class="topHudPanel">
-        <div class="topStatsPanel">
-          <div class="topStatRow"><span><i class="fa-solid fa-heart-pulse"></i> الصحة</span><b data-stat="healthText">100%</b></div>
-          <div class="topStatusBar"><span data-stat="healthFill"></span></div>
-          <div class="topStatRow"><span><i class="fa-solid fa-bowl-food"></i> الجوع</span><b data-stat="hungerText">100%</b></div>
-          <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+        <div class="topBarsRow">
+          <div class="topStatsPanel compact">
+            <div class="topStatRow"><span><i class="fa-solid fa-heart-pulse"></i> الصحة</span><b data-stat="healthText">100%</b></div>
+            <div class="topStatusBar"><span data-stat="healthFill"></span></div>
+          </div>
+          <div class="topStatsPanel compact">
+            <div class="topStatRow"><span><i class="fa-solid fa-bowl-food"></i> الجوع</span><b data-stat="hungerText">100%</b></div>
+            <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+          </div>
         </div>
         <div class="topSideStats">
-          <div><i class="fa-solid fa-star"></i> <span>الليفل</span> <b data-stat="levelPoints">0</b></div>
+          <div><i class="fa-solid fa-star"></i> <span>المستوى</span> <b data-stat="levelPoints">0</b></div>
           <div><i class="fa-solid fa-coins"></i> <span>الفلوس</span> <b data-stat="money">0 ريال</b></div>
           <div><i class="fa-solid fa-location-dot"></i> <span>موقعك</span> <b data-stat="currentCell">--</b></div>
+        </div>
+        <div class="topBagPanel">
+          <div class="bagTitle"><i class="fa-solid fa-bag-shopping"></i> الحقيبة</div>
+          <div id="topBagSlots" class="topBagSlots"></div>
         </div>
       </div>
 
@@ -166,9 +174,7 @@
           يجب تسجيل الدخول حتى تستطيع البناء أو التجول، الزائر يستطيع المشاهدة فقط.
         </p>
 
-        <div class="section statsPanel">
-          <div class="statLine"><span><i class="fa-solid fa-star"></i> نقاط المستوى</span><b data-stat="levelPoints">0</b></div>
-          <div class="statLine"><span><i class="fa-solid fa-coins"></i> الفلوس</span><b data-stat="money">0 ريال</b></div>
+        <div class="section statsPanel missionsOnlyPanel">
           <button id="openMissionsBtn" class="mainBtn missionsOpenBtn" type="button">
             <i class="fa-solid fa-list-check"></i>
             المهام
@@ -201,12 +207,6 @@
           </div>
         </div>
 
-        <div class="section profileEditBox">
-          <label for="displayNameInput"><i class="fa-solid fa-signature"></i> تغيير الاسم</label>
-          <input id="displayNameInput" type="text" placeholder="اكتب اسمك" maxlength="20" />
-          <button id="saveNameBtn" type="button"><i class="fa-solid fa-check"></i> حفظ الاسم</button>
-        </div>
-
         <div class="section houseRatingPanel">
           <div id="ownHouseBox">
             <label for="houseNameInput"><i class="fa-solid fa-house-user"></i> اسم بيتك</label>
@@ -227,9 +227,9 @@
             تجول
           </button>
 
-          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">
-            <i class="fa-solid fa-user-pen"></i>
-            تغيير الشخصية
+          <button id="openGameSettingsBtn" class="mainBtn secondaryBtn" type="button">
+            <i class="fa-solid fa-gear"></i>
+            إعدادات
           </button>
 
           <button id="homeBtn" class="mainBtn homeBtn" type="button">
@@ -245,11 +245,13 @@
         </div>
 
         <div class="section elementsSection">
-          <label>
+          <button id="toggleElementsBtn" class="accordionBtn" type="button">
             <i class="fa-solid fa-layer-group"></i>
-            القسم
-          </label>
+            الأقسام والعناصر
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
 
+          <div id="elementsAccordionBody" class="elementsAccordionBody hidden">
           <div id="categoryButtons" class="categoryButtons">
             <button data-category="bag" class="categoryBtn" type="button">
               <i class="fa-solid fa-bag-shopping"></i>
@@ -390,6 +392,7 @@
           </div>
 
           <div id="tileset" class="hidden"></div>
+          </div>
         </div>
 
         <div class="section">
@@ -436,7 +439,7 @@
             <i class="fa-solid fa-maximize"></i>
             حجم العنصر
           </label>
-          <input id="itemScale" type="range" min="0.85" max="1.35" step="0.05" value="1.10" />
+          <input id="itemScale" type="range" min="0.35" max="1.20" step="0.05" value="0.80" />
         </div>
 
         <div class="desktopTools">
@@ -640,6 +643,27 @@
     </div>
   </div>
 
+
+  <div id="gameSettingsModal" class="characterModal hidden">
+    <div class="characterBox smallBox">
+      <button id="settingsCloseBtn" class="modalCloseBtn" type="button" title="إغلاق">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2><i class="fa-solid fa-gear"></i> إعدادات</h2>
+      <label for="displayNameInput"><i class="fa-solid fa-signature"></i> تغيير الاسم</label>
+      <input id="displayNameInput" type="text" placeholder="اكتب اسمك" maxlength="20" />
+      <button id="saveNameBtn" class="mainBtn" type="button"><i class="fa-solid fa-check"></i> حفظ الاسم</button>
+      <button id="settingsChangeCharacterBtn" class="mainBtn secondaryBtn" type="button"><i class="fa-solid fa-user-pen"></i> تغيير الشخصية</button>
+      <hr class="modalDivider" />
+      <label for="realEmailInput"><i class="fa-solid fa-envelope"></i> ربط إيميل حقيقي</label>
+      <input id="realEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
+      <label for="realEmailPassInput"><i class="fa-solid fa-lock"></i> كلمة المرور الحالية</label>
+      <input id="realEmailPassInput" type="password" placeholder="اكتب كلمة المرور الحالية" autocomplete="current-password" />
+      <button id="linkRealEmailBtn" class="mainBtn" type="button"><i class="fa-solid fa-link"></i> ربط الإيميل</button>
+      <p id="settingsEmailMsg" class="smallHint"></p>
+    </div>
+  </div>
+
   <div id="npcModal" class="characterModal hidden">
     <div class="characterBox smallBox npcBox">
       <h2 id="npcTitle">مهمة</h2>
@@ -699,7 +723,10 @@
       signInWithEmailAndPassword,
       signOut,
       onAuthStateChanged,
-      sendPasswordResetEmail
+      sendPasswordResetEmail,
+      EmailAuthProvider,
+      reauthenticateWithCredential,
+      updateEmail
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
     const firebaseConfig = {
@@ -741,6 +768,9 @@
     window.signOut = signOut;
     window.onAuthStateChanged = onAuthStateChanged;
     window.sendPasswordResetEmail = sendPasswordResetEmail;
+    window.EmailAuthProvider = EmailAuthProvider;
+    window.reauthenticateWithCredential = reauthenticateWithCredential;
+    window.updateEmail = updateEmail;
   </script>
 </body>
 </html>
