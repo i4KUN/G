@@ -1,4 +1,4 @@
-/* GameNjd v12.7 */
+/* GameNjd v14.1 */
 
 * {
   box-sizing: border-box;
@@ -1191,7 +1191,7 @@ body.walking .worldWrap {
   }
 }
 
-/* ===== GameNjd v12.7 additions - keep original design ===== */
+/* ===== GameNjd v14.1 additions - keep original design ===== */
 
 /* 02: Pixelated على اللعبة كاملة */
 img,
@@ -1474,7 +1474,7 @@ canvas,
 
 
 
-/* ===== v12.7 Fixes ===== */
+/* ===== v14.1 Fixes ===== */
 
 /* لوحة الإعدادات يمين والخريطة يسار */
 .layout {
@@ -2386,4 +2386,13 @@ button { font-size: 13px; padding: 8px; }
     grid-template-columns: repeat(4, 20px);
   }
   .bagSlot { width: 20px; height: 20px; min-width: 20px; min-height: 20px; }
+}
+
+
+.settingsTopBtn {
+  background: #0ea5e9;
+}
+
+.settingsTopBtn:hover {
+  background: #0284c7;
 }
