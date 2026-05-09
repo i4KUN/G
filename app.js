@@ -2313,7 +2313,7 @@ function drawSpriteCharacter(x, y, dir, moving, name, characterId, isMe) {
   const img = getCharacterImage(characterId || 'woman-1');
 
   ctx.save();
-  ctx.globalAlpha = npcAlpha;
+  ctx.globalAlpha = 1;
   ctx.imageSmoothingEnabled = false;
 
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
