@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v13.2</title>
+  <title>GameNjd v14.1</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="All-Pic/logo/njd-white-black-ful.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v13.2" />
+  <meta property="og:title" content="GameNjd v14.1" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v13.2" />
+  <meta name="twitter:title" content="GameNjd v14.1" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
 
@@ -78,6 +78,11 @@
       </div>
 
       <div class="authBox">
+        <button id="openSettingsBtn" class="authMainBtn settingsTopBtn" type="button">
+          <i class="fa-solid fa-gear"></i>
+          إعدادات
+        </button>
+
         <span id="authState" class="authState offline">
           <i class="fa-solid fa-circle-xmark"></i>
           أنت لم تسجل دخول
@@ -216,11 +221,6 @@
         </div>
 
         <div class="section actionGrid">
-          <button id="openSettingsBtn" class="mainBtn settingsBtn" type="button">
-            <i class="fa-solid fa-gear"></i>
-            إعدادات
-          </button>
-
           <button id="walkBtn" class="mainBtn" type="button">
             <i class="fa-solid fa-person-walking"></i>
             تجول
@@ -575,6 +575,9 @@
         <label for="signupPassInput">كلمة المرور</label>
         <input id="signupPassInput" type="password" placeholder="الرقم السري (6 أحرف على الأقل)" autocomplete="new-password" />
 
+        <label for="signupPassConfirmInput">تأكيد كلمة المرور</label>
+        <input id="signupPassConfirmInput" type="password" placeholder="أعد كتابة الرقم السري" autocomplete="new-password" />
+
         <label for="signupDisplayNameInput">الاسم الظاهر</label>
         <input id="signupDisplayNameInput" type="text" placeholder="الاسم الظاهر (اختياري)" maxlength="20" />
 
@@ -728,7 +731,9 @@
       signOut,
       onAuthStateChanged,
       sendPasswordResetEmail,
-      updateEmail
+      updateEmail,
+      reauthenticateWithCredential,
+      EmailAuthProvider
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
     const firebaseConfig = {
@@ -771,6 +776,8 @@
     window.onAuthStateChanged = onAuthStateChanged;
     window.sendPasswordResetEmail = sendPasswordResetEmail;
     window.updateEmail = updateEmail;
+    window.reauthenticateWithCredential = reauthenticateWithCredential;
+    window.EmailAuthProvider = EmailAuthProvider;
   </script>
 </body>
 </html>
