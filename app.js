@@ -11,7 +11,7 @@ const WORLD_ROWS = 100;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '12.8';
+const VERSION = '1.1';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
