@@ -58,7 +58,8 @@ const HOME_BUILD_RADIUS_CELLS = 5;
 // حدود الزوم: التبعيد محدود، والتقريب واسع
 const BASE_ZOOM = 0.55;
 const ZOOM_STEP = 1.12;
-const ZOOM_OUT_STEPS = 7; // التبعيد 7 درجات فقط
+const ZOOM_OUT_STEPS = 7;
+const WALK_ZOOM_STEPS = 5; // التبعيد 7 درجات فقط
 const ZOOM_IN_STEPS = 10;
 const MIN_ZOOM = BASE_ZOOM / Math.pow(ZOOM_STEP, ZOOM_OUT_STEPS);
 const MAX_ZOOM = BASE_ZOOM * Math.pow(ZOOM_STEP, ZOOM_IN_STEPS);
@@ -608,7 +609,7 @@ const NPC_CONFIG = {
   pharmacy: { label: 'الصيدلي', src: 'All-Pic/npc/q6.png', mode: 'always', type: 'shop' },
   oryx: { label: 'Arabian Oryx', src: 'All-Pic/npc/q2.png', mode: 'always', type: 'animal' },
   wolf: { label: 'ذيب صحراوي', src: 'All-Pic/npc/q4.png', mode: 'night', type: 'enemy' },
-  caracal: { label: 'Caracal', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
+  caracal: { label: 'وشق', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
   shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest' },
   camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest' }
 };
@@ -748,7 +749,7 @@ function drawNpcSprite(npc) {
   }
 
   if (npc.kind === 'spookyMan' && getNightAlpha() > 0.03) {
-    drawPointLight(point.x - 10 * zoom, point.y - 22 * zoom, 120 * zoom, getNightAlpha() * npcAlpha, 0);
+    drawPointLight(point.x - 10 * zoom, point.y - 22 * zoom, 85 * zoom, getNightAlpha() * npcAlpha, 0);
   }
 
   ctx.fillStyle = '#fff';
@@ -1322,7 +1323,7 @@ function getTileImage(src) {
     const img = new Image();
     img.onerror = () => {
       // تجربة PNG تلقائيًا إذا كان المسار WebP وغير موجود
-      if (String(src).endsWith('.webp')) img.src = String(src).replace(/\.webp$/i, '.png');
+      const pngSrc=String(src).replace(/\.(webp|png|jpg|jpeg)$/i,'.png'); const webpSrc=String(src).replace(/\.(webp|png|jpg|jpeg)$/i,'.webp'); img.onerror=()=>{ if(img.src!==webpSrc) img.src=webpSrc; else if(img.src!==pngSrc) img.src=pngSrc; };
     };
     img.src = src;
     imageCache[src] = img;
@@ -2000,7 +2001,7 @@ function drawLights(layer = 1) {
 
     const lightX = point.x + rect.w * zoom / 2;
     const lightY = point.y + rect.h * zoom / 2;
-    const radius = 160 * zoom;
+    const radius = 110 * zoom;
 
     drawPointLight(lightX, lightY, radius, nightAlpha, item.layer || 1);
   }
