@@ -2031,3 +2031,100 @@ body.loggedIn .guestPanelOverlay { display: none; }
     width: 100%;
   }
 }
+
+/* ===== Update 05 fixes ===== */
+.topbar {
+  grid-template-columns: auto auto 1fr auto;
+  gap: 8px;
+}
+.topHudPanel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  direction: rtl;
+}
+.topHudPanel .topStatsPanel {
+  width: min(48vw, 520px);
+  min-width: 260px;
+  font-size: 11px;
+}
+.topHudPanel .topStatusBar {
+  height: 6px;
+}
+.topStatRow span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.topSideStats {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.topSideStats div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #e5e7eb;
+}
+.topSideStats i { color: #93c5fd; }
+.topSideStats b { color: #facc15; }
+.homeBtn small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #dbeafe;
+  opacity: 0.9;
+  line-height: 1.2;
+}
+body:not(.loggedIn) .panel::before {
+  content: "";
+  position: sticky;
+  display: block;
+  top: 0;
+  height: calc(100vh - 82px);
+  margin-bottom: calc(-100vh + 82px);
+  background: rgba(2, 6, 23, 0.68);
+  z-index: 500;
+  border-radius: 16px;
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+body:not(.loggedIn) .guestPanelOverlay {
+  position: sticky;
+  top: 42%;
+  z-index: 501;
+  margin: 0 auto 12px;
+  max-width: 92%;
+  background: rgba(2, 6, 23, 0.92);
+  box-shadow: 0 12px 34px rgba(0,0,0,.45);
+  pointer-events: auto;
+}
+body.loggedIn .panel::before { display: none; }
+.mobileCameraLocked #worldCanvas { cursor: not-allowed; }
+@media (max-width: 768px) {
+  .topbar {
+    height: auto;
+    min-height: 62px;
+    grid-template-columns: auto 1fr auto;
+  }
+  .topHudPanel {
+    order: 3;
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+  .topHudPanel .topStatsPanel {
+    width: 58vw;
+    min-width: 190px;
+  }
+  .topSideStats { font-size: 10px; }
+  .bigTilePreview img {
+    max-width: min(220px, 55vw);
+    max-height: min(220px, 38vh);
+  }
+}
