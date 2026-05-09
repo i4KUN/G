@@ -719,12 +719,13 @@
     // 2) اختر reCAPTCHA v3
     // 3) ضع المفتاح بدل APP_CHECK_SITE_KEY_HERE
     const APP_CHECK_SITE_KEY = "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD";
-    if (APP_CHECK_SITE_KEY !== "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD") {
-      initializeAppCheck(firebaseApp, {
-        provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
-        isTokenAutoRefreshEnabled: true
-      });
-    }
+	
+const APP_CHECK_SITE_KEY = "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD";
+
+initializeAppCheck(firebaseApp, {
+  provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
+  isTokenAutoRefreshEnabled: true
+});
 
     const db = getDatabase(firebaseApp);
     const auth = getAuth(firebaseApp);
