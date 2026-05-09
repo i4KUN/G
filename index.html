@@ -12,13 +12,13 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="GameNjd v12.7" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
-  <meta property="og:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
-  <meta property="og:url" content="https://i4kun.github.io/G/" />
+  <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
+  <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="GameNjd v12.7" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
-  <meta name="twitter:image" content="https://n4anime.github.io/bon/icon/cover2.png" />
+  <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
 
   <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
@@ -59,11 +59,18 @@
       </div>
 
 
-      <div class="topStatsPanel">
-        <div class="topStatRow"><span>الصحة</span><b data-stat="healthText">100%</b></div>
-        <div class="topStatusBar"><span data-stat="healthFill"></span></div>
-        <div class="topStatRow"><span>الجوع</span><b data-stat="hungerText">100%</b></div>
-        <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+      <div class="topHudPanel">
+        <div class="topStatsPanel">
+          <div class="topStatRow"><span><i class="fa-solid fa-heart-pulse"></i> الصحة</span><b data-stat="healthText">100%</b></div>
+          <div class="topStatusBar"><span data-stat="healthFill"></span></div>
+          <div class="topStatRow"><span><i class="fa-solid fa-bowl-food"></i> الجوع</span><b data-stat="hungerText">100%</b></div>
+          <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+        </div>
+        <div class="topSideStats">
+          <div><i class="fa-solid fa-star"></i> <span>الليفل</span> <b data-stat="levelPoints">0</b></div>
+          <div><i class="fa-solid fa-coins"></i> <span>الفلوس</span> <b data-stat="money">0 ريال</b></div>
+          <div><i class="fa-solid fa-location-dot"></i> <span>موقعك</span> <b data-stat="currentCell">--</b></div>
+        </div>
       </div>
 
       <div class="authBox">
@@ -160,8 +167,8 @@
         </p>
 
         <div class="section statsPanel">
-          <div class="statLine"><span>نقاط المستوى</span><b data-stat="levelPoints">0</b></div>
-          <div class="statLine"><span>الفلوس</span><b data-stat="money">0 ريال</b></div>
+          <div class="statLine"><span><i class="fa-solid fa-star"></i> نقاط المستوى</span><b data-stat="levelPoints">0</b></div>
+          <div class="statLine"><span><i class="fa-solid fa-coins"></i> الفلوس</span><b data-stat="money">0 ريال</b></div>
           <button id="openMissionsBtn" class="mainBtn missionsOpenBtn" type="button">
             <i class="fa-solid fa-list-check"></i>
             المهام
@@ -227,7 +234,8 @@
 
           <button id="homeBtn" class="mainBtn homeBtn" type="button">
             <i class="fa-solid fa-house"></i>
-            تحديد المنزل
+            <span>العودة للمنزل</span>
+            <small data-home-cell>لم تحدد بيتك بعد</small>
           </button>
 
           <button id="setHomeBtn" class="setHomeBtn" type="button">
@@ -421,14 +429,6 @@
             شفافية الجدول
           </label>
           <input id="gridOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
-        </div>
-
-        <div class="section">
-          <label for="brushSize">
-            <i class="fa-solid fa-paintbrush"></i>
-            حجم ريشة الرسم
-          </label>
-          <input id="brushSize" type="range" min="1" max="4" step="1" value="1" />
         </div>
 
         <div class="section">
@@ -678,7 +678,7 @@
   <script src="app.js"></script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 
     import {
       getDatabase,
@@ -689,9 +689,9 @@
       get,
       update,
       off
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
-    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check.js";
 
     import {
       getAuth,
@@ -700,7 +700,7 @@
       signOut,
       onAuthStateChanged,
       sendPasswordResetEmail
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
@@ -718,8 +718,8 @@
     // 1) فعّل App Check من Firebase Console
     // 2) اختر reCAPTCHA v3
     // 3) ضع المفتاح بدل APP_CHECK_SITE_KEY_HERE
-    const APP_CHECK_SITE_KEY = "APP_CHECK_SITE_KEY_HERE";
-    if (APP_CHECK_SITE_KEY !== "APP_CHECK_SITE_KEY_HERE") {
+    const APP_CHECK_SITE_KEY = "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD";
+    if (APP_CHECK_SITE_KEY !== "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD") {
       initializeAppCheck(firebaseApp, {
         provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
         isTokenAutoRefreshEnabled: true
