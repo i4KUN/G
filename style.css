@@ -1,4 +1,4 @@
-/* GameNjd v14.3 */
+/* GameNjd v15.3 */
 
 * {
   box-sizing: border-box;
@@ -1191,7 +1191,7 @@ body.walking .worldWrap {
   }
 }
 
-/* ===== GameNjd v14.3 additions - keep original design ===== */
+/* ===== GameNjd v13 additions - keep original design ===== */
 
 /* 02: Pixelated على اللعبة كاملة */
 img,
@@ -1474,7 +1474,7 @@ canvas,
 
 
 
-/* ===== v14.1 Fixes ===== */
+/* ===== v13 Fixes ===== */
 
 /* لوحة الإعدادات يمين والخريطة يسار */
 .layout {
@@ -2256,143 +2256,145 @@ button { font-size: 13px; padding: 8px; }
   #stick { width: 40px !important; height: 40px !important; left: 28px !important; top: 28px !important; }
 }
 
-/* ===== GameNjd v13 updates ===== */
+
+/* ===== v13 Refinements ===== */
+button { font-size: 13px; padding: 8px; }
+.section input, .section select, .section textarea { font-size: 13px; padding: 8px; }
+.topbar { min-height: 88px; height: auto; }
+.layout { height: calc(100vh - 88px); }
+.topHudPanel { display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 8px; min-width: 0; }
+.topBarsRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
+.topStatsPanel.compact { width: 120px; background: #111827; border: 1px solid #334155; border-radius: 12px; padding: 5px; }
+.topStatRow { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; line-height: 1.2; }
+.topStatusBar { height: 8px; margin-top: 3px; background: #334155; border-radius: 999px; overflow: hidden; }
+.topStatusBar span { display: block; height: 100%; background: #ef4444; border-radius: inherit; }
+.topStatusBar.hungerBar span { background: #f59e0b; }
+.topSideStats { display: grid; gap: 3px; font-size: 12px; }
+.topSideStats div { background: #111827; border: 1px solid #334155; border-radius: 10px; padding: 4px 6px; white-space: nowrap; }
+.topBagPanel { display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px; }
+.bagTitle { font-size: 12px; font-weight: 800; color: #dbeafe; white-space: nowrap; }
+.topBagSlots { display: grid; grid-template-columns: repeat(4, 24px); gap: 3px; }
+.bagSlot { width: 24px; height: 24px; min-height: 24px; border-radius: 6px; padding: 0; background: #0f172a; border: 1px solid #475569; position: relative; display: flex; align-items: center; justify-content: center; }
+.bagSlot img { width: 20px; height: 20px; object-fit: contain; }
+.bagSlot span { position: absolute; left: 1px; bottom: -2px; font-size: 9px; background: #0f172a; border-radius: 4px; padding: 0 2px; }
+.bagSlot.locked { opacity: 0.55; }
+.missionsOnlyPanel { padding: 6px; }
+.profileEditBox { display: none !important; }
+.accordionBtn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #0f172a; border: 1px solid #475569; font-weight: 800; }
+.elementsAccordionBody { margin-top: 10px; }
+.bagOptions { display: grid; gap: 8px; }
+.shopDoneMsg { display: block; color: #86efac; margin-top: 6px; font-weight: 800; }
+.modalDivider { border: 0; border-top: 1px solid #334155; margin: 14px 0; }
+.characterBox label { display: block; text-align: right; margin: 8px 0 4px; color: #dbeafe; font-weight: 800; }
+.characterBox input { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+@media (max-width: 720px) {
+  .topbar { grid-template-columns: 1fr; gap: 6px; padding: 6px; }
+  .topHudPanel { grid-template-columns: 1fr; width: 100%; }
+  .topBarsRow { grid-template-columns: 1fr 1fr; }
+  .topStatsPanel.compact { width: 100%; }
+  .topSideStats { grid-template-columns: repeat(3, 1fr); }
+  .topSideStats div { font-size: 11px; padding: 3px; }
+  .topBagPanel { justify-content: center; }
+  .mobileQuickTools { gap: 12px; right: 14px; top: 14px; }
+  .joystick { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); transform: scale(.9); transform-origin: left bottom; }
+}
+
+
+/* ===== v15.1 fixes ===== */
+* { image-rendering: auto; }
+canvas, #worldCanvas, .tileImg, .bagSlot img, .topLogo { image-rendering: auto !important; }
+.topbar { min-height: 74px !important; height: auto !important; }
+.layout { height: calc(100vh - 74px) !important; }
 .topHudPanel {
-  grid-template-columns: minmax(230px, 1fr) auto auto !important;
+  grid-template-columns: minmax(150px, 240px) auto minmax(120px, 190px) !important;
+  gap: 6px !important;
+  justify-content: center !important;
 }
-.topBagPanel {
-  display: grid;
-  gap: 3px;
-  align-items: center;
-  justify-items: center;
-  min-width: 112px;
+.topBarsRow { gap: 5px !important; }
+.topStatsPanel.compact {
+  width: 92px !important;
+  min-width: 92px !important;
+  padding: 3px 5px !important;
+  border-radius: 9px !important;
 }
-.bagTitle {
-  font-size: 10px;
-  font-weight: 800;
-  color: #dbeafe;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.topBagSlots {
-  display: grid;
-  grid-template-columns: repeat(4, 22px);
-  gap: 3px;
-  direction: ltr;
-}
-.bagSlot {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  min-height: 22px;
-  padding: 0;
-  border-radius: 6px;
-  background: #020617;
-  border: 1px solid #475569;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.bagSlot img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
-.bagSlot b {
-  position: absolute;
-  right: -3px;
-  bottom: -5px;
-  font-size: 9px;
-  color: #facc15;
-  background: #020617;
-  border-radius: 6px;
-  padding: 0 2px;
-}
-.bagSlot.locked {
-  opacity: .55;
-  cursor: not-allowed;
-}
-.statsPanel .statLine { display: none !important; }
-.sectionToggleBtn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: #0f172a;
-  border: 1px solid #475569;
-  font-weight: 800;
-}
-.sectionToggleBtn.active {
-  background: #2563eb;
-}
-.elementsContent {
-  margin-top: 10px;
-}
-.settingsModalBox {
-  display: grid;
-  gap: 8px;
-  text-align: right;
-}
-.settingsModalBox label {
-  font-weight: 800;
-  color: #dbeafe;
-}
-.settingsModalBox input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid #4b5563;
-  background: #0f172a;
+.topStatRow { font-size: 10px !important; gap: 3px !important; line-height: 1 !important; }
+.topStatusBar { height: 5px !important; margin-top: 2px !important; }
+.topSideStats { font-size: 10px !important; gap: 2px !important; }
+.topSideStats div { padding: 3px 5px !important; border-radius: 8px !important; }
+.topBagPanel { gap: 4px !important; }
+.bagTitle { font-size: 10px !important; }
+.topBagSlots { grid-template-columns: repeat(4, 21px) !important; gap: 2px !important; }
+.bagSlot { width: 21px !important; height: 21px !important; min-height: 21px !important; }
+.bagSlot img { width: 18px !important; height: 18px !important; }
+.modalToast {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: none;
+  background: #ef4444;
   color: #fff;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
 }
-.bagActionBox {
-  display: grid;
-  gap: 8px;
-}
-.bagActionBox button {
-  width: 100%;
-}
-.shopDoneMsg {
-  color: #86efac;
-}
-.joystick {
-  left: max(16px, env(safe-area-inset-left)) !important;
-  bottom: max(16px, env(safe-area-inset-bottom)) !important;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 32px);
-}
-@media (max-width: 900px) {
-  .topHudPanel {
-    grid-template-columns: 1fr auto !important;
-  }
-  .topBagPanel {
-    grid-column: 2;
-  }
-  .topSideStats {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(3, auto);
-    display: grid !important;
-    justify-content: center;
-  }
-}
-@media (max-width: 700px) {
-  .topHudPanel {
-    grid-template-columns: 1fr auto !important;
-  }
-  .topBagSlots {
-    grid-template-columns: repeat(4, 20px);
-  }
-  .bagSlot { width: 20px; height: 20px; min-width: 20px; min-height: 20px; }
+#toast { z-index: 2000 !important; }
+.npcInteractBtn { min-width: 92px; }
+@media (max-width: 720px) {
+  .topbar { min-height: 120px !important; }
+  .layout { height: calc(100vh - 120px) !important; }
+  .topHudPanel { grid-template-columns: 1fr !important; }
+  .topBarsRow { grid-template-columns: 1fr 1fr !important; }
+  .topStatsPanel.compact { width: 100% !important; min-width: 0 !important; }
+  .topSideStats { grid-template-columns: repeat(3, 1fr); }
+  .topBagPanel { justify-content: center; }
 }
 
 
-.settingsTopBtn {
-  background: #0ea5e9;
+/* ===== v15.2 final fixes ===== */
+.topStatsPanel.compact {
+  width: 86px !important;
+  min-width: 86px !important;
+  padding: 3px 4px !important;
 }
-
-.settingsTopBtn:hover {
-  background: #0284c7;
+.topStatRow { font-size: 9.5px !important; }
+.topStatusBar {
+  height: 7px !important;
+  background: #020617 !important;
+  border: 1px solid #475569 !important;
+}
+.topStatusBar [data-stat="healthFill"],
+[data-stat="healthFill"] {
+  display: block !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, #16a34a, #22c55e) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 6px rgba(34,197,94,.35) !important;
+}
+.topStatusBar.hungerBar [data-stat="hungerFill"],
+[data-stat="hungerFill"] {
+  display: block !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, #f97316, #facc15) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 6px rgba(249,115,22,.35) !important;
+}
+.topBagPanel, .topBagSlots, .bagSlot {
+  position: relative !important;
+  z-index: 95 !important;
+  pointer-events: auto !important;
+}
+.bagSlot { cursor: pointer !important; }
+.characterModal { z-index: 1200 !important; }
+#npcModal { z-index: 1300 !important; }
+body:not(.loggedIn) #animalLayer,
+body:not(.loggedIn) .npcInteractBtn,
+body:not(.loggedIn) .mobileQuickTools {
+  display: none !important;
+}
+@media (max-width: 720px) {
+  .topStatsPanel.compact { width: 100% !important; min-width: 0 !important; }
+  .topStatusBar { height: 6px !important; }
 }
