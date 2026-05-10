@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v14.1
+// GameNjd v15.1
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -11,7 +11,7 @@ const WORLD_ROWS = 50;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '14.1';
+const VERSION = '15.1';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -49,7 +49,7 @@ const MAX_ITEMS_PER_CELL = 150;
 // تم إلغاء منع السفر البعيد حتى لا يمنع الانتقال بين المناطق
 const MAX_PLAYER_JUMP = Infinity;
 const CHUNK_RADIUS = 3; // نطاق الخلايا القريبة عند الحاجة
-const USE_NEARBY_WORLD_LOADING = true; // تحميل الخلايا القريبة فقط لتقليل اللاق
+const USE_NEARBY_WORLD_LOADING = true; // تفعيل تحميل الخلايا القريبة لتخفيف اللاق
 const TILE_IMAGE_EXT = 'png'; // استخدام PNG حتى لا تختفي العناصر القديمة
 
 // عدد خلايا البناء المسموحة حول البيت
@@ -59,8 +59,8 @@ const HOME_BUILD_RADIUS_CELLS = 4;
 const BASE_ZOOM = 0.55;
 const ZOOM_STEP = 1.12;
 const ZOOM_OUT_STEPS = 8;
-const WALK_ZOOM_OUT_STEPS = 5;
-const WALK_ZOOM_IN_STEPS = 1; // زوم التجول بين 1 و2 تقريبًا
+const WALK_ZOOM_IN_STEPS = 5;
+const WALK_ZOOM_OUT_STEPS = 3; // وضع التجول: 5 تقريب و3 تبعيد فقط
 const ZOOM_IN_STEPS = 5;
 const WALK_BASE_ZOOM = 1.80;
 const MIN_ZOOM = BASE_ZOOM / Math.pow(ZOOM_STEP, ZOOM_OUT_STEPS);
@@ -94,17 +94,23 @@ const edgeImagesSrc = {
 };
 
 const fixedGroundTiles = [
-  { cell: 'H8', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'R12', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'H12', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'R18', src: 'All-Pic/map-pic/09.png' },
   { cell: 'AF15', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AQ20', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AX14', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AX20', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'J31', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AD38', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'AX45', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'C41', src: 'All-Pic/map-pic/09.png' },
 
   { cell: 'M28', src: 'All-Pic/map-pic/10.png' },
   { cell: 'X9', src: 'All-Pic/map-pic/10.png' },
   { cell: 'AL31', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AX11', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AS25', src: 'All-Pic/map-pic/10.png' }
+  { cell: 'AW11', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'F44', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AH42', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AV48', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'AS6', src: 'All-Pic/map-pic/10.png' }
 ];
 
 
@@ -113,7 +119,10 @@ const fixedAnimalTiles = [
   { cell: 'P17', src: 'All-Pic/animal/animal-01.gif' },
   { cell: 'AB9', src: 'All-Pic/animal/animal-01.gif' },
   { cell: 'AO25', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'AW13', src: 'All-Pic/animal/animal-01.gif' }
+  { cell: 'AX13', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'K42', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AD37', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'AV46', src: 'All-Pic/animal/animal-01.gif' }
 ];
 
 const SIZE_DATA = {
@@ -205,8 +214,6 @@ let houseProfiles = {};
 let houseRatings = {};
 let lastNearbyNpc = null;
 let activeTalkingNpc = null;
-const BAG_KEY = storageKey('bag_items');
-let bagItems = loadBagItems();
 let lastGameStateSave = 0;
 let buildBoundaryFlashUntil = 0;
 let buildBoundaryFlashStart = 0;
@@ -302,10 +309,11 @@ function loadGameState() {
       lastHungerAt: Number(saved.lastHungerAt) || now,
       lastHealthAt: Number(saved.lastHealthAt) || now,
       lastLevelAt: Number(saved.lastLevelAt) || now,
-      quests: saved.quests && typeof saved.quests === 'object' ? saved.quests : {}
+      quests: saved.quests && typeof saved.quests === 'object' ? saved.quests : {},
+      inventory: Array.isArray(saved.inventory) ? saved.inventory : []
     };
   } catch {
-    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, quests: {} };
+    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, quests: {}, inventory: [] };
   }
 }
 
@@ -331,7 +339,6 @@ function loadGameStateFromFirebase() {
     if (!gameState.lastLevelAt) gameState.lastLevelAt = now;
     saveGameState(true);
     updateStatsPanel();
-  updateBagUI();
   }).catch(console.error);
 }
 
@@ -341,14 +348,14 @@ function handleEmptyBars() {
     gameState.levelPoints = Math.max(0, Math.floor(gameState.levelPoints * 0.5));
     gameState.money = Math.max(0, gameState.money - 5);
     gameState.health = 30;
-    showToast('انتهت الصحة: تم خصم عقوبة ورجعت إلى 30%');
+    showToast('انتهت الصحة: تم خصم عقوبة وتمت تعبئتها إلى 30%');
     changed = true;
   }
   if (gameState.hunger <= 0) {
     gameState.levelPoints = Math.max(0, Math.floor(gameState.levelPoints * 0.5));
     gameState.money = Math.max(0, gameState.money - 5);
     gameState.hunger = 30;
-    showToast('انتهى الجوع: تم خصم عقوبة ورجع إلى 30%');
+    showToast('انتهى الجوع: تم خصم عقوبة وتمت تعبئته إلى 30%');
     changed = true;
   }
   if (changed) saveGameState();
@@ -358,7 +365,7 @@ function updateGameTimers() {
   if (!isLoggedIn()) return;
   const now = Date.now();
 
-  // نقص الجوع كل 10 دقائق
+  // نقص الجوع كل 5 دقائق
   while (now - gameState.lastHungerAt >= HUNGER_DECAY_MS) {
     gameState.hunger = Math.max(0, gameState.hunger - 1);
     gameState.lastHungerAt += HUNGER_DECAY_MS;
@@ -370,7 +377,7 @@ function updateGameTimers() {
     gameState.lastHealthAt += HEALTH_DECAY_MS;
   }
 
-  // زيادة نقاط المستوى كل دقيقة، وكل 10 نقاط تعطي ريال
+  // زيادة نقاط المستوى كل دقيقة، وكل 5 نقاط تعطي ريال
   while (now - gameState.lastLevelAt >= LEVEL_POINT_MS) {
     gameState.levelPoints += 1;
     if (gameState.levelPoints % POINTS_PER_RIYAL === 0) gameState.money += 1;
@@ -392,7 +399,7 @@ function updateStatsPanel() {
   document.querySelectorAll('[data-stat="hungerText"]').forEach(el => el.textContent = `${gameState.hunger}%`);
   document.querySelectorAll('[data-stat="levelPoints"]').forEach(el => el.textContent = String(gameState.levelPoints));
   document.querySelectorAll('[data-stat="money"]').forEach(el => el.textContent = `${gameState.money} ريال`);
-  updateBagUI();
+  updateBagPanel();
 }
 
 function spendMoney(price) {
@@ -594,51 +601,177 @@ const SHOP_ITEMS = {
   ]
 };
 
+const BAG_SLOTS_BASE = 4;
+const BAG_SLOTS_LEVEL_BONUS = 4;
+const BAG_UNLOCK_LEVEL = 500;
+const BAG_STACK_LIMIT = 3;
+const QUEST_REWARD_MONEY = 20;
+const QUEST_REWARD_POINTS = 20;
+
+function getBagSlotsCount() {
+  return gameState.levelPoints >= BAG_UNLOCK_LEVEL ? BAG_SLOTS_BASE + BAG_SLOTS_LEVEL_BONUS : BAG_SLOTS_BASE;
+}
+
+function getInventory() {
+  if (!Array.isArray(gameState.inventory)) gameState.inventory = [];
+  return gameState.inventory;
+}
+
+function addInventoryItem(item) {
+  const inv = getInventory();
+  const unlocked = getBagSlotsCount();
+  const existing = inv.find(slot => slot && slot.id === item.id && (slot.qty || 1) < BAG_STACK_LIMIT);
+  if (existing) {
+    existing.qty = Math.min(BAG_STACK_LIMIT, (existing.qty || 1) + (item.qty || 1));
+    saveGameState();
+    updateBagPanel();
+    return true;
+  }
+  if (inv.filter(Boolean).length >= unlocked) {
+    showToast('الحقيبة ممتلئة');
+    return false;
+  }
+  inv.push(Object.assign({ qty: 1 }, item));
+  saveGameState();
+  updateBagPanel();
+  return true;
+}
+
+function removeInventoryItem(id, count = 1) {
+  const inv = getInventory();
+  const item = inv.find(slot => slot && slot.id === id);
+  if (!item) return false;
+  item.qty = (item.qty || 1) - count;
+  if (item.qty <= 0) gameState.inventory = inv.filter(slot => slot && slot.id !== id);
+  saveGameState();
+  updateBagPanel();
+  return true;
+}
+
+function hasInventoryItem(id) {
+  return getInventory().some(slot => slot && slot.id === id && (slot.qty || 0) > 0);
+}
+
+function updateBagPanel() {
+  const box = document.getElementById('topBagSlots');
+  if (!box) return;
+  const inv = getInventory();
+  const unlocked = getBagSlotsCount();
+  const total = BAG_SLOTS_BASE + BAG_SLOTS_LEVEL_BONUS;
+  box.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const item = inv[i];
+    const btn = document.createElement('button');
+    btn.className = 'bagSlot' + (i >= unlocked ? ' locked' : '');
+    btn.type = 'button';
+    btn.dataset.index = String(i);
+    if (i >= unlocked) {
+      btn.innerHTML = '<i class="fa-solid fa-lock"></i>';
+      btn.title = 'تفتح عند المستوى 500';
+    } else if (item) {
+      btn.innerHTML = item.img ? `<img src="${item.img}" alt="${item.name || 'عنصر'}"><span>${item.qty || 1}x</span>` : `<i class="fa-solid fa-box"></i><span>${item.qty || 1}x</span>`;
+      btn.onclick = () => openBagItemOptions(i);
+    } else {
+      btn.innerHTML = '<i class="fa-regular fa-square"></i>';
+    }
+    box.appendChild(btn);
+  }
+}
+
+function openBagItemOptions(index) {
+  const item = getInventory()[index];
+  if (!item) return;
+  const modal = document.getElementById('npcModal');
+  const titleBox = document.getElementById('npcTitle');
+  const textBox = document.getElementById('npcText');
+  const listBox = document.getElementById('npcShopList');
+  if (!modal || !titleBox || !textBox || !listBox) return;
+  titleBox.textContent = item.name || 'عنصر في الحقيبة';
+  textBox.textContent = 'اختر الإجراء المناسب.';
+  const actions = [];
+  if (item.type === 'food') actions.push(`<button class="mainBtn bagUseBtn" data-action="eat" type="button"><i class="fa-solid fa-utensils"></i> أكل</button>`);
+  if (item.type === 'medicine') actions.push(`<button class="mainBtn bagUseBtn" data-action="heal" type="button"><i class="fa-solid fa-heart-pulse"></i> علاج</button>`);
+  if (item.type === 'quest') actions.push(`<button class="mainBtn bagUseBtn" data-action="return" type="button"><i class="fa-solid fa-hand-holding-hand"></i> إرجاع</button>`);
+  actions.push(`<button class="bagCancelBtn" type="button"><i class="fa-solid fa-xmark"></i> إلغاء</button>`);
+  listBox.innerHTML = `<div class="bagOptions">${actions.join('')}</div>`;
+  listBox.querySelectorAll('.bagUseBtn').forEach(btn => btn.onclick = () => useBagItem(index, btn.dataset.action));
+  listBox.querySelector('.bagCancelBtn').onclick = () => modal.classList.add('hidden');
+  modal.classList.remove('hidden');
+}
+
+function useBagItem(index, action) {
+  const item = getInventory()[index];
+  if (!item) return;
+  if (action === 'eat') {
+    addHunger(item.value || 5);
+    removeInventoryItem(item.id, 1);
+    showToast('تم الأكل');
+  } else if (action === 'heal') {
+    addHealth(item.value || 5);
+    removeInventoryItem(item.id, 1);
+    showToast('تم العلاج');
+  } else if (action === 'return') {
+    showToast('ارجع لصاحب المهمة المناسب لتسليم هذا العنصر');
+  }
+  document.getElementById('npcModal')?.classList.add('hidden');
+}
+
+function rewardQuest(key) {
+  gameState.quests[key] = Object.assign({}, gameState.quests[key] || {}, { completed: true });
+  gameState.money += QUEST_REWARD_MONEY;
+  gameState.levelPoints += QUEST_REWARD_POINTS;
+  saveGameState();
+  updateStatsPanel();
+  updateBagPanel();
+  updateMissionsPanel();
+}
+
+
 // أماكن NPC ثابتة ومتفرقة داخل الخريطة بعيدًا عن الحواف
 const NPC_STARTS = {
-  grocery: ['H8', 'AR42'],
-  pharmacy: ['M40', 'AV12'],
-  spookyMan: ['L12','Q23','AB9','AH33','AR18','AU43','AT11','AS29','AR39','AV20'],
-  wolf: ['J18','P41','Y12','AL36','AX22','AW14','AV46','AU26','AT9','AU35'],
-  caracal: ['F29','N8','U44','AG18','AT31','AX7','AW24','AV42','AU15','AW28'],
-  oryx: ['AF21','AT33'],
+  grocery: ['H12', 'AR38'],
+  pharmacy: ['M42', 'AX14'],
+  spookyMan: ['L22','Q45','AB18','AH36','AR33','AW44','AT21','AO47','C39','AX6'],
+  wolf: ['J35','P42','Y24','AL39','AX44','AI27','AO48','AC32','V18','AU46'],
+  caracal: ['F37','N15','U48','AG36','AT41','AD13','AJ28','AP43','AG29','AW49'],
+  oryx: ['AF41','AX34'],
   shepherd: ['R34'],
-  camel: ['AQ14'],
-  archaeologist: ['D44'],
-  ruins: ['AW6'],
-  herbalist: ['E24'],
-  rarePlant: ['K7','AQ27','AU44'],
-  messenger: ['G37'],
-  messageFriend: ['AS38'],
-  fireMan: ['S10'],
-  fireTent: ['T10'],
-  well: ['AR8'],
-  dateGirl: ['B12'],
-  dateHouse: ['C12'],
-  datePalm: ['AQ45']
+  camel: ['AQ28'],
+  archaeologist: ['D12'],
+  ruins: ['AV40'],
+  herbalist: ['AK10'],
+  rarePlant: ['F46','AX22','AR47'],
+  messenger: ['T9'],
+  messengerFriend: ['AE37'],
+  fireMan: ['AE18'],
+  burningTent: ['AF18'],
+  well: ['C31'],
+  dateWoman: ['AJ12'],
+  dateHouse: ['AK12'],
+  palm: ['AP7','AQ7','AR7']
 };
 
 const NPC_CONFIG = {
   grocery: { label: 'صاحب البقالة', src: 'All-Pic/npc/q5.png', mode: 'always', type: 'shop' },
+  spookyMan: { label: 'أبو فانوس', src: 'All-Pic/npc/q8.png', mode: 'night', type: 'enemy' },
   pharmacy: { label: 'الصيدلي', src: 'All-Pic/npc/q6.png', mode: 'always', type: 'shop' },
-  spookyMan: { label: 'ابو فانوس', src: 'All-Pic/npc/q8.png', mode: 'night', type: 'enemy' },
-  wolf: { label: 'الذيب الصحراوي', src: 'All-Pic/npc/q4.png', mode: 'night', type: 'enemy' },
-  caracal: { label: 'القط البري', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
   oryx: { label: 'المها العربية', src: 'All-Pic/npc/q2.png', mode: 'always', type: 'animal' },
-  shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest' },
-  camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest' },
-  archaeologist: { label: 'الباحثة الأثرية', src: 'All-Pic/npc/q09.png', mode: 'always', type: 'quest' },
-  ruins: { label: 'الآثار', src: 'All-Pic/npc/q10.png', mode: 'always', type: 'quest', fixed: true },
-  herbalist: { label: 'العطارة', src: 'All-Pic/npc/q11.png', mode: 'always', type: 'quest' },
-  rarePlant: { label: 'نبتة نادرة', src: 'All-Pic/npc/q12.png', mode: 'always', type: 'quest', fixed: true },
-  messenger: { label: 'رجل الرسالة', src: 'All-Pic/npc/q13.png', mode: 'always', type: 'quest' },
-  messageFriend: { label: 'صديق الرسالة', src: 'All-Pic/npc/q14.png', mode: 'always', type: 'quest' },
-  fireMan: { label: 'صاحب الخيمة', src: 'All-Pic/npc/q15.png', mode: 'always', type: 'quest' },
-  fireTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', fixed: true },
-  well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', fixed: true },
-  dateGirl: { label: 'بنت التمر', src: 'All-Pic/npc/q18.png', mode: 'always', type: 'quest' },
-  dateHouse: { label: 'بيت بنت التمر', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', fixed: true },
-  datePalm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', fixed: true }
+  wolf: { label: 'ذيب صحراوي', src: 'All-Pic/npc/q4.png', mode: 'night', type: 'enemy' },
+  caracal: { label: 'القط البري', src: 'All-Pic/npc/q1.png', mode: 'day', type: 'enemy' },
+  shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest', quest: 'shepherdCamel' },
+  camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest', quest: 'shepherdCamel' },
+  archaeologist: { label: 'الباحثة الأثرية', src: 'All-Pic/npc/q09.png', mode: 'always', type: 'quest', quest: 'archaeology' },
+  ruins: { label: 'الآثار', src: 'All-Pic/npc/q10.png', mode: 'always', type: 'quest', quest: 'archaeology', fixed: true, staticImage: true },
+  herbalist: { label: 'العطارة', src: 'All-Pic/npc/q11.png', mode: 'always', type: 'quest', quest: 'herbalist' },
+  rarePlant: { label: 'النبتة النادرة', src: 'All-Pic/npc/q12.png', mode: 'always', type: 'quest', quest: 'herbalist', fixed: true, staticImage: true },
+  messenger: { label: 'صاحب الرسالة', src: 'All-Pic/npc/q13.png', mode: 'always', type: 'quest', quest: 'message' },
+  messengerFriend: { label: 'صديق صاحب الرسالة', src: 'All-Pic/npc/q14.png', mode: 'always', type: 'quest', quest: 'message' },
+  fireMan: { label: 'صاحب الخيمة', src: 'All-Pic/npc/q15.png', mode: 'always', type: 'quest', quest: 'fire' },
+  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', quest: 'fire', fixed: true, staticImage: true },
+  well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', quest: 'fire', fixed: true, staticImage: true },
+  dateWoman: { label: 'صاحبة الضيوف', src: 'All-Pic/npc/q18.png', mode: 'always', type: 'quest', quest: 'dates' },
+  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', quest: 'dates', fixed: true, staticImage: true },
+  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', quest: 'dates', fixed: true, staticImage: true }
 };
 
 const npcImageCache = {};
@@ -654,9 +787,6 @@ function makeNpc(id, kind, cellKey) {
 Object.entries(NPC_STARTS).forEach(([kind, cells]) => {
   cells.forEach((cell, i) => npcs.push(makeNpc(`${kind}_${i+1}`, kind, cell)));
 });
-
-const initialNpcPositions = {};
-npcs.forEach(npc => { initialNpcPositions[npc.id] = { x: npc.x, y: npc.y, homeX: npc.homeX, homeY: npc.homeY }; });
 
 
 let worldNpcsListenerStarted = false;
@@ -704,34 +834,6 @@ function applyWorldNpcsData(data) {
   worldNpcsLoaded = true;
 }
 
-
-function resetNpcsToInitialPositions() {
-  for (const npc of npcs) {
-    const pos = initialNpcPositions[npc.id];
-    if (!pos) continue;
-    npc.x = pos.x;
-    npc.y = pos.y;
-    npc.homeX = pos.homeX;
-    npc.homeY = pos.homeY;
-    npc.targetX = pos.x;
-    npc.targetY = pos.y;
-    npc.moving = false;
-    npc.chasing = false;
-    npc.targetPlayer = '';
-  }
-}
-
-function hasBadNpcCluster() {
-  const counts = {};
-  for (const npc of npcs) {
-    const cell = cellFromWorld(npc.x, npc.y);
-    if (!cell) return true;
-    counts[cell.key] = (counts[cell.key] || 0) + 1;
-    if (counts[cell.key] >= 5) return true;
-  }
-  return false;
-}
-
 function getNpcControllerUid() {
   const ids = Object.keys(onlinePlayers || {}).filter(Boolean);
   if (currentUser?.uid && !ids.includes(currentUser.uid)) ids.push(currentUser.uid);
@@ -743,24 +845,31 @@ function isNpcController() {
   return !!(currentUser?.uid && currentUser.uid === getNpcControllerUid());
 }
 
+function saveWorldNpcsObject(data, label = 'worldNpcs save error') {
+  if (!isLoggedIn() || !window.db || !window.ref) return;
+  const writer = window.update || window.set;
+  if (!writer) return;
+  writer(window.ref(window.db, 'worldNpcs'), data).catch(error => console.error(label + ':', error));
+}
+
 function seedWorldNpcsToFirebase() {
-  if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
+  if (!isLoggedIn()) return;
   const data = {};
   npcs.forEach(npc => { data[npc.id] = npcToFirebaseData(npc); });
-  window.set(window.ref(window.db, 'worldNpcs'), data).catch(error => console.error('worldNpcs seed error:', error));
+  saveWorldNpcsObject(data, 'worldNpcs seed error');
 }
 
 function saveWorldNpcsToFirebase(force = false) {
   if (!force && !isNpcController()) return;
-  if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
+  if (!isLoggedIn()) return;
   const data = {};
   npcs.forEach(npc => { data[npc.id] = npcToFirebaseData(npc); });
-  window.set(window.ref(window.db, 'worldNpcs'), data).catch(error => console.error('worldNpcs save error:', error));
+  saveWorldNpcsObject(data, 'worldNpcs save error');
 }
 
 function listenWorldNpcsFromFirebase() {
   if (worldNpcsListenerStarted) return;
-  if (!isLoggedIn()) { setTimeout(listenWorldNpcsFromFirebase, 400); return; }
+  if (!isLoggedIn()) return;
   if (!window.db || !window.ref || !window.onValue) {
     setTimeout(listenWorldNpcsFromFirebase, 400);
     return;
@@ -778,7 +887,10 @@ function listenWorldNpcsFromFirebase() {
 function getNpcImage(src) {
   if (!npcImageCache[src]) {
     const img = new Image();
-    img.onerror = () => { img.__failed = true; };
+    img.onerror = () => {
+      img.dataset.failed = '1';
+      img.src = 'All-Pic/npc/q7.png';
+    };
     img.src = src;
     npcImageCache[src] = img;
   }
@@ -821,16 +933,21 @@ function updateNpcs() {
       continue;
     }
 
+    const config = NPC_CONFIG[npc.kind];
+
     if (activeTalkingNpc && activeTalkingNpc.id === npc.id) {
       npc.moving = false;
       npc.chasing = false;
       continue;
     }
 
-    if (!controller) continue;
+    if (config.fixed) {
+      npc.moving = false;
+      npc.chasing = false;
+      continue;
+    }
 
-    const config = NPC_CONFIG[npc.kind];
-    if (config.fixed) { npc.moving = false; continue; }
+    if (!controller) continue;
     const distToPlayer = Math.hypot(player.x - npc.x, player.y - npc.y);
     const canChase = walkMode && config.type === 'enemy' && distToPlayer <= chaseDistance;
 
@@ -869,6 +986,9 @@ function updateNpcs() {
     if (npc.chasing && distToPlayer < 42 && now - npc.lastAttack > 1800) {
       npc.lastAttack = now;
       gameState.health = Math.max(0, gameState.health - 10);
+      handleEmptyBars();
+      saveGameState();
+      updateStatsPanel();
       gameState.hunger = Math.max(0, gameState.hunger - 5);
       handleEmptyBars();
       saveGameState();
@@ -901,10 +1021,14 @@ function drawNpcSprite(npc) {
   ctx.fill();
 
   if (img.complete && img.naturalWidth) {
-    const frameW = img.naturalWidth / SPRITE_COLS;
-    const frameH = img.naturalHeight / SPRITE_ROWS;
-    const yOffset = npc.kind === 'caracal' ? 30 * zoom : 18 * zoom;
-    ctx.drawImage(img, frame * frameW, row * frameH, frameW, frameH, point.x - drawW / 2, point.y - drawH + yOffset, drawW, drawH);
+    if (config.staticImage) {
+      ctx.drawImage(img, point.x - drawW / 2, point.y - drawH + 18 * zoom, drawW, drawH);
+    } else {
+      const frameW = img.naturalWidth / SPRITE_COLS;
+      const frameH = img.naturalHeight / SPRITE_ROWS;
+      const yOffset = npc.kind === 'caracal' ? 30 * zoom : 18 * zoom;
+      ctx.drawImage(img, frame * frameW, row * frameH, frameW, frameH, point.x - drawW / 2, point.y - drawH + yOffset, drawW, drawH);
+    }
   } else {
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(point.x - 12, point.y - 30, 24, 30);
@@ -949,11 +1073,9 @@ function updateNpcInteractButton() {
   lastNearbyNpc = getNearestInteractNpc();
   btn.classList.toggle('hidden', !lastNearbyNpc);
   if (lastNearbyNpc) {
-    const cfg = NPC_CONFIG[lastNearbyNpc.kind];
-    const label = cfg.label;
-    if (cfg.fixed && ['rarePlant','well','datePalm'].includes(lastNearbyNpc.kind)) btn.textContent = `أخذ ${label}`;
-    else if (cfg.fixed) btn.textContent = `فحص ${label}`;
-    else btn.textContent = `تحدث مع ${label}`;
+    const cfg = NPC_CONFIG[lastNearbyNpc.kind] || {};
+    const action = cfg.staticImage ? (lastNearbyNpc.kind === 'rarePlant' || lastNearbyNpc.kind === 'palm' || lastNearbyNpc.kind === 'well' ? 'جمع' : 'فحص') : 'تحدث مع';
+    btn.textContent = `${action} ${cfg.label || ''}`.trim();
   }
 }
 
@@ -968,8 +1090,7 @@ function openNpcInteraction(npc = lastNearbyNpc) {
 
   if (npc.kind === 'grocery') return openShop('صاحب البقالة', 'grocery', 'hunger');
   if (npc.kind === 'pharmacy') return openShop('الصيدلي', 'pharmacy', 'health');
-  if (npc.kind === 'shepherd' || npc.kind === 'camel') return openShepherdQuest(npc.kind);
-  return handleQuestNpc(npc.kind);
+  return openQuestNpc(npc.kind);
 }
 
 function openShop(title, shopKey, target) {
@@ -1004,216 +1125,183 @@ function showShopConfirm(btn, shopKey, index, target) {
   const box = btn.parentElement?.querySelector('.shopConfirm');
   if (!box) return;
   document.querySelectorAll('.shopConfirm').forEach(el => { el.classList.add('hidden'); el.innerHTML = ''; });
+  if (target === 'hunger' && gameState.hunger >= 100) { box.classList.remove('hidden'); box.textContent = 'الجوع ممتلئ، لا تحتاج الشراء.'; return; }
+  if (target === 'health' && gameState.health >= 100) { box.classList.remove('hidden'); box.textContent = 'الصحة ممتلئة، لا تحتاج الشراء.'; return; }
   if (gameState.money < item.price) { box.classList.remove('hidden'); box.textContent = 'لا تستطيع الشراء، المال لا يكفي.'; return; }
   box.classList.remove('hidden');
-  box.innerHTML = `<span>هل أنت متأكد من الشراء؟</span><button type="button" class="confirmBuyYes">نعم</button><button type="button" class="confirmBuyNo">لا</button>`;
-  box.querySelector('.confirmBuyYes').onclick = () => buyShopItem(shopKey, index, target, box);
+  box.innerHTML = `<span>هل أنت متأكد من الشراء؟</span><button type="button" class="confirmBuyYes">نعم</button><button type="button" class="confirmBuyNo">لا</button><small class="shopDoneMsg hidden">تم الشراء</small>`;
+  box.querySelector('.confirmBuyYes').onclick = () => buyShopItem(shopKey, index, target);
   box.querySelector('.confirmBuyNo').onclick = () => { box.classList.add('hidden'); box.innerHTML = ''; };
 }
 
-function buyShopItem(shopKey, index, target, confirmBox = null) {
+function buyShopItem(shopKey, index, target) {
   const item = SHOP_ITEMS[shopKey][index];
   if (!item) return;
-  if (!spendMoney(item.price)) return;
-  const added = addBagItem({
-    id: `${shopKey}_${index}`,
-    name: item.name,
-    type: target === 'hunger' ? 'food' : 'medicine',
-    value: item.value,
-    img: item.img
-  });
+  const confirmBox = document.querySelector(`.shopItemBtn[data-shop="${shopKey}"][data-index="${index}"]`)?.parentElement?.querySelector('.shopConfirm');
+  const yesBtn = confirmBox?.querySelector('.confirmBuyYes');
+  if (yesBtn) yesBtn.disabled = true;
+  if (!spendMoney(item.price)) { if (yesBtn) yesBtn.disabled = false; return; }
+  const type = target === 'hunger' ? 'food' : 'medicine';
+  const added = addInventoryItem({ id: `${shopKey}_${index}`, name: item.name, type, value: item.value, img: item.img });
   if (!added) {
     gameState.money += item.price;
     saveGameState();
     updateStatsPanel();
+    if (yesBtn) yesBtn.disabled = false;
     return;
   }
   gameState.quests.usedShop = true;
   saveGameState();
   updateMissionsPanel();
-  if (confirmBox) {
-    confirmBox.classList.remove('hidden');
-    confirmBox.innerHTML = '<span class="shopDoneMsg"><i class="fa-solid fa-circle-check"></i> تم الشراء</span>';
+  const msg = confirmBox?.querySelector('.shopDoneMsg');
+  if (msg) {
+    msg.classList.remove('hidden');
     setTimeout(() => { confirmBox.classList.add('hidden'); confirmBox.innerHTML = ''; }, 2000);
-  } else showToast('تم الشراء');
-}
-
-
-function completeQuestReward(questKey = '') {
-  if (questKey && gameState.quests[questKey]?.completed) return false;
-  if (questKey) gameState.quests[questKey] = Object.assign({}, gameState.quests[questKey], { completed: true });
-  gameState.money += 20;
-  gameState.levelPoints += 20;
-  saveGameState();
-  updateStatsPanel();
-  updateMissionsPanel();
-  return true;
-}
-
-function loadBagItems() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(BAG_KEY) || '[]');
-    return Array.isArray(saved) ? saved : [];
-  } catch { return []; }
-}
-
-function saveBagItems() {
-  localStorage.setItem(BAG_KEY, JSON.stringify(bagItems));
-  if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
-  window.set(window.ref(window.db, 'inventory/' + window.auth.currentUser.uid + '/bagItems'), bagItems).catch(console.error);
-  updateBagUI();
-}
-
-function loadBagFromFirebase() {
-  if (!isLoggedIn() || !window.db || !window.ref || !window.get) return;
-  window.get(window.ref(window.db, 'inventory/' + window.auth.currentUser.uid + '/bagItems')).then(snapshot => {
-    const data = snapshot.val();
-    if (Array.isArray(data)) bagItems = data;
-    saveBagItems();
-  }).catch(console.error);
-}
-
-function getBagLimit() { return gameState.levelPoints >= 500 ? 8 : 4; }
-function getBagCount() { return bagItems.reduce((sum, item) => sum + (Number(item.count) || 1), 0); }
-function findBagItem(id) { return bagItems.find(item => item.id === id); }
-
-function addBagItem(item) {
-  const current = findBagItem(item.id);
-  if (current) {
-    if ((current.count || 1) >= 3) { showToast('وصلت للحد الأعلى من هذا العنصر'); return false; }
-    current.count = (current.count || 1) + 1;
   } else {
-    if (bagItems.length >= getBagLimit()) { showToast('الحقيبة ممتلئة'); return false; }
-    bagItems.push({ id: item.id, name: item.name, type: item.type || 'quest', value: item.value || 0, img: item.img || '', count: 1 });
+    showToast('تم الشراء');
   }
-  saveBagItems();
-  return true;
 }
 
-function removeBagItem(id) {
-  const item = findBagItem(id);
-  if (!item) return false;
-  item.count = (item.count || 1) - 1;
-  if (item.count <= 0) bagItems = bagItems.filter(x => x.id !== id);
-  saveBagItems();
-  return true;
-}
-
-function useBagItem(id) {
-  const item = findBagItem(id);
-  if (!item) return;
-  if (item.type === 'food') { if (addHunger(item.value || 0)) removeBagItem(id); return; }
-  if (item.type === 'medicine') { if (addHealth(item.value || 0)) removeBagItem(id); return; }
-  showToast('هذا عنصر مهمة، استخدمه عند الشخص المناسب');
-}
-
-function updateBagUI() {
-  const bag = document.getElementById('topBagSlots');
-  if (!bag) return;
-  const limit = getBagLimit();
-  const slots = 8;
-  let html = '';
-  for (let i = 0; i < slots; i++) {
-    const item = bagItems[i];
-    const locked = i >= limit;
-    html += `<button type="button" class="bagSlot ${locked ? 'locked' : ''}" data-bag-index="${i}" title="${locked ? 'تفتح عند المستوى 500' : (item?.name || 'فارغ')}">${locked ? '<i class="fa-solid fa-lock"></i>' : (item ? `<img src="${item.img}" alt="${item.name}"><b>${item.count > 1 ? item.count + 'x' : ''}</b>` : '')}</button>`;
-  }
-  bag.innerHTML = html;
-  bag.querySelectorAll('.bagSlot:not(.locked)').forEach(btn => {
-    btn.onclick = () => openBagItemMenu(Number(btn.dataset.bagIndex));
-  });
-}
-
-function openBagItemMenu(index) {
-  const item = bagItems[index];
-  if (!item) return showToast('الخانة فارغة');
-  const action = item.type === 'food' ? 'أكل' : item.type === 'medicine' ? 'علاج' : 'إرجاع';
-  showInfo('الحقيبة', `<div class="bagActionBox"><p>${item.name}</p><button type="button" onclick="window.__useBagItem('${item.id}')"><i class="fa-solid fa-check"></i> ${action}</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> إلغاء</button></div>`, true);
-}
-
-window.__useBagItem = id => { useBagItem(id); document.getElementById('infoModal')?.classList.add('hidden'); };
-
-function handleQuestNpc(kind) {
-  const q = gameState.quests;
-  if (kind === 'archaeologist' || kind === 'ruins') return openPairQuest('archaeology', kind, 'الباحثة الأثرية', 'الآثار', 'ابحث عن الآثار ثم ارجع للباحثة الأثرية.', 'وجدت الآثار. ارجع للباحثة الأثرية.', 'أخبرت الباحثة عن مكان الآثار.');
-  if (kind === 'herbalist') return openCollectQuest('rarePlants', 'rarePlantItem', 'العطارة', 'ابحث عن نبتة نادرة واحدة وضعها في الحقيبة ثم ارجع للعطارة.', 'سلمت النبتة النادرة للعطارة.');
-  if (kind === 'rarePlant') { if (!q.rarePlants?.completed && !findBagItem('rarePlantItem') && addBagItem({ id:'rarePlantItem', name:'نبتة نادرة', type:'quest', img:'All-Pic/npc/q12.png' })) showToast('تم وضع النبتة في الحقيبة'); return openQuestText('نبتة نادرة', findBagItem('rarePlantItem') ? 'النبتة موجودة في حقيبتك. ارجع للعطارة.' : 'تم العثور على نبتة نادرة.'); }
-  if (kind === 'messenger') return openDeliveryQuest('messageQuest', 'letterItem', 'رجل الرسالة', 'صديق الرسالة', 'خذ الرسالة إلى صديقه.', 'أخذت الرسالة. ابحث عن الصديق.', 'تم تسليم الرسالة.');
-  if (kind === 'messageFriend') return openDeliveryQuest('messageQuest', 'letterItem', 'صديق الرسالة', 'رجل الرسالة', 'ابحث عن رجل الرسالة وخذ منه الرسالة.', 'سلم الرسالة هنا بعد أخذها.', 'وصلت الرسالة إلى الصديق.');
-  if (kind === 'fireMan') return openDeliveryQuest('fireQuest', 'waterBucket', 'صاحب الخيمة', 'البئر', 'ابحث عن البئر وخذ الماء لإطفاء النار.', 'خذ الماء من البئر ثم ارجع.', 'تم إطفاء النار.');
-  if (kind === 'well') { if (!q.fireQuest?.completed && !findBagItem('waterBucket') && addBagItem({ id:'waterBucket', name:'سطل ماء', type:'quest', img:'All-Pic/npc/q17.png' })) showToast('تم وضع الماء في الحقيبة'); return openQuestText('البئر', 'أخذت ماء في الحقيبة.'); }
-  if (kind === 'dateGirl') return openDeliveryQuest('dateQuest', 'datesItem', 'بنت التمر', 'النخلة', 'ابحث عن النخلة وخذ التمر.', 'خذ التمر من النخلة ثم ارجع.', 'تم تسليم التمر.');
-  if (kind === 'datePalm') { if (!q.dateQuest?.completed && !findBagItem('datesItem') && addBagItem({ id:'datesItem', name:'تمر', type:'quest', img:'All-Pic/npc/q20.png' })) showToast('تم وضع التمر في الحقيبة'); return openQuestText('النخلة', 'أخذت تمر في الحقيبة.'); }
-  if (kind === 'fireTent' || kind === 'dateHouse') return openQuestText(NPC_CONFIG[kind].label, 'هذا مكان مرتبط بمهمة.');
-}
-
-function openQuestText(title, text) {
-  const modal = document.getElementById('npcModal');
-  document.getElementById('npcTitle').textContent = title;
-  document.getElementById('npcText').textContent = text;
-  document.getElementById('npcShopList').innerHTML = '';
-  modal?.classList.remove('hidden');
-}
-
-function openPairQuest(key, kind, giverTitle, targetTitle, startText, foundText, doneText) {
-  const q = gameState.quests[key] || {};
-  if (q.completed) return openQuestText(giverTitle, 'أنت أكملت هذه المهمة خلاص.');
-  if (kind === 'ruins') { gameState.quests[key] = Object.assign({}, q, { foundTarget: true }); saveGameState(); return openQuestText(targetTitle, foundText); }
-  if (q.foundTarget) { completeQuestReward(key); return openQuestText(giverTitle, doneText + ' حصلت على 20 ريال و20 نقطة مستوى.'); }
-  gameState.quests[key] = Object.assign({}, q, { started: true }); saveGameState(); return openQuestText(giverTitle, startText);
-}
-
-function openCollectQuest(key, itemId, title, startText, doneText) {
-  const q = gameState.quests[key] || {};
-  if (q.completed) return openQuestText(title, 'أنت أكملت هذه المهمة خلاص.');
-  const item = findBagItem(itemId);
-  if (item && (item.count || 1) >= 1) { removeBagItem(itemId); completeQuestReward(key); return openQuestText(title, doneText + ' حصلت على 20 ريال و20 نقطة مستوى.'); }
-  gameState.quests[key] = Object.assign({}, q, { started: true }); saveGameState(); return openQuestText(title, startText);
-}
-
-function openDeliveryQuest(key, itemId, title, targetTitle, startText, carryingText, doneText) {
-  const q = gameState.quests[key] || {};
-  if (q.completed) return openQuestText(title, 'أنت أكملت هذه المهمة خلاص.');
-  if (findBagItem(itemId) && ['صديق الرسالة','صاحب الخيمة','بنت التمر'].includes(title)) {
-    removeBagItem(itemId); completeQuestReward(key); return openQuestText(title, doneText + ' حصلت على 20 ريال و20 نقطة مستوى.');
-  }
-  if (!findBagItem(itemId) && ['رجل الرسالة'].includes(title)) addBagItem({ id:itemId, name:'رسالة', type:'quest', img:'All-Pic/npc/q13.png' });
-  gameState.quests[key] = Object.assign({}, q, { started: true }); saveGameState();
-  return openQuestText(title, findBagItem(itemId) ? carryingText : startText);
-}
-
-function openShepherdQuest(kind) {
+function setNpcModal(title, text, html = '') {
   const modal = document.getElementById('npcModal');
   const titleBox = document.getElementById('npcTitle');
   const textBox = document.getElementById('npcText');
   const listBox = document.getElementById('npcShopList');
   if (!modal || !titleBox || !textBox || !listBox) return;
+  titleBox.textContent = title;
+  textBox.textContent = text;
+  listBox.innerHTML = html;
+  modal.classList.remove('hidden');
+}
 
-  const q = gameState.quests.shepherdCamel || {};
-  titleBox.textContent = kind === 'shepherd' ? 'الراعي' : 'الجمل الضائع';
-  listBox.innerHTML = '';
+function completeTwoPartQuest(key, firstFlag, secondFlag, title, completeText, firstText) {
+  const q = gameState.quests[key] || {};
+  if (q.completed) return setNpcModal(title, 'أنت أكملت هذه المهمة خلاص.');
+  if (q[secondFlag]) {
+    rewardQuest(key);
+    return setNpcModal(title, completeText);
+  }
+  gameState.quests[key] = Object.assign({}, q, { [firstFlag]: true });
+  saveGameState();
+  setNpcModal(title, firstText);
+}
 
-  if (q.completed) {
-    textBox.textContent = 'أنت أكملت هذه المهمة خلاص.';
-  } else if (kind === 'shepherd' && q.foundCamel) {
-    textBox.textContent = 'وجدت الجمل والراعي، حصلت على مكافأة 20 ريال و20 نقطة مستوى.';
-    gameState.quests.shepherdCamel = { completed: true };
-    completeQuestReward();
-  } else if (kind === 'camel' && q.foundShepherd) {
-    textBox.textContent = 'رجّعت خبر الجمل للراعي، حصلت على مكافأة 20 ريال و20 نقطة مستوى.';
-    gameState.quests.shepherdCamel = { completed: true };
-    completeQuestReward();
-  } else if (kind === 'shepherd') {
-    textBox.textContent = 'الراعي يبحث عن جمله الضائع. ابحث عن الجمل ثم ارجع له.';
-    gameState.quests.shepherdCamel = Object.assign({}, q, { foundShepherd: true });
+function openQuestNpc(kind) {
+  const q = gameState.quests || {};
+  if (kind === 'shepherd') return completeTwoPartQuest('shepherdCamel', 'foundShepherd', 'foundCamel', 'الراعي', 'وجدت الجمل والراعي، حصلت على 20 ريال و20 نقطة مستوى.', 'الراعي يبحث عن جمله الضائع. ابحث عن الجمل ثم ارجع له.');
+  if (kind === 'camel') return completeTwoPartQuest('shepherdCamel', 'foundCamel', 'foundShepherd', 'الجمل الضائع', 'رجّعت خبر الجمل للراعي، حصلت على 20 ريال و20 نقطة مستوى.', 'وجدت الجمل الضائع. ابحث عن الراعي لتحصل على المكافأة.');
+
+  if (kind === 'archaeologist') return completeTwoPartQuest('archaeology', 'foundResearcher', 'foundRuins', 'الباحثة الأثرية', 'أخبرت الباحثة بموقع الآثار، حصلت على 20 ريال و20 نقطة مستوى.', 'هناك آثار قديمة في مكان بعيد. ابحث عنها ثم ارجع لي.');
+  if (kind === 'ruins') return completeTwoPartQuest('archaeology', 'foundRuins', 'foundResearcher', 'الآثار', 'وجدت الآثار وأخبرت الباحثة، حصلت على 20 ريال و20 نقطة مستوى.', 'وجدت الآثار. ابحث عن الباحثة الأثرية وأخبرها بمكانها.');
+
+  if (kind === 'herbalist') {
+    if (q.herbalist?.completed) return setNpcModal('العطارة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('rare_plant')) {
+      removeInventoryItem('rare_plant', 1);
+      rewardQuest('herbalist');
+      return setNpcModal('العطارة', 'أحضرت النبتة النادرة، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.herbalist = Object.assign({}, q.herbalist || {}, { metHerbalist: true });
     saveGameState();
-  } else {
-    textBox.textContent = 'وجدت الجمل الضائع. ابحث عن الراعي لتحصل على 20 ريال و20 نقطة مستوى.';
-    gameState.quests.shepherdCamel = Object.assign({}, q, { foundCamel: true });
+    return setNpcModal('العطارة', 'أبحث عن نباتات نادرة في العالم. إذا وجدت نبتة أحضرها لي.');
+  }
+  if (kind === 'rarePlant') {
+    if (q.herbalist?.completed) return setNpcModal('النبتة النادرة', 'لقد أكملت مهمة العطارة خلاص.');
+    addInventoryItem({ id: 'rare_plant', name: 'نبتة نادرة', type: 'quest', img: 'All-Pic/npc/q12.png' });
+    gameState.quests.herbalist = Object.assign({}, q.herbalist || {}, { foundPlant: true });
     saveGameState();
+    return setNpcModal('النبتة النادرة', 'أخذت النبتة النادرة في الحقيبة. ارجع للعطارة.');
   }
 
-  modal.classList.remove('hidden');
+  if (kind === 'messenger') {
+    if (q.message?.completed) return setNpcModal('صاحب الرسالة', 'أنت أكملت هذه المهمة خلاص.');
+    addInventoryItem({ id: 'message_note', name: 'رسالة', type: 'quest', img: '' });
+    gameState.quests.message = Object.assign({}, q.message || {}, { gotMessage: true, metSender: true });
+    saveGameState();
+    return setNpcModal('صاحب الرسالة', 'خذ هذه الرسالة وأوصلها إلى صديقي.');
+  }
+  if (kind === 'messengerFriend') {
+    if (q.message?.completed) return setNpcModal('صديق صاحب الرسالة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('message_note')) {
+      removeInventoryItem('message_note', 1);
+      rewardQuest('message');
+      return setNpcModal('صديق صاحب الرسالة', 'وصلت الرسالة، شكرًا لك. حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.message = Object.assign({}, q.message || {}, { metFriend: true });
+    saveGameState();
+    return setNpcModal('صديق صاحب الرسالة', 'سمعت أن هناك رجلًا يريد إرسال رسالة. ابحث عنه ثم ارجع لي.');
+  }
+
+  if (kind === 'fireMan') {
+    if (q.fire?.completed) return setNpcModal('صاحب الخيمة', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('water_bucket')) {
+      removeInventoryItem('water_bucket', 1);
+      rewardQuest('fire');
+      return setNpcModal('صاحب الخيمة', 'أطفأت النار، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.fire = Object.assign({}, q.fire || {}, { metFireMan: true });
+    saveGameState();
+    return setNpcModal('صاحب الخيمة', 'خيمتي تحترق! ابحث عن بئر وخذ ماءً في سطل.');
+  }
+  if (kind === 'well') {
+    if (q.fire?.completed) return setNpcModal('البئر', 'أنت أكملت مهمة الخيمة خلاص.');
+    addInventoryItem({ id: 'water_bucket', name: 'سطل ماء', type: 'quest', img: '' });
+    gameState.quests.fire = Object.assign({}, q.fire || {}, { gotWater: true });
+    saveGameState();
+    return setNpcModal('البئر', 'أخذت ماءً في السطل. ارجع لصاحب الخيمة.');
+  }
+  if (kind === 'burningTent') return setNpcModal('الخيمة المحترقة', q.fire?.completed ? 'تم إطفاء النار خلاص.' : 'الخيمة تحترق. ابحث عن صاحبها أو عن البئر.');
+
+  if (kind === 'dateWoman') {
+    if (q.dates?.completed) return setNpcModal('صاحبة الضيوف', 'أنت أكملت هذه المهمة خلاص.');
+    if (hasInventoryItem('dates_item')) {
+      removeInventoryItem('dates_item', 1);
+      rewardQuest('dates');
+      return setNpcModal('صاحبة الضيوف', 'أحضرت التمر للضيوف، حصلت على 20 ريال و20 نقطة مستوى.');
+    }
+    gameState.quests.dates = Object.assign({}, q.dates || {}, { metWoman: true });
+    saveGameState();
+    return setNpcModal('صاحبة الضيوف', 'سيأتيني ضيوف وقد خلص التمر. ابحث عن نخلة وأحضر لي تمرًا.');
+  }
+  if (kind === 'palm') {
+    if (q.dates?.completed) return setNpcModal('النخلة', 'أنت أكملت مهمة التمر خلاص.');
+    addInventoryItem({ id: 'dates_item', name: 'تمر', type: 'quest', img: '' });
+    gameState.quests.dates = Object.assign({}, q.dates || {}, { gotDates: true });
+    saveGameState();
+    return setNpcModal('النخلة', 'أخذت التمر في الحقيبة. ارجع لصاحبة الضيوف.');
+  }
+  if (kind === 'dateHouse') return setNpcModal('بيت صاحبة الضيوف', q.dates?.completed ? 'الضيوف وصلهم التمر خلاص.' : 'هذا بيت صاحبة الضيوف.');
+}
+
+
+function linkRealEmailToAccount() {
+  if (!isLoggedIn()) return showToast('سجل دخولك أولًا');
+  const email = document.getElementById('realEmailInput')?.value.trim();
+  const pass = document.getElementById('realEmailPassInput')?.value || '';
+  const msg = document.getElementById('settingsEmailMsg');
+  if (msg) msg.textContent = '';
+  if (!email || !email.includes('@')) return showToast('اكتب إيميل صحيح');
+  if (pass.length < 6) return showToast('اكتب كلمة مرور الحساب الحالية');
+  if (!window.EmailAuthProvider || !window.reauthenticateWithCredential || !window.updateEmail) {
+    return showToast('أدوات ربط الإيميل غير جاهزة');
+  }
+  const user = window.auth.currentUser;
+  const oldEmail = user.email || usernameToEmail(emailToUsername(currentUserEmail || 'player'));
+  const credential = window.EmailAuthProvider.credential(oldEmail, pass);
+  window.reauthenticateWithCredential(user, credential)
+    .then(() => window.updateEmail(user, email))
+    .then(() => {
+      currentUserEmail = email;
+      localStorage.setItem(LAST_EMAIL_KEY, email);
+      if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي بنجاح.';
+      showToast('تم ربط الإيميل');
+      updateAuthUI();
+    })
+    .catch(error => {
+      console.error(error);
+      if (msg) msg.textContent = 'فشل ربط الإيميل. تأكد أن كلمة المرور هي كلمة مرور حسابك الحالي، وأن الإيميل غير مستخدم مسبقًا.';
+      showToast('فشل ربط الإيميل');
+    });
 }
 
 function loadCollectedMoney() {
@@ -1224,10 +1312,16 @@ function loadCollectedMoney() {
 }
 
 let collectedMoneyIds = loadCollectedMoney();
+function seededRandom(seed) {
+  let x = Math.sin(seed * 99991) * 10000;
+  return x - Math.floor(x);
+}
 const mapMoney = Array.from({ length: 50 }, (_, i) => {
-  const col = 3 + ((i * 17) % 45);
-  const row = 3 + ((i * 23) % 45);
-  return { id: 'money_' + i, x: (col - 0.5) * CELL, y: (row - 0.5) * CELL, amount: 1 + (i % 5) };
+  const col = 2 + Math.floor(seededRandom(i + 11) * (WORLD_COLS - 3));
+  const row = 2 + Math.floor(seededRandom(i + 37) * (WORLD_ROWS - 3));
+  const offsetX = (seededRandom(i + 101) - 0.5) * CELL * 0.65;
+  const offsetY = (seededRandom(i + 151) - 0.5) * CELL * 0.65;
+  return { id: 'money_' + i, x: (col - 0.5) * CELL + offsetX, y: (row - 0.5) * CELL + offsetY, amount: 1 + (i % 5) };
 });
 
 function saveCollectedMoney() {
@@ -1381,6 +1475,7 @@ function normalizeWorldData(data) {
   const result = {};
 
   for (const key in data || {}) {
+    if (!parseCell(key)) continue;
     const cell = data[key];
 
     if (!cell || typeof cell !== 'object' || cell === true) continue;
@@ -1565,9 +1660,12 @@ function saveCellToFirebase(cellKey) {
     .map(item => sanitizeItemForSave(item, cellKey))
     .filter(Boolean);
 
+  const safeItemsObject = {};
+  safeItems.forEach((item, index) => { safeItemsObject[String(index)] = item; });
+
   window.set(window.ref(window.db, 'world/' + cellKey), {
     owner: cell.owner || currentOwner(),
-    items: safeItems
+    items: safeItemsObject
   }).catch(error => {
     console.error('Firebase cell save error:', error);
     showToast('فشل حفظ الخلية');
@@ -1598,7 +1696,6 @@ function saveWorld() {
 }
 
 function listenWorldFromFirebase() {
-  if (!isLoggedIn()) { setTimeout(listenWorldFromFirebase, 400); return; }
   if (!window.db || !window.ref || !window.onValue) {
     setTimeout(listenWorldFromFirebase, 400);
     return;
@@ -1886,6 +1983,22 @@ resize();
 
 function showToast(message) {
   if (!toast) return;
+
+  const openModal = document.querySelector('.characterModal:not(.hidden)');
+  if (openModal) {
+    let modalToast = openModal.querySelector('.modalToast');
+    if (!modalToast) {
+      modalToast = document.createElement('div');
+      modalToast.className = 'modalToast';
+      const box = openModal.querySelector('.characterBox') || openModal;
+      box.prepend(modalToast);
+    }
+    modalToast.textContent = message;
+    modalToast.style.display = 'block';
+    clearTimeout(showToast.modalTimer);
+    showToast.modalTimer = setTimeout(() => { modalToast.style.display = 'none'; }, 2400);
+    return;
+  }
 
   toast.textContent = message;
   toast.style.display = 'block';
@@ -2308,13 +2421,15 @@ function drawPointLight(lightX, lightY, radius, alpha = 1, layer = 0) {
   if (alpha <= 0.01) return;
   const glow = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, radius);
   glow.addColorStop(0, `rgba(255,238,150,${0.34 * alpha})`);
-  glow.addColorStop(0.35, `rgba(255,230,120,${0.18 * alpha})`);
-  glow.addColorStop(0.72, `rgba(255,245,190,${0.06 * alpha})`);
-  glow.addColorStop(1, 'rgba(255,255,230,0)');
+  glow.addColorStop(0.35, `rgba(255,210,90,${0.18 * alpha})`);
+  glow.addColorStop(0.72, `rgba(255,190,70,${0.07 * alpha})`);
+  glow.addColorStop(1, `rgba(255,190,70,0)`);
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = glow;
-  ctx.fillRect(lightX - radius, lightY - radius, radius * 2, radius * 2);
+  ctx.beginPath();
+  ctx.arc(lightX, lightY, radius, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -2670,17 +2785,6 @@ function bind(id, event, fn) {
 
 function initUI() {
   bind('openAuthBtn', 'click', openAuthModal);
-  bind('openSettingsBtn', 'click', openSettingsModal);
-  bind('settingsCloseBtn', 'click', closeSettingsModal);
-  bind('settingsSaveNameBtn', 'click', saveSettingsName);
-  bind('settingsChangeCharacterBtn', 'click', () => { closeSettingsModal(); showCharacterModal(true); });
-  bind('linkEmailBtn', 'click', linkRealEmail);
-  bind('toggleElementsBtn', 'click', () => {
-    const box = document.getElementById('elementsContent');
-    const btn = document.getElementById('toggleElementsBtn');
-    box?.classList.toggle('hidden');
-    btn?.classList.toggle('active', !box?.classList.contains('hidden'));
-  });
   bind('guestPanelOverlay', 'click', openAuthModal);
   bind('authCloseBtn', 'click', closeAuthModal);
   bind('authBottomCloseBtn', 'click', closeAuthModal);
@@ -2754,6 +2858,12 @@ function initUI() {
   bind('saveNameBtn', 'click', saveDisplayName);
   bind('saveHouseNameBtn', 'click', saveHouseProfile);
   bind('npcInteractBtn', 'click', () => openNpcInteraction());
+  bind('openGameSettingsBtn', 'click', () => document.getElementById('gameSettingsModal')?.classList.remove('hidden'));
+  bind('settingsCloseBtn', 'click', () => document.getElementById('gameSettingsModal')?.classList.add('hidden'));
+  bind('settingsChangeCharacterBtn', 'click', () => { document.getElementById('gameSettingsModal')?.classList.add('hidden'); showCharacterModal(true); });
+  bind('linkRealEmailBtn', 'click', linkRealEmailToAccount);
+  bind('toggleElementsBtn', 'click', () => document.getElementById('elementsAccordionBody')?.classList.toggle('hidden'));
+
   bind('npcCloseBtn', 'click', () => { activeTalkingNpc = null; document.getElementById('npcModal')?.classList.add('hidden'); });
   bind('openMissionsBtn', 'click', () => { updateMissionsPanel(); document.getElementById('missionsModal')?.classList.remove('hidden'); });
   bind('missionsCloseBtn', 'click', () => document.getElementById('missionsModal')?.classList.add('hidden'));
@@ -3101,6 +3211,7 @@ function updateMissionsPanel() {
   const categoriesUsed = new Set(myItems.map(item => tileMap[item.tileId]?.category).filter(Boolean));
   const visitedCount = getVisitedCells().length;
   const hasHome = !!localStorage.getItem(HOME_KEY);
+  const q = gameState.quests || {};
 
   const missions = [
     { text: 'اختر شخصية', done: !!myCharacterId, money: 0, points: 5 },
@@ -3108,24 +3219,23 @@ function updateMissionsPanel() {
     { text: 'استخدم 3 أقسام مختلفة', done: categoriesUsed.size >= 3, money: 2, points: 10 },
     { text: 'حدد منزلك', done: hasHome, money: 1, points: 5 },
     { text: 'زر 3 خلايا مختلفة', done: visitedCount >= 3, money: 1, points: 5 },
-    { text: 'ابحث عن الراعي والجمل', done: !!gameState.quests.shepherdCamel?.completed, money: 20, points: 20 },
-    { text: 'مهمة الباحثة الأثرية', done: !!gameState.quests.archaeology?.completed, money: 20, points: 20 },
-    { text: 'مهمة النباتات النادرة', done: !!gameState.quests.rarePlants?.completed, money: 20, points: 20 },
-    { text: 'مهمة الرسالة', done: !!gameState.quests.messageQuest?.completed, money: 20, points: 20 },
-    { text: 'مهمة الخيمة والبئر', done: !!gameState.quests.fireQuest?.completed, money: 20, points: 20 },
-    { text: 'مهمة التمر', done: !!gameState.quests.dateQuest?.completed, money: 20, points: 20 },
+    { text: 'ابحث عن الراعي والجمل', done: !!q.shepherdCamel?.completed, money: 20, points: 20 },
+    { text: 'ساعد الباحثة الأثرية', done: !!q.archaeology?.completed, money: 20, points: 20 },
+    { text: 'أحضر النبتة النادرة للعطارة', done: !!q.herbalist?.completed, money: 20, points: 20 },
+    { text: 'أوصل الرسالة إلى الصديق', done: !!q.message?.completed, money: 20, points: 20 },
+    { text: 'أطفئ نار الخيمة', done: !!q.fire?.completed, money: 20, points: 20 },
+    { text: 'أحضر التمر لصاحبة الضيوف', done: !!q.dates?.completed, money: 20, points: 20 },
     { text: 'اجمع أول ريال من الخريطة', done: collectedMoneyIds.size > 0, money: 0, points: 5 },
-    { text: 'تحدث مع صاحب البقالة أو الصيدلي', done: !!gameState.quests.usedShop, money: 0, points: 5 }
+    { text: 'اشترِ من البقالة أو الصيدلي', done: !!q.usedShop, money: 0, points: 5 }
   ];
 
   box.innerHTML = missions.map(mission => `
     <div class="missionItem ${mission.done ? 'done' : ''}">
-      <span><i class="fa-solid ${mission.done ? 'fa-square-check' : 'fa-square'}"></i> ${mission.text}</span>
-      <small>الجائزة: ${mission.money} ريال | ${mission.points} نقطة</small>
+      <span><i class="fa-solid ${mission.done ? 'fa-circle-check' : 'fa-circle'}"></i> ${mission.text}</span>
+      <small>الجائزة: ${mission.money} ريال | ${mission.points} نقطة مستوى</small>
     </div>
   `).join('');
 }
-
 
 function updateSelectedPreview() {
   const box = document.getElementById('selectedPreviewBox');
@@ -3300,7 +3410,7 @@ function updateHomeButton() {
 }
 
 function changeItemScale(delta) {
-  itemScale = Math.max(0.30, Math.min(1.05, Number((itemScale + delta).toFixed(2))));
+  itemScale = Math.max(0.35, Math.min(1.20, Number((itemScale + delta).toFixed(2))));
 
   const scaleInput = document.getElementById('itemScale');
   if (scaleInput) scaleInput.value = itemScale;
@@ -3311,7 +3421,7 @@ function changeItemScale(delta) {
 }
 
 function updateItemScale(event) {
-  const newScale = Math.max(0.30, Math.min(1.05, Number(event.target.value || 0.80))); 
+  const newScale = Math.max(0.35, Math.min(1.20, Number(event.target.value || 0.80)));
   const factor = newScale / itemScale;
   itemScale = newScale;
 
@@ -3447,8 +3557,8 @@ function paintOne(x, y) {
   };
 
   applyAutoAlign(item, cell.key);
-  item.x = clampNumber(item.x, -scaledW + 1, CELL - 1, 0);
-  item.y = clampNumber(item.y, -scaledH + 1, CELL - 1, 0);
+  item.x = clampNumber(item.x, -item.w / 2, CELL - item.w / 2, 0);
+  item.y = clampNumber(item.y, -item.h / 2, CELL - item.h / 2, 0);
   cellData.items.push(item);
 
   saveLocalWorld();
@@ -3512,8 +3622,8 @@ function moveSelected(dx, dy) {
     if (selectedIds.has(item.uid) && canEditCell(item.cell) && canUseBuildSettingsAtCell(item.cell, false)) {
       item.x += dx;
       item.y += dy;
-      item.x = clampNumber(item.x, 0, CELL, item.x);
-      item.y = clampNumber(item.y, 0, CELL, item.y);
+      item.x = clampNumber(item.x, -item.w / 2, CELL - item.w / 2, item.x);
+      item.y = clampNumber(item.y, -item.h / 2, CELL - item.h / 2, item.y);
       changedCells.add(item.cell);
     }
   }
@@ -3533,7 +3643,7 @@ function resizeSelected(pos) {
   const centerY = rect.y + rect.h / 2;
   const distance = Math.hypot(pos.world.x - centerX, pos.world.y - centerY);
   const startDistance = selectedResize.startDistance || distance;
-  const factor = Math.max(0.2, Math.min(4, distance / startDistance));
+  const factor = Math.max(0.35, Math.min(1.20, distance / startDistance));
 
   const cell = parseCell(item.cell);
   if (!cell) return;
@@ -3698,7 +3808,7 @@ window.addEventListener('wheel', event => {
 
 function closeAllModals() {
   activeTalkingNpc = null;
-  ['authModal', 'confirmModal', 'characterModal', 'infoModal', 'npcModal', 'missionsModal', 'settingsModal'].forEach(id => {
+  ['authModal', 'confirmModal', 'characterModal', 'infoModal', 'npcModal', 'missionsModal'].forEach(id => {
     document.getElementById(id)?.classList.add('hidden');
   });
 
@@ -4009,7 +4119,7 @@ function deleteSelectedItems() {
 
   clearPaintState();
   updateInfoPanel();
-  showToast('تم حذف العناصر المحددة');
+  showToast(`تم حذف ${deletedCount} عنصر`);
 }
 
 function deleteMyItems() {
@@ -4161,60 +4271,6 @@ function saveDisplayName() {
   showToast('تم حفظ الاسم');
 }
 
-function openSettingsModal() {
-  const modal = document.getElementById('settingsModal');
-  const input = document.getElementById('settingsNameInput');
-  const msg = document.getElementById('settingsMessage');
-  if (input) input.value = displayName || '';
-  if (msg) msg.textContent = '';
-  modal?.classList.remove('hidden');
-}
-
-function closeSettingsModal() {
-  document.getElementById('settingsModal')?.classList.add('hidden');
-}
-
-function saveSettingsName() {
-  const input = document.getElementById('settingsNameInput');
-  displayName = cleanPlayerName(input?.value, 20);
-  localStorage.setItem(DISPLAY_NAME_KEY, displayName);
-  const oldInput = document.getElementById('displayNameInput');
-  if (oldInput) oldInput.value = displayName;
-  saveProfileData();
-  savePlayerToFirebase();
-  updateAuthUI();
-  const msg = document.getElementById('settingsMessage');
-  if (msg) msg.textContent = 'تم حفظ الاسم';
-}
-
-function linkRealEmail() {
-  const email = document.getElementById('linkEmailInput')?.value.trim();
-  const msg = document.getElementById('settingsMessage');
-  if (!isLoggedIn()) { if (msg) msg.textContent = 'سجل دخولك أولًا'; return; }
-  if (!email || !email.includes('@') || email.endsWith('@gamenjd.local')) { if (msg) msg.textContent = 'اكتب إيميل حقيقي صحيح'; return; }
-  if (!window.updateEmail) { if (msg) msg.textContent = 'خدمة ربط الإيميل غير جاهزة'; return; }
-
-  const finishUpdate = () => window.updateEmail(window.auth.currentUser, email).then(() => {
-    currentUserEmail = email;
-    localStorage.setItem(LAST_EMAIL_KEY, email);
-    saveProfileData();
-    if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي';
-  });
-
-  finishUpdate().catch(error => {
-    if (error && error.code === 'auth/requires-recent-login' && window.reauthenticateWithCredential && window.EmailAuthProvider) {
-      const pass = prompt('اكتب كلمة المرور الحالية لتأكيد ربط الإيميل');
-      if (!pass) { if (msg) msg.textContent = 'تم إلغاء الربط'; return; }
-      const credential = window.EmailAuthProvider.credential(window.auth.currentUser.email, pass);
-      window.reauthenticateWithCredential(window.auth.currentUser, credential)
-        .then(finishUpdate)
-        .catch(err => { if (msg) msg.textContent = authErrorMessage(err); });
-      return;
-    }
-    if (msg) msg.textContent = authErrorMessage(error);
-  });
-}
-
 function saveProfileData() {
   if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
 
@@ -4272,7 +4328,6 @@ function loadProfileData() {
     updateInfoPanel();
     loadGameStateFromFirebase();
     loadCollectedMoneyFromFirebase();
-    loadBagFromFirebase();
     listenHouseData();
   }).catch(error => {
     console.error('profile load error:', error);
@@ -4290,12 +4345,10 @@ function showSettingsHelpOnce() {
 function signup() {
   const username = cleanUsername(document.getElementById('signupUsernameInput')?.value);
   const pass = document.getElementById('signupPassInput')?.value;
-  const pass2 = document.getElementById('signupPassConfirmInput')?.value;
   const nameInput = document.getElementById('signupDisplayNameInput');
 
   if (!isValidUsername(username)) return showAuthMessage('اسم المستخدم يجب أن يكون إنجليزي 3-20 حرف أو رقم أو _');
   if (!pass || pass.length < 6) return showAuthMessage('كلمة المرور يجب أن تكون 6 أحرف أو أكثر');
-  if (pass !== pass2) return showAuthMessage('تأكيد كلمة المرور غير مطابق');
 
   const email = usernameToEmail(username);
   displayName = cleanPlayerName(nameInput?.value || username, 20);
@@ -4330,7 +4383,6 @@ function login() {
     loadProfileData();
     loadGameStateFromFirebase();
     loadCollectedMoneyFromFirebase();
-    loadBagFromFirebase();
     listenHouseData();
   }).catch(error => {
     showAuthMessage(authErrorMessage(error));
@@ -4376,7 +4428,6 @@ function authErrorMessage(error) {
   if (code.includes('user-not-found')) return 'هذا الحساب غير مسجل، يمكنك إنشاء حساب جديد';
   if (code.includes('wrong-password')) return 'كلمة المرور غير صحيحة';
   if (code.includes('invalid-credential')) return 'هذا الحساب غير مسجل أو أن كلمة المرور غير صحيحة، تأكد من البيانات أو أنشئ حسابًا جديدًا';
-  if (code.includes('requires-recent-login')) return 'للحماية سجل خروج ثم ادخل من جديد وبعدها اربط الإيميل';
   if (code.includes('too-many-requests')) return 'محاولات كثيرة، حاول لاحقًا';
 
   return 'حدث خطأ، حاول مرة أخرى';
@@ -4657,12 +4708,17 @@ function waitFirebaseReady() {
       listenWorldNpcsFromFirebase();
     } else {
       if (walkMode) toggleWalk();
+      Object.keys(worldListeners).forEach(key => {
+        if (window.off) window.off(window.ref(window.db, 'world/' + key), 'value', worldListeners[key]);
+        delete worldListeners[key];
+      });
+      lastSubscribedCenterCell = '';
+      worldNpcsListenerStarted = false;
     }
 
     updateAuthUI();
     updateInfoPanel();
   });
-
 }
 
 window.addEventListener('beforeunload', () => {
