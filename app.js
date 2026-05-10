@@ -1219,7 +1219,7 @@ function openDeliveryQuest(key, itemId, title, targetTitle, startText, carryingT
   if (findBagItem(itemId) && ['صديق صاحب الرسالة','صاحب الخيمة','صاحبة الضيوف'].includes(title)) {
     removeBagItem(itemId); completeQuestReward(key); return openQuestText(title, doneText + ' حصلت على 20 ريال و20 نقطة مستوى.');
   }
-  if (!findBagItem(itemId) && ['صاحب الرسالة'].includes(title)) addBagItem({ id:itemId, name:'رسالة', type:'quest', img:'All-Pic/npc/q20.png' });
+  if (!findBagItem(itemId) && ['صاحب الرسالة'].includes(title)) addBagItem({ id:itemId, name:'رسالة', type:'quest', img:'All-Pic/npc/q30.png' });
   gameState.quests[key] = Object.assign({}, q, { started: true }); saveGameState();
   return openQuestText(title, findBagItem(itemId) ? carryingText : startText);
 }
