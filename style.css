@@ -2478,188 +2478,19 @@ button { font-size: 13px; padding: 8px; }
   cursor: not-allowed;
 }
 
-/* ===== v16.1 Phaser Layout ===== */
-#game-container {
+/* Phaser v17.1 */
+.gameContainer {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
   overflow: hidden;
-  background: #0b1120;
+  background: #0f172a;
+  touch-action: none;
 }
-#game-container canvas {
+.gameContainer canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
-.formGrid {
-  display: grid;
-  gap: 10px;
-  text-align: right;
-}
-.formGrid label {
-  font-weight: 800;
-  color: #bfdbfe;
-}
-.formGrid input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #475569;
-  background: #0f172a;
-  color: #fff;
-}
-.formGrid input[readonly] {
-  opacity: 0.75;
-  cursor: not-allowed;
-}
-.smallModal { width: min(520px, 94vw); }
-.authTabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 10px 0 14px;
-}
-.authTabs button.active { background:#2563eb; }
-.closeModalBtn {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  padding: 0;
-  background: #dc2626;
-}
-.sectionToggleBtn {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 800;
-  background: #0f172a;
-  border: 1px solid #475569;
-}
-.elementsContent { margin-top: 10px; }
-.topBagSlots {
-  display: grid;
-  grid-template-columns: repeat(5, 32px);
-  grid-auto-rows: 32px;
-  gap: 4px;
-}
-.bagSlot {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #475569;
-  background: #111827;
-  position: relative;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-.bagSlot.locked {
-  opacity: .45;
-  background: repeating-linear-gradient(45deg, #111827, #111827 5px, #1f2937 5px, #1f2937 10px);
-}
-.bagSlot img {
-  max-width: 92%;
-  max-height: 92%;
-  object-fit: contain;
-}
-.bagCount {
-  position: absolute;
-  bottom: 0;
-  right: 2px;
-  font-size: 10px;
-  font-weight: 800;
-  color: #facc15;
-  text-shadow: 0 1px 2px #000;
-}
-.missionsList {
-  display: grid;
-  gap: 10px;
-  text-align: right;
-}
-.missionCard {
-  background: #111827;
-  border: 1px solid #334155;
-  border-radius: 14px;
-  padding: 10px;
-}
-.missionCard b { color: #facc15; }
-.dialogActions {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-}
-.dialogActions .shopItemBtn {
-  display: grid;
-  grid-template-columns: 42px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  text-align: right;
-  background:#111827;
-  border:1px solid #475569;
-}
-.dialogActions .shopItemBtn img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-}
-.selectedWorldHint {
-  position: absolute;
-  pointer-events:none;
-}
-.connectionNotice {
-  position: fixed;
-  top: 98px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4000;
-  background: #dc2626;
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 999px;
-  font-weight: 800;
-  box-shadow: 0 8px 26px rgba(0,0,0,.4);
-}
-.screenAdviceModal {
-  position: fixed;
-  inset: 0;
-  z-index: 4500;
-  background: rgba(0,0,0,.62);
-  display: grid;
-  place-items: center;
-}
-.screenAdviceBox {
-  width: min(420px, 90vw);
-  background: #0f172a;
-  border: 1px solid #475569;
-  border-radius: 20px;
-  padding: 22px;
-  text-align: center;
-  position: relative;
-  box-shadow: 0 18px 55px rgba(0,0,0,.45);
-}
-.screenAdviceBox > i { font-size: 42px; color: #93c5fd; }
-.screenAdviceBox h2 { margin: 10px 0 6px; }
-.screenAdviceBox p { color: #cbd5e1; line-height: 1.8; }
-#screenAdviceCloseBtn {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  padding: 0;
-  background: #dc2626;
-}
-@media (max-width: 900px) {
-  .topbar { height: auto; grid-template-columns: 1fr; }
-  .layout { height: calc(100vh - 210px); grid-template-columns: 1fr; }
-  .panel { position: fixed; right: 0; top: 0; bottom: 0; width: 330px; max-width: 86vw; transform: translateX(0); z-index: 90; }
-  .panel.hiddenPanel { transform: translateX(100%); }
-  .mobileOnly { display:block; }
-  .mobileQuickTools { display:grid; }
-  .topHudPanel { flex-wrap: wrap; }
-}
+.panel.collapsed { transform: translateX(105%); }

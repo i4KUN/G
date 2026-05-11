@@ -2,17 +2,29 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v16.1 Phaser</title>
+  <title>GameNjd v17.1</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
+
   <link rel="icon" href="All-Pic/logo/njd-white-black-ful.png" />
-  <meta property="og:title" content="GameNjd v16.1" />
-  <meta property="og:description" content="لعبة نجد بمحرك Phaser.js" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="GameNjd v17.1" />
+  <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
+  <meta property="og:url" content="./" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="GameNjd v17.1" />
+  <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
+  <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
+
   <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div id="offlineNotice" class="connectionNotice hidden"><i class="fa-solid fa-wifi"></i> أنت غير متصل بالإنترنت</div>
   <div id="screenAdviceModal" class="screenAdviceModal hidden">
@@ -23,10 +35,12 @@
       <p>يمكنك المتابعة على الجوال، لكن اللعب والبناء أوضح على شاشة أكبر.</p>
     </div>
   </div>
-
   <div id="loadingScreen">
     <div class="loaderBox">
-      <div class="loaderText"><i class="fa-solid fa-spinner fa-spin"></i> انتظر التحميل</div>
+      <div class="loaderText">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        انتظر التحميل
+      </div>
       <div class="loaderBar"><span></span></div>
     </div>
   </div>
@@ -35,13 +49,24 @@
     <header class="topbar">
       <div class="brandBox">
         <img class="topLogo" src="All-Pic/logo/njd-white-logo-ful.png" alt="GameNjd" />
-      </div>
+
+            </div>
 
       <div class="topControls">
-        <button id="zoomOutBtn" class="topIconBtn" type="button" title="تصغير الشاشة"><i class="fa-solid fa-minus"></i></button>
-        <button id="zoomInBtn" class="topIconBtn" type="button" title="تكبير الشاشة"><i class="fa-solid fa-plus"></i></button>
-        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button"><i class="fa-solid fa-person-walking-arrow-right"></i> إيقاف التجول</button>
+        <button id="zoomOutBtn" class="topIconBtn" type="button" title="تصغير الشاشة">
+          <i class="fa-solid fa-minus"></i>
+        </button>
+
+        <button id="zoomInBtn" class="topIconBtn" type="button" title="تكبير الشاشة">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <button id="stopWalkBtn" class="stopWalkBtn hidden" type="button">
+          <i class="fa-solid fa-person-walking-arrow-right"></i>
+          إيقاف التجول
+        </button>
       </div>
+
 
       <div class="topHudPanel">
         <div class="topStatsPanel">
@@ -62,160 +87,712 @@
       </div>
 
       <div class="authBox">
-        <button id="openSettingsBtn" class="authMainBtn settingsTopBtn" type="button"><i class="fa-solid fa-gear"></i> إعدادات</button>
-        <span id="authState" class="authState offline"><i class="fa-solid fa-circle-xmark"></i> أنت لم تسجل دخول</span>
-        <button id="openAuthBtn" class="authMainBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> تسجيل دخول / تسجيل جديد</button>
-        <button id="logoutBtn" class="logoutBtn hidden" type="button"><i class="fa-solid fa-arrow-right-from-bracket"></i> خروج</button>
+        <button id="openSettingsBtn" class="authMainBtn settingsTopBtn" type="button">
+          <i class="fa-solid fa-gear"></i>
+          إعدادات
+        </button>
+
+        <span id="authState" class="authState offline">
+          <i class="fa-solid fa-circle-xmark"></i>
+          أنت لم تسجل دخول
+        </span>
+
+        <button id="openAuthBtn" class="authMainBtn" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          تسجيل دخول / تسجيل جديد
+        </button>
+
+        <button id="logoutBtn" class="logoutBtn hidden" type="button">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          خروج
+        </button>
       </div>
     </header>
 
     <main class="layout">
       <section class="worldWrap">
-        <div id="game-container"></div>
+        <div id="gameContainer" class="gameContainer"></div>
+
         <div id="toast"></div>
-        <div id="joystick" class="joystick hidden"><div id="stick"></div></div>
-        <div id="mobileQuickTools" class="mobileQuickTools">
-          <button id="mobileGearBtn" class="mobileToolBtn mobileGearColor" type="button" title="إخفاء الإعدادات"><i class="fa-solid fa-gear"></i><span>إخفاء</span></button>
-          <button id="mobileUndoBtn" class="mobileToolBtn mobileUndoColor" type="button" title="استعادة"><i class="fa-solid fa-rotate-left"></i><span>استعادة</span></button>
-          <button id="mobileEraseBtn" class="mobileToolBtn mobileEraseColor" type="button" title="ممحاة"><i class="fa-solid fa-eraser"></i><span>ممحاة</span></button>
-          <button id="mobileBlockBtn" class="mobileToolBtn mobileBlockColor" type="button" title="عائق"><i class="fa-solid fa-ban"></i><span>عائق</span></button>
-          <button id="mobileFlipBtn" class="mobileToolBtn mobileFlipColor" type="button" title="عكس يمين ويسار"><i class="fa-solid fa-left-right"></i><span>يمين/يسار</span></button>
-          <button id="mobileFlipYBtn" class="mobileToolBtn mobileFlipYColor" type="button" title="عكس علوي وسفلي"><i class="fa-solid fa-up-down"></i><span>فوق/تحت</span></button>
-          <button id="mobileDeleteBtn" class="mobileToolBtn dangerMobileBtn" type="button" title="حذف"><i class="fa-solid fa-trash"></i><span>حذف</span></button>
-          <button id="mobileLockCameraBtn" class="mobileToolBtn mobileLockCameraColor" type="button" title="تثبيت الكاميرا"><i class="fa-solid fa-lock"></i><span>تثبيت</span></button>
+
+        <div id="bigTilePreview" class="bigTilePreview hidden">
+          <img id="bigTilePreviewImg" src="" alt="معاينة العنصر" />
         </div>
-        <button id="npcInteractBtn" class="npcInteractBtn hidden" type="button">تفاعل</button>
+
+        <div id="joystick" class="joystick hidden">
+          <div id="stick"></div>
+        </div>
+
+        <div id="mobileQuickTools" class="mobileQuickTools">
+          <button id="mobileGearBtn" class="mobileToolBtn mobileGearColor" type="button" title="إخفاء الإعدادات">
+            <i class="fa-solid fa-gear"></i>
+            <span>إخفاء</span>
+          </button>
+
+          <button id="mobileUndoBtn" class="mobileToolBtn mobileUndoColor" type="button" title="استعادة">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>استعادة</span>
+          </button>
+
+          <button id="mobileEraseBtn" class="mobileToolBtn mobileEraseColor" type="button" title="ممحاة">
+            <i class="fa-solid fa-eraser"></i>
+            <span>ممحاة</span>
+          </button>
+
+          <button id="mobileBlockBtn" class="mobileToolBtn mobileBlockColor" type="button" title="عائق">
+            <i class="fa-solid fa-ban"></i>
+            <span>عائق</span>
+          </button>
+
+          <button id="mobileFlipBtn" class="mobileToolBtn mobileFlipColor" type="button" title="عكس يمين ويسار">
+            <i class="fa-solid fa-left-right"></i>
+            <span>يمين/يسار</span>
+          </button>
+
+          <button id="mobileFlipYBtn" class="mobileToolBtn mobileFlipYColor" type="button" title="عكس علوي وسفلي">
+            <i class="fa-solid fa-up-down"></i>
+            <span>فوق/تحت</span>
+          </button>
+
+          <button id="mobileDeleteBtn" class="mobileToolBtn dangerMobileBtn" type="button" title="حذف">
+            <i class="fa-solid fa-trash"></i>
+            <span>حذف</span>
+          </button>
+
+          <button id="mobileLockCameraBtn" class="mobileToolBtn mobileLockCameraColor" type="button" title="تثبيت الكاميرا">
+            <i class="fa-solid fa-lock"></i>
+            <span>تثبيت</span>
+          </button>
+        </div>
+
+        <button id="npcInteractBtn" class="npcInteractBtn hidden" type="button">تحدث</button>
       </section>
 
       <aside id="panel" class="panel">
-        <button id="togglePanel" class="mobileOnly" type="button"><i class="fa-solid fa-sliders"></i> إخفاء / إظهار الإعدادات</button>
-        <div id="guestPanelOverlay" class="guestPanelOverlay"><i class="fa-solid fa-lock"></i> يجب أن تسجل دخولك للعب</div>
-        <p id="loginHint"><i class="fa-solid fa-circle-info"></i> يجب تسجيل الدخول حتى تستطيع البناء أو التجول.</p>
+        <button id="togglePanel" class="mobileOnly" type="button">
+          <i class="fa-solid fa-sliders"></i>
+          إخفاء / إظهار الإعدادات
+        </button>
 
-        <div class="section statsPanel"><button id="openMissionsBtn" class="mainBtn missionsOpenBtn" type="button"><i class="fa-solid fa-list-check"></i> المهام</button></div>
-        <div class="section infoPanel">
-          <div class="infoRow"><span><i class="fa-solid fa-cubes"></i> عدد عناصرك</span><b id="myItemsCount">0</b></div>
-          <div class="infoRow"><span><i class="fa-solid fa-location-dot"></i> موقعك الحالي</span><b id="currentCellText">--</b></div>
-          <div id="selectedPreviewBox" class="selectedPreviewBox hidden"><span><i class="fa-solid fa-magnifying-glass"></i> العنصر المحدد</span><img id="selectedItemPreview" src="" alt="العنصر المحدد" /></div>
+        <div id="guestPanelOverlay" class="guestPanelOverlay">
+          <i class="fa-solid fa-lock"></i>
+          يجب أن تسجل دخولك للعب
         </div>
 
+        <p id="loginHint">
+          <i class="fa-solid fa-circle-info"></i>
+          يجب تسجيل الدخول حتى تستطيع البناء أو التجول، الزائر يستطيع المشاهدة فقط.
+        </p>
+        <div class="section statsPanel">
+          <button id="openMissionsBtn" class="mainBtn missionsOpenBtn" type="button">
+            <i class="fa-solid fa-list-check"></i>
+            المهام
+          </button>
+        </div>
+
+        <div class="section infoPanel">
+          <div class="infoRow">
+            <span>
+              <i class="fa-solid fa-cubes"></i>
+              عدد عناصرك
+            </span>
+            <b id="myItemsCount">0</b>
+          </div>
+
+          <div class="infoRow">
+            <span>
+              <i class="fa-solid fa-location-dot"></i>
+              موقعك الحالي
+            </span>
+            <b id="currentCellText">--</b>
+          </div>
+
+          <div id="selectedPreviewBox" class="selectedPreviewBox hidden">
+            <span>
+              <i class="fa-solid fa-magnifying-glass"></i>
+              العنصر المحدد
+            </span>
+            <img id="selectedItemPreview" src="" alt="العنصر المحدد" />
+          </div>
+        </div>
         <div class="section houseRatingPanel">
           <div id="ownHouseBox">
             <label for="houseNameInput"><i class="fa-solid fa-house-user"></i> اسم بيتك</label>
             <input id="houseNameInput" type="text" placeholder="مثال: بيت راشد" maxlength="30" />
             <button id="saveHouseNameBtn" type="button"><i class="fa-solid fa-check"></i> تم</button>
-            <p class="smallHint">يتم حفظ خلية البيت أونلاين حتى تظهر من أي جهاز.</p>
+            <p class="smallHint">سوف يتم تقييم المنزل من قبل اللاعبين أونلاين.</p>
+          </div>
+          <div id="visitedHouseBox" class="visitedHouseBox hidden">
+            <b id="visitedHouseTitle">بيت لاعب</b>
+            <div id="visitedHouseStars" class="starsBox"></div>
+            <small id="visitedHouseStats">0 من 5 | عدد المقيمين: 0</small>
           </div>
         </div>
 
         <div class="section actionGrid">
-          <button id="walkBtn" class="mainBtn" type="button"><i class="fa-solid fa-person-walking"></i> تجول</button>
-          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button"><i class="fa-solid fa-user-pen"></i> تغيير الشخصية</button>
-          <button id="homeBtn" class="mainBtn homeBtn" type="button"><i class="fa-solid fa-house"></i><span>العودة للمنزل</span><small data-home-cell>لم تحدد بيتك بعد</small></button>
-          <button id="setHomeBtn" class="setHomeBtn" type="button"><i class="fa-solid fa-location-crosshairs"></i> تحديد بيتك هنا</button>
+          <button id="walkBtn" class="mainBtn" type="button">
+            <i class="fa-solid fa-person-walking"></i>
+            تجول
+          </button>
+
+          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">
+            <i class="fa-solid fa-user-pen"></i>
+            تغيير الشخصية
+          </button>
+
+          <button id="homeBtn" class="mainBtn homeBtn" type="button">
+            <i class="fa-solid fa-house"></i>
+            <span>العودة للمنزل</span>
+            <small data-home-cell>لم تحدد بيتك بعد</small>
+          </button>
+
+          <button id="setHomeBtn" class="setHomeBtn" type="button">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            تحديد جديد
+          </button>
         </div>
 
         <div class="section elementsSection">
-          <button id="toggleElementsBtn" class="sectionToggleBtn" type="button"><i class="fa-solid fa-layer-group"></i> الأقسام والعناصر <i class="fa-solid fa-chevron-down"></i></button>
+          <button id="toggleElementsBtn" class="sectionToggleBtn" type="button">
+            <i class="fa-solid fa-layer-group"></i>
+            الأقسام والعناصر
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+
           <div id="elementsContent" class="elementsContent hidden">
-            <div id="categoryButtons" class="categoryButtons"></div>
-            <div class="two">
-              <button id="smallerBtn" type="button"><i class="fa-solid fa-down-left-and-up-right-to-center"></i> تصغير</button>
-              <button id="biggerBtn" type="button"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> تكبير</button>
-            </div>
-            <div class="layerChoices" id="layerChoices"></div>
-            <div id="tileset"></div>
+          <div id="categoryButtons" class="categoryButtons">
+            <button data-category="bag" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bag-shopping"></i>
+              أكياس
+            </button>
+
+            <button data-category="lighting" class="categoryBtn" type="button">
+              <i class="fa-solid fa-lightbulb"></i>
+              إنارات
+            </button>
+
+            <button data-category="door" class="categoryBtn" type="button">
+              <i class="fa-solid fa-door-open"></i>
+              باب
+            </button>
+
+            <button data-category="coffee_pot" class="categoryBtn" type="button">
+              <i class="fa-solid fa-mug-hot"></i>
+              دلة
+            </button>
+
+            <button data-category="cabinet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-box-archive"></i>
+              دولاب
+            </button>
+
+            <button data-category="decor" class="categoryBtn" type="button">
+              <i class="fa-solid fa-star"></i>
+              ديكورات
+            </button>
+
+            <button data-category="carpet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-rug"></i>
+              زولية
+            </button>
+
+            <button data-category="curtain" class="categoryBtn" type="button">
+              <i class="fa-solid fa-grip-lines-vertical"></i>
+              ستارة
+            </button>
+
+            <button data-category="bed" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bed"></i>
+              سرير
+            </button>
+
+            <button data-category="plant" class="categoryBtn" type="button">
+              <i class="fa-solid fa-tree"></i>
+              شجرة
+            </button>
+
+            <button data-category="bedsheet" class="categoryBtn" type="button">
+              <i class="fa-solid fa-layer-group"></i>
+              شرشف
+            </button>
+
+            <button data-category="plate" class="categoryBtn" type="button">
+              <i class="fa-solid fa-circle-dot"></i>
+              صحن
+            </button>
+
+            <button data-category="box" class="categoryBtn" type="button">
+              <i class="fa-solid fa-box"></i>
+              صندوق
+            </button>
+
+            <button data-category="table" class="categoryBtn" type="button">
+              <i class="fa-solid fa-table"></i>
+              طاولة
+            </button>
+
+            <button data-category="pottery" class="categoryBtn" type="button">
+              <i class="fa-solid fa-jar"></i>
+              فخار
+            </button>
+
+            <button data-category="cooking_pot" class="categoryBtn" type="button">
+              <i class="fa-solid fa-fire-burner"></i>
+              قدر
+            </button>
+
+            <button data-category="chair" class="categoryBtn" type="button">
+              <i class="fa-solid fa-chair"></i>
+              كرسي
+            </button>
+
+            <button data-category="cup" class="categoryBtn" type="button">
+              <i class="fa-solid fa-mug-saucer"></i>
+              كوب
+            </button>
+
+            <button data-category="painting" class="categoryBtn" type="button">
+              <i class="fa-solid fa-image"></i>
+              لوحة
+            </button>
+
+            <button data-category="pillow" class="categoryBtn" type="button">
+              <i class="fa-solid fa-cloud"></i>
+              مخدة
+            </button>
+
+            <button data-category="floor_mattress" class="categoryBtn" type="button">
+              <i class="fa-solid fa-bed"></i>
+              مرتبة
+            </button>
+
+            <button data-category="window" class="categoryBtn" type="button">
+              <i class="fa-solid fa-border-top-left"></i>
+              نافذة
+            </button>
+
+            <button data-category="floor" class="categoryBtn" type="button">
+              <i class="fa-solid fa-border-all"></i>
+              ارضيات
+            </button>
+
+            <button data-category="wall" class="categoryBtn" type="button">
+              <i class="fa-solid fa-dungeon"></i>
+              جدران
+            </button>
           </div>
+
+          <input id="categorySelect" class="hidden" type="hidden" value="" />
+          <input id="sizeFilter" class="hidden" type="hidden" value="all" />
+
+          <div class="previewToggleBox">
+            <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
+              <i class="fa-solid fa-eye"></i>
+              تكبير العناصر عند المرور: تشغيل
+            </button>
+          </div>
+
+          <div class="previewToggleBox">
+            <button id="autoAlignBtn" class="toggleFeatureBtn autoAlignBtn" type="button">
+              <i class="fa-solid fa-border-all"></i>
+              الترتيب التلقائي: إيقاف
+            </button>
+          </div>
+
+          <div id="tileset" class="hidden"></div>
         </div>
 
-        <div class="section toolsPanel">
-          <div class="two">
-            <button id="undoBtn" type="button"><i class="fa-solid fa-rotate-left"></i> استعادة</button>
-            <button id="deleteBtn" class="dangerBtn" type="button"><i class="fa-solid fa-trash"></i> حذف المحدد</button>
+        <div class="section">
+          <label>
+            <i class="fa-solid fa-layer-group"></i>
+            الطبقة
+          </label>
+
+          <div id="layersPanel" class="layerChoices">
+            <button data-layer="1" class="layerBtn active" type="button">
+              <i class="fa-solid fa-1"></i>
+            </button>
+
+            <button data-layer="2" class="layerBtn" type="button">
+              <i class="fa-solid fa-2"></i>
+            </button>
+
+            <button data-layer="3" class="layerBtn" type="button">
+              <i class="fa-solid fa-3"></i>
+            </button>
+
+            <button data-layer="4" class="layerBtn" type="button">
+              <i class="fa-solid fa-4"></i>
+            </button>
+
+            <button data-layer="5" class="layerBtn" type="button">
+              <i class="fa-solid fa-5"></i>
+            </button>
           </div>
-          <button id="deleteAllBtn" class="dangerBtn" type="button"><i class="fa-solid fa-trash-can"></i> حذف كل عناصري في الخلية</button>
-          <div class="two">
-            <button id="blockBtn" type="button"><i class="fa-solid fa-ban"></i> عائق</button>
-            <button id="eraseBtn" type="button"><i class="fa-solid fa-eraser"></i> ممحاة</button>
+
+          <input id="layerInput" class="hidden" type="hidden" value="1" />
+        </div>
+
+        <div class="section">
+          <label for="gridOpacity">
+            <i class="fa-solid fa-table-cells"></i>
+            شفافية الجدول
+          </label>
+          <input id="gridOpacity" type="range" min="0" max="1" step="0.05" value="0.45" />
+        </div>
+
+        <div class="section">
+          <label for="itemScale">
+            <i class="fa-solid fa-maximize"></i>
+            حجم العنصر
+          </label>
+          <input id="itemScale" type="range" min="0.20" max="1.00" step="0.04" value="0.70" />
+        </div>
+
+        <div class="desktopTools">
+          <div class="section two">
+            <button id="eraseBtn" type="button">
+              <i class="fa-solid fa-eraser"></i>
+              ممحاة: إيقاف
+            </button>
+
+            <button id="undoBtn" type="button">
+              <i class="fa-solid fa-rotate-left"></i>
+              استعادة
+            </button>
           </div>
-          <div class="two">
-            <button id="flipBtn" type="button"><i class="fa-solid fa-left-right"></i> عكس</button>
-            <button id="flipYBtn" type="button"><i class="fa-solid fa-up-down"></i> فوق/تحت</button>
+
+          <div class="section">
+            <button id="blockBtn" type="button">
+              <i class="fa-solid fa-ban"></i>
+              جعل العنصر عائق: إيقاف
+            </button>
+          </div>
+
+          <div class="section two">
+            <button id="flipBtn" type="button">
+              <i class="fa-solid fa-left-right"></i>
+              عكس العنصر: إيقاف
+            </button>
+
+            <button id="flipYBtn" type="button">
+              <i class="fa-solid fa-up-down"></i>
+              عكس علوي وسفلي: إيقاف
+            </button>
+          </div>
+
+          <div class="section">
+            <button id="deleteSelectedBtn" type="button">
+              <i class="fa-solid fa-trash"></i>
+              حذف العنصر المحدد
+            </button>
+          </div>
+
+          <div class="section">
+            <button id="deleteAllBtn" class="dangerBtn" type="button">
+              <i class="fa-solid fa-trash-can"></i>
+              حذف جميع عناصري
+            </button>
           </div>
         </div>
 
         <div class="section jumpBox">
-          <label for="jumpCellInput"><i class="fa-solid fa-map-location-dot"></i> انتقال إلى خلية</label>
-          <input id="jumpCellInput" type="text" placeholder="مثال: M5" maxlength="4" />
-          <button id="jumpBtn" type="button"><i class="fa-solid fa-location-arrow"></i> انتقال</button>
+          <label for="jumpInput">
+            <i class="fa-solid fa-location-dot"></i>
+            انتقال إلى خلية
+          </label>
+
+          <input id="jumpInput" type="text" placeholder="مثال K90" />
+
+          <button id="jumpBtn" type="button">
+            <i class="fa-solid fa-paper-plane"></i>
+            سافر
+          </button>
+        </div>
+
+        <div class="section two">
+          <button id="shortcutsBtn" type="button">
+            <i class="fa-solid fa-keyboard"></i>
+            شرح الاختصارات
+          </button>
+
+          <button id="settingsHelpBtn" type="button">
+            <i class="fa-solid fa-circle-info"></i>
+            شرح الإعدادات
+          </button>
+        </div>
+
+        <div class="section">
+          <button id="aboutBtn" type="button">
+            <i class="fa-solid fa-circle-question"></i>
+            من نحن
+          </button>
         </div>
       </aside>
     </main>
   </div>
 
   <div id="authModal" class="characterModal hidden">
-    <div class="characterBox smallModal">
-      <button class="closeModalBtn" data-close="authModal" type="button"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-user-lock"></i> الحساب</h2>
-      <div class="authTabs"><button id="loginTab" class="active" type="button">تسجيل دخول</button><button id="signupTab" type="button">تسجيل جديد</button></div>
-      <div id="loginForm" class="formGrid">
-        <input id="loginUsername" type="text" placeholder="اسم المستخدم" autocomplete="username" />
-        <input id="loginPassword" type="password" placeholder="كلمة المرور" autocomplete="current-password" />
-        <button id="loginSubmitBtn" class="mainBtn" type="button">دخول</button>
+    <div class="characterBox smallBox authModalBox">
+      <button id="authCloseBtn" class="modalCloseBtn" type="button" title="إغلاق">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h2>
+        <i class="fa-solid fa-user"></i>
+        الحساب
+      </h2>
+
+      <p id="authModalHint">
+        سجل دخولك أو أنشئ حسابًا جديدًا حتى تستطيع اللعب والبناء.
+      </p>
+
+      <div class="authTabs">
+        <button id="authLoginTab" class="authTab active" data-auth-tab="login" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          تسجيل الدخول
+        </button>
+
+        <button id="authSignupTab" class="authTab" data-auth-tab="signup" type="button">
+          <i class="fa-solid fa-user-plus"></i>
+          إنشاء حساب
+        </button>
+
+        <button id="authResetTab" class="authTab" data-auth-tab="reset" type="button">
+          <i class="fa-solid fa-key"></i>
+          استعادة كلمة المرور
+        </button>
       </div>
-      <div id="signupForm" class="formGrid hidden">
-        <input id="signupName" type="text" placeholder="اسم اللاعب" maxlength="20" />
-        <input id="signupUsername" type="text" placeholder="اسم المستخدم بالإنجليزي" maxlength="20" />
-        <input id="signupPassword" type="password" placeholder="كلمة المرور" />
-        <input id="signupPassword2" type="password" placeholder="تأكيد كلمة المرور" />
-        <button id="signupSubmitBtn" class="mainBtn" type="button">إنشاء حساب</button>
+
+      <div id="authLoginPanel" class="authPanel">
+        <label for="authUsernameInput">اسم المستخدم</label>
+        <input id="authUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
+
+        <label for="authPassInput">كلمة المرور</label>
+        <input id="authPassInput" type="password" placeholder="الرقم السري" autocomplete="current-password" />
+
+        <button id="loginBtn" class="mainBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          دخول
+        </button>
       </div>
+
+      <div id="authSignupPanel" class="authPanel hidden">
+        <label for="signupUsernameInput">اسم المستخدم الإنجليزي</label>
+        <input id="signupUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
+
+        <label for="signupPassInput">كلمة المرور</label>
+        <input id="signupPassInput" type="password" placeholder="الرقم السري (6 أحرف على الأقل)" autocomplete="new-password" />
+
+        <label for="signupPassConfirmInput">تأكيد كلمة المرور</label>
+        <input id="signupPassConfirmInput" type="password" placeholder="أعد كتابة الرقم السري" autocomplete="new-password" />
+
+        <label for="signupDisplayNameInput">الاسم الظاهر</label>
+        <input id="signupDisplayNameInput" type="text" placeholder="الاسم الظاهر (اختياري)" maxlength="20" />
+
+        <button id="signupBtn" class="mainBtn secondaryBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-user-plus"></i>
+          إنشاء حساب
+        </button>
+      </div>
+
+      <div id="authResetPanel" class="authPanel hidden">
+        <label for="resetEmailInput">الإيميل الحقيقي المربوط</label>
+        <input id="resetEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
+        <p class="smallHint">لن تصلك رسالة استعادة إذا لم تربط حسابك بإيميل حقيقي.</p>
+
+        <button id="resetPasswordBtn" class="mainBtn authSubmitBtn" type="button">
+          <i class="fa-solid fa-envelope"></i>
+          إرسال رابط الاستعادة
+        </button>
+      </div>
+
+      <p id="authMessage" class="authMessage"></p>
+
+      <button id="authBottomCloseBtn" class="closeFullBtn" type="button">
+        <i class="fa-solid fa-xmark"></i>
+        إغلاق
+      </button>
     </div>
   </div>
 
   <div id="settingsModal" class="characterModal hidden">
-    <div class="characterBox smallModal">
-      <button class="closeModalBtn" data-close="settingsModal" type="button"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-gear"></i> إعدادات الحساب</h2>
-      <div class="formGrid">
-        <label>اليوزر</label>
-        <input id="settingsUsername" type="text" readonly />
-        <label>اسم اللاعب</label>
-        <input id="settingsName" type="text" maxlength="20" />
-        <label>ربط إيميل حقيقي</label>
-        <input id="settingsRealEmail" type="email" placeholder="example@email.com" />
-        <input id="settingsPassword" type="password" placeholder="كلمة المرور الحالية للربط" />
-        <button id="saveSettingsBtn" class="mainBtn" type="button">حفظ</button>
+    <div class="characterBox smallBox settingsModalBox">
+      <button id="settingsCloseBtn" class="modalCloseBtn" type="button" title="إغلاق">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2><i class="fa-solid fa-gear"></i> إعدادات</h2>
+
+      <label for="settingsUsernameInput"><i class="fa-solid fa-user"></i> اسم المستخدم</label>
+      <input id="settingsUsernameInput" type="text" readonly disabled />
+
+      <label for="settingsNameInput"><i class="fa-solid fa-signature"></i> تغيير الاسم</label>
+      <input id="settingsNameInput" type="text" placeholder="اكتب اسمك" maxlength="20" />
+      <button id="settingsSaveNameBtn" class="mainBtn" type="button"><i class="fa-solid fa-check"></i> حفظ الاسم</button>
+
+      <button id="settingsChangeCharacterBtn" class="mainBtn secondaryBtn" type="button">
+        <i class="fa-solid fa-user-pen"></i>
+        تغيير الشخصية
+      </button>
+
+      <label for="linkEmailInput"><i class="fa-solid fa-envelope"></i> ربط الإيميل الحقيقي</label>
+      <input id="linkEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
+      <label for="linkPasswordInput"><i class="fa-solid fa-key"></i> كلمة المرور الحالية</label>
+      <input id="linkPasswordInput" type="password" placeholder="اكتب كلمة المرور الحالية للتأكيد" autocomplete="current-password" />
+      <p class="smallHint">بعد الربط تستطيع استخدام استعادة كلمة المرور على الإيميل الحقيقي.</p>
+      <button id="linkEmailBtn" class="mainBtn authSubmitBtn" type="button">
+        <i class="fa-solid fa-link"></i>
+        ربط الإيميل
+      </button>
+      <p id="settingsMessage" class="authMessage"></p>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="characterModal hidden">
+    <div class="characterBox smallBox">
+      <h2 id="confirmTitle">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        تأكيد
+      </h2>
+
+      <p id="confirmText">هل أنت متأكد؟</p>
+
+      <div class="confirmActions">
+        <button id="confirmYesBtn" class="dangerBtn" type="button">
+          <i class="fa-solid fa-check"></i>
+          نعم
+        </button>
+
+        <button id="confirmNoBtn" type="button">
+          <i class="fa-solid fa-xmark"></i>
+          إلغاء
+        </button>
       </div>
     </div>
   </div>
 
   <div id="characterModal" class="characterModal hidden">
     <div class="characterBox">
-      <button class="closeModalBtn" data-close="characterModal" type="button"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-user-pen"></i> اختيار الشخصية</h2>
+      <h2>
+        <i class="fa-solid fa-user-astronaut"></i>
+        اختر شخصيتك
+      </h2>
+
+      <p>اختر شخصية واحدة، وسيتم ربطها بحسابك.</p>
+      <p class="characterLaterText">تستطيع تغيير شخصيتك لاحقًا</p>
+
       <div id="characterChoices"></div>
     </div>
   </div>
 
+  <div id="npcModal" class="characterModal hidden">
+    <div class="characterBox smallBox npcBox">
+      <h2 id="npcTitle">مهمة</h2>
+      <p id="npcText"></p>
+      <div id="npcShopList" class="npcShopList"></div>
+      <button id="npcCloseBtn" class="mainBtn" type="button">
+        <i class="fa-solid fa-check"></i>
+        إغلاق
+      </button>
+    </div>
+  </div>
+
   <div id="missionsModal" class="characterModal hidden">
-    <div class="characterBox">
-      <button class="closeModalBtn" data-close="missionsModal" type="button"><i class="fa-solid fa-xmark"></i></button>
+    <div class="characterBox smallBox missionsModalBox">
       <h2><i class="fa-solid fa-list-check"></i> المهام</h2>
       <div id="missionsList" class="missionsList"></div>
+      <button id="missionsCloseBtn" class="mainBtn" type="button">
+        <i class="fa-solid fa-check"></i>
+        إغلاق
+      </button>
     </div>
   </div>
 
-  <div id="dialogModal" class="characterModal hidden">
-    <div class="characterBox smallModal">
-      <button class="closeModalBtn" data-close="dialogModal" type="button"><i class="fa-solid fa-xmark"></i></button>
-      <h2 id="dialogTitle">عنوان</h2>
-      <p id="dialogText"></p>
-      <div id="dialogActions" class="dialogActions"></div>
+  <div id="infoModal" class="characterModal hidden">
+    <div class="characterBox smallBox">
+      <h2 id="infoTitle">تنبيه</h2>
+      <div id="infoText"></div>
+
+      <button id="infoCloseBtn" class="mainBtn" type="button">
+        <i class="fa-solid fa-check"></i>
+        إغلاق
+      </button>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
+    import {
+      getDatabase,
+      ref,
+      set,
+      onValue,
+      remove,
+      get,
+      update,
+      off
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check.js";
+
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged,
+      sendPasswordResetEmail,
+      updateEmail,
+      reauthenticateWithCredential,
+      EmailAuthProvider
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7-Ge0zjrsJNqEL4hAx3JSU0Cb-PUhlOg",
+      authDomain: "gamenjd-0001.firebaseapp.com",
+      databaseURL: "https://gamenjd-0001-default-rtdb.firebaseio.com",
+      projectId: "gamenjd-0001",
+      storageBucket: "gamenjd-0001.firebasestorage.app",
+      messagingSenderId: "1076362661145",
+      appId: "1:1076362661145:web:4c171f17ec05854b324988"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+
+    // Firebase App Check مفعّل بمفتاح reCAPTCHA v3 الخاص باللعبة
+    const APP_CHECK_SITE_KEY = "6LfkJ-EsAAAAAEtlqyG7OUaKms-qTgKhktaMjkHD";
+
+    initializeAppCheck(firebaseApp, {
+      provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
+      isTokenAutoRefreshEnabled: true
+    });
+
+    const db = getDatabase(firebaseApp);
+    const auth = getAuth(firebaseApp);
+
+    window.db = db;
+    window.auth = auth;
+
+    window.ref = ref;
+    window.set = set;
+    window.onValue = onValue;
+    window.remove = remove;
+    window.get = get;
+    window.update = update;
+    window.off = off;
+
+    window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+    window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+    window.signOut = signOut;
+    window.onAuthStateChanged = onAuthStateChanged;
+    window.sendPasswordResetEmail = sendPasswordResetEmail;
+    window.updateEmail = updateEmail;
+    window.reauthenticateWithCredential = reauthenticateWithCredential;
+    window.EmailAuthProvider = EmailAuthProvider;
+  </script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

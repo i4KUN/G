@@ -1,99 +1,25 @@
-import { BAG_OPEN_SLOTS, BAG_TOTAL_SLOTS, BAG_STACK_LIMIT } from '../config.js';
-
+import { SHOP_ITEMS } from '../data/constants.js';
 export class InventorySystem {
-  constructor(firebase, stats, toast) {
-    this.firebase = firebase;
-    this.stats = stats;
-    this.toast = toast;
-    this.items = [];
-    this.slotBox = document.getElementById('topBagSlots');
-    this.dialog = {
-      modal: document.getElementById('dialogModal'),
-      title: document.getElementById('dialogTitle'),
-      text: document.getElementById('dialogText'),
-      actions: document.getElementById('dialogActions')
-    };
-  }
-
-  applyRemote(items) {
-    this.items = Array.isArray(items) ? items.filter(Boolean) : [];
-    this.render();
-  }
-
+  constructor(state, firebase, ui) { this.state = state; this.firebase = firebase; this.ui = ui; }
+  items() { return this.state.get().bagItems || []; }
+  async load() { if (!this.firebase.loggedIn()) return; const data = await this.firebase.get(`inventory/${this.firebase.uid()}/bagItems`); if (Array.isArray(data)) this.state.set({ bagItems: data }); }
+  async save() { if (this.firebase.loggedIn()) await this.firebase.set(`inventory/${this.firebase.uid()}/bagItems`, this.items()); this.ui.updateBag(); }
+  limit() { return 5; }
   add(item) {
-    const existing = this.items.find(x => x.id === item.id && x.type === item.type);
-    if (existing) {
-      if ((existing.count || 1) >= BAG_STACK_LIMIT) {
-        this.toast.show('وصلت للحد الأعلى من هذا العنصر');
-        return false;
-      }
-      existing.count = (existing.count || 1) + 1;
-      this.toast.show(`تمت إضافة ${item.name} إلى الحقيبة`);
-      this.save();
-      this.render();
-      return true;
-    }
-    if (this.items.length >= BAG_OPEN_SLOTS) {
-      this.toast.show('الحقيبة ممتلئة');
-      return false;
-    }
-    this.items.push({ ...item, count: 1 });
-    this.toast.show(`تمت إضافة ${item.name} إلى الحقيبة`);
-    this.save();
-    this.render();
-    return true;
+    const list = [...this.items()]; const existing = list.find(x => x.id === item.id);
+    if (existing) { if ((existing.count || 1) >= 3) { this.ui.toast('وصلت للحد الأعلى من هذا العنصر'); return false; } existing.count = (existing.count || 1) + 1; }
+    else { if (list.length >= this.limit()) { this.ui.toast('الحقيبة ممتلئة'); return false; } list.push({ ...item, count: 1 }); }
+    this.state.set({ bagItems: list }); this.save(); return true;
   }
-
-  has(id) { return this.items.some(x => x.id === id && (x.count || 1) > 0); }
-
-  removeOne(id) {
-    const item = this.items.find(x => x.id === id);
-    if (!item) return false;
-    item.count = (item.count || 1) - 1;
-    if (item.count <= 0) this.items = this.items.filter(x => x !== item);
-    this.save();
-    this.render();
-    return true;
+  remove(id) { let list = [...this.items()]; const item = list.find(x => x.id === id); if (!item) return false; item.count = (item.count || 1) - 1; if (item.count <= 0) list = list.filter(x => x.id !== id); this.state.set({ bagItems: list }); this.save(); return true; }
+  use(id) { const item = this.items().find(x => x.id === id); if (!item) return; if (item.type === 'food' && this.state.addHunger(item.value || 0)) this.remove(id); else if (item.type === 'medicine' && this.state.addHealth(item.value || 0)) this.remove(id); else if (item.type === 'quest') this.remove(id); }
+  openShop(shopKey) {
+    const title = shopKey === 'grocery' ? 'صاحب البقالة' : 'الصيدلي';
+    const target = shopKey === 'grocery' ? 'food' : 'medicine';
+    this.ui.openShop(title, shopKey, SHOP_ITEMS[shopKey], (item, index) => {
+      if (!this.state.spendMoney(item.price)) return this.ui.toast('المال لا يكفي');
+      if (!this.add({ id: `${shopKey}_${index}`, name: item.name, type: target, value: item.value, img: item.img })) { this.state.addMoney(item.price); return; }
+      this.state.set({ quests: { ...this.state.get().quests, usedShop: true } }); this.ui.toast('تم الشراء');
+    });
   }
-
-  render() {
-    if (!this.slotBox) return;
-    this.slotBox.innerHTML = '';
-    for (let i = 0; i < BAG_TOTAL_SLOTS; i++) {
-      const slot = document.createElement('button');
-      slot.type = 'button';
-      slot.className = 'bagSlot' + (i >= BAG_OPEN_SLOTS ? ' locked' : '');
-      const item = this.items[i];
-      if (i >= BAG_OPEN_SLOTS) {
-        slot.innerHTML = '<i class="fa-solid fa-lock"></i>';
-      } else if (item) {
-        slot.innerHTML = `<img src="${item.img}" alt="${item.name}"><span class="bagCount">${item.count || 1}x</span>`;
-        slot.onclick = () => this.openItemMenu(item);
-      }
-      this.slotBox.appendChild(slot);
-    }
-  }
-
-  openItemMenu(item) {
-    this.dialog.title.textContent = item.name;
-    this.dialog.text.textContent = item.type === 'food' ? 'ماذا تريد أن تفعل بهذا الطعام؟'
-      : item.type === 'medicine' ? 'ماذا تريد أن تفعل بهذا العلاج؟'
-      : 'هذا عنصر مهمة. تستطيع حذفه وأخذه من المهمة مرة أخرى.';
-    this.dialog.actions.innerHTML = '';
-    const addButton = (label, icon, fn, danger = false) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = danger ? 'dangerBtn' : 'mainBtn';
-      btn.innerHTML = `<i class="fa-solid ${icon}"></i> ${label}`;
-      btn.onclick = () => { fn(); this.dialog.modal.classList.add('hidden'); };
-      this.dialog.actions.appendChild(btn);
-    };
-    if (item.type === 'food') addButton('أكل', 'fa-utensils', () => { if (this.stats.addHunger(item.value || 0)) this.removeOne(item.id); });
-    else if (item.type === 'medicine') addButton('علاج', 'fa-kit-medical', () => { if (this.stats.addHealth(item.value || 0)) this.removeOne(item.id); });
-    else addButton('حذف', 'fa-trash', () => this.removeOne(item.id), true);
-    addButton('إلغاء', 'fa-xmark', () => {}, false);
-    this.dialog.modal.classList.remove('hidden');
-  }
-
-  save() { return this.firebase.saveBag(this.items).catch(console.error); }
 }
