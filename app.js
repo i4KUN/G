@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v15.4
+// GameNjd v15.5
 
 // v15.4: تم إلغاء الحفظ المحلي داخل كود اللعبة، والاعتماد على Firebase فقط.
 const __memoryStore = {};
@@ -14,12 +14,12 @@ const ctx = canvas.getContext('2d');
 const panel = document.getElementById('panel');
 const toast = document.getElementById('toast');
 
-const WORLD_COLS = 50;
-const WORLD_ROWS = 50;
+const WORLD_COLS = 20;
+const WORLD_ROWS = 20;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '15.4';
+const VERSION = '15.5';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -61,7 +61,7 @@ const USE_NEARBY_WORLD_LOADING = true; // تحميل الخلايا القريب
 const TILE_IMAGE_EXT = 'png'; // استخدام PNG حتى لا تختفي العناصر القديمة
 
 // عدد خلايا البناء المسموحة حول البيت
-const HOME_BUILD_RADIUS_CELLS = 4;
+const HOME_BUILD_RADIUS_CELLS = 0;
 
 // حدود الزوم: التبعيد محدود، والتقريب واسع
 const BASE_ZOOM = 0.30;
@@ -104,49 +104,51 @@ const edgeImagesSrc = {
 };
 
 const fixedGroundTiles = [
+  { cell: 'B2', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'E5', src: 'All-Pic/map-pic/09.png' },
   { cell: 'H8', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'R12', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AF15', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AQ20', src: 'All-Pic/map-pic/09.png' },
-  { cell: 'AX14', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'L12', src: 'All-Pic/map-pic/09.png' },
+  { cell: 'P16', src: 'All-Pic/map-pic/09.png' },
 
-  { cell: 'M28', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'X9', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AL31', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AX11', src: 'All-Pic/map-pic/10.png' },
-  { cell: 'AS25', src: 'All-Pic/map-pic/10.png' }
+  { cell: 'D18', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'G14', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'K4', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'O9', src: 'All-Pic/map-pic/10.png' },
+  { cell: 'T19', src: 'All-Pic/map-pic/10.png' }
 ];
 
 
 const fixedAnimalTiles = [
-  { cell: 'E8', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'P17', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'AB9', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'AO25', src: 'All-Pic/animal/animal-01.gif' },
-  { cell: 'AW13', src: 'All-Pic/animal/animal-01.gif' }
+  { cell: 'C7', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'F17', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'J10', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'P4', src: 'All-Pic/animal/animal-01.gif' },
+  { cell: 'S15', src: 'All-Pic/animal/animal-01.gif' }
 ];
 
 
 
 const randomSceneryTiles = [
-  { cell: 'D6', src: 'All-Pic/npc/q40.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'H22', src: 'All-Pic/npc/q41.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'M44', src: 'All-Pic/npc/q42.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'S9', src: 'All-Pic/npc/q43.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'Y31', src: 'All-Pic/npc/q44.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'AI22', src: 'All-Pic/npc/q40.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'AL47', src: 'All-Pic/npc/q41.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'AR11', src: 'All-Pic/npc/q42.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'AX36', src: 'All-Pic/npc/q43.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'B40', src: 'All-Pic/npc/q44.png', w: 144, h: 144, blocking: true, hitbox: 0.38 },
-  { cell: 'F16', src: 'All-Pic/npc/q45.png', w: 54, h: 54 },
-  { cell: 'K38', src: 'All-Pic/npc/q46.png', w: 54, h: 54 },
-  { cell: 'Q7', src: 'All-Pic/npc/q47.png', w: 54, h: 54 },
-  { cell: 'W26', src: 'All-Pic/npc/q45.png', w: 54, h: 54 },
-  { cell: 'AD45', src: 'All-Pic/npc/q46.png', w: 54, h: 54 },
-  { cell: 'AJ13', src: 'All-Pic/npc/q47.png', w: 54, h: 54 },
-  { cell: 'AP34', src: 'All-Pic/npc/q45.png', w: 54, h: 54 },
-  { cell: 'AV19', src: 'All-Pic/npc/q46.png', w: 54, h: 54 }
+  { cell: 'B2', src: 'All-Pic/npc/q40.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'E8', src: 'All-Pic/npc/q41.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'H17', src: 'All-Pic/npc/q42.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'K4', src: 'All-Pic/npc/q43.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'N19', src: 'All-Pic/npc/q44.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'Q9', src: 'All-Pic/npc/q40.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'T2', src: 'All-Pic/npc/q41.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'C14', src: 'All-Pic/npc/q42.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'L12', src: 'All-Pic/npc/q43.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'R18', src: 'All-Pic/npc/q44.png', w: 220, h: 220, blocking: true, hitbox: 0.34 },
+  { cell: 'D11', src: 'All-Pic/npc/q45.png', w: 70, h: 70 },
+  { cell: 'G5', src: 'All-Pic/npc/q46.png', w: 70, h: 70 },
+  { cell: 'J20', src: 'All-Pic/npc/q47.png', w: 70, h: 70 },
+  { cell: 'M8', src: 'All-Pic/npc/q45.png', w: 70, h: 70 },
+  { cell: 'P13', src: 'All-Pic/npc/q46.png', w: 70, h: 70 },
+  { cell: 'S6', src: 'All-Pic/npc/q47.png', w: 70, h: 70 },
+  { cell: 'A18', src: 'All-Pic/npc/q45.png', w: 70, h: 70 },
+  { cell: 'I2', src: 'All-Pic/npc/q46.png', w: 70, h: 70 },
+  { cell: 'O16', src: 'All-Pic/npc/q47.png', w: 70, h: 70 },
+  { cell: 'T11', src: 'All-Pic/npc/q45.png', w: 70, h: 70 }
 ];
 
 const SIZE_DATA = {
@@ -183,7 +185,7 @@ const tileGroups = [
   { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 48, h: 48, blocking: true }
 ];
 
-let zoom = 0.55;
+let zoom = BASE_ZOOM;
 let camX = 0;
 let camY = 0;
 let gridOpacity = 0.45;
@@ -494,7 +496,7 @@ function canUseBuildSettingsAtCell(cellKey, message = true) {
   }
   if (!isCellNearHome(cellKey)) {
     if (message) {
-      showToast('البناء مسموح حول بيتك فقط بمقدار 4 خلايا');
+      showToast('البناء مسموح داخل خلية بيتك فقط');
       flashBuildBoundary();
     }
     return false;
@@ -629,26 +631,26 @@ const SHOP_ITEMS = {
 
 // أماكن NPC ثابتة ومتفرقة داخل الخريطة بعيدًا عن الحواف
 const NPC_STARTS = {
-  grocery: ['H12', 'AR38'],
-  pharmacy: ['M42', 'AX14'],
-  spookyMan: ['L22','Q45','AB18','AH36','AR33'],
-  wolf: ['J35','P42','Y24','AL39','AX44'],
-  caracal: ['F37','N15','U48','AG36','AT41'],
-  oryx: ['AF41','AX34'],
-  shepherd: ['R34'],
-  camel: ['AQ28'],
-  archaeologist: ['D12'],
-  ruins: ['AV40'],
-  herbalist: ['AK10'],
-  rarePlant: ['F46','AX22','AR47'],
-  messenger: ['T9'],
-  messengerFriend: ['AE37'],
-  fireMan: ['AE18'],
-  burningTent: ['AF18'],
-  well: ['C31'],
-  dateWoman: ['AJ12'],
-  dateHouse: ['AK12'],
-  palm: ['AP7','AJ32','AX45']
+  grocery: ['C4', 'R17'],
+  pharmacy: ['D18', 'Q5'],
+  spookyMan: ['B16','H3','N14','T8','K19'],
+  wolf: ['E13','P2','S18','L7','C10'],
+  caracal: ['F6','M16','R11','I20','T3'],
+  oryx: ['B7','S14'],
+  shepherd: ['G12'],
+  camel: ['P18'],
+  archaeologist: ['C3'],
+  ruins: ['R4'],
+  herbalist: ['N6'],
+  rarePlant: ['D15','J4','T19'],
+  messenger: ['M12'],
+  messengerFriend: ['E19'],
+  fireMan: ['K9'],
+  burningTent: ['L9'],
+  well: ['B20'],
+  dateWoman: ['Q15'],
+  dateHouse: ['R15'],
+  palm: ['B5','J18','T12']
 };
 
 const NPC_CONFIG = {
@@ -667,18 +669,18 @@ const NPC_CONFIG = {
   messenger: { label: 'صاحب الرسالة', src: 'All-Pic/npc/q13.png', mode: 'always', type: 'quest' },
   messengerFriend: { label: 'صديق صاحب الرسالة', src: 'All-Pic/npc/q14.png', mode: 'always', type: 'quest' },
   fireMan: { label: 'صاحب الخيمة', src: 'All-Pic/npc/q15.png', mode: 'always', type: 'quest' },
-  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', fixed: true, light: true, scale: 1.5, blocking: true },
+  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', fixed: true, light: true, scale: 2.2, blocking: true },
   well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', fixed: true },
   dateWoman: { label: 'صاحبة الضيوف', src: 'All-Pic/npc/q18.png', mode: 'always', type: 'quest' },
-  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', fixed: true, scale: 1.5, blocking: true },
-  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', fixed: true }
+  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', fixed: true, scale: 2.2, blocking: true },
+  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', fixed: true, scale: 1.4, blocking: true }
 };
 
 const npcImageCache = {};
 const npcs = [];
 
 function makeNpc(id, kind, cellKey) {
-  const cell = parseCell(cellKey) || { col: 50, row: 50 };
+  const cell = parseCell(cellKey) || { col: 10, row: 10 };
   const baseX = (cell.col - 0.5) * CELL;
   const baseY = (cell.row - 0.5) * CELL;
   return { id, kind, x: baseX, y: baseY, homeX: baseX, homeY: baseY, dir: 'down', moving: false, targetX: baseX, targetY: baseY, lastPick: 0, lastAttack: 0, chasing: false };
@@ -1277,9 +1279,9 @@ function loadCollectedMoney() {
 }
 
 let collectedMoneyIds = loadCollectedMoney();
-const mapMoney = Array.from({ length: 50 }, (_, i) => {
-  const col = 3 + ((i * 17) % 45);
-  const row = 3 + ((i * 23) % 45);
+const mapMoney = Array.from({ length: 25 }, (_, i) => {
+  const col = 2 + ((i * 7) % 18);
+  const row = 2 + ((i * 11) % 18);
   return { id: 'money_' + i, x: (col - 0.5) * CELL, y: (row - 0.5) * CELL, amount: 1 + (i % 5) };
 });
 
@@ -1372,8 +1374,8 @@ function loadLastPlayer() {
     const saved = JSON.parse(offlineStore.getItem(LAST_PLAYER_KEY));
     if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
       return {
-        x: saved.x,
-        y: saved.y,
+        x: clampNumber(saved.x, 18, WORLD_COLS * CELL - 18, (10 - 0.5) * CELL),
+        y: clampNumber(saved.y, 28, WORLD_ROWS * CELL - 8, (10 - 0.5) * CELL),
         speed: 5,
         dir: saved.dir || 'down'
       };
@@ -1381,8 +1383,8 @@ function loadLastPlayer() {
   } catch {}
 
   return {
-    x: (25 - 0.5) * CELL,
-    y: (25 - 0.5) * CELL,
+    x: (10 - 0.5) * CELL,
+    y: (10 - 0.5) * CELL,
     speed: 5,
     dir: 'down'
   };
@@ -1564,7 +1566,7 @@ function sanitizeItemForSave(item, cellKey) {
     h: clampNumber(item.h, 12, 1000, 55),
     layer: clampNumber(item.layer, 1, 5, 1),
     blocking: !!item.blocking,
-    owner: String(item.owner || currentOwner() || ''),
+    owner: String(currentOwner() || item.owner || ''),
     ...(typeof item.flipX === 'boolean' ? { flipX: item.flipX } : {}),
     ...(typeof item.flipY === 'boolean' ? { flipY: item.flipY } : {})
   };
@@ -1650,7 +1652,7 @@ function saveCellToFirebase(cellKey) {
     .filter(Boolean);
 
   window.set(window.ref(window.db, 'world/' + cellKey), {
-    owner: cell.owner || currentOwner(),
+    owner: currentOwner(),
     items: safeItems
   }).catch(error => {
     console.error('Firebase cell save error:', error);
@@ -2331,7 +2333,7 @@ function drawSnow(width, height) {
 
 function isSafeFixedCell(cell) {
   if (!cell) return false;
-  return cell.col > 2 && cell.col < WORLD_COLS - 1 && cell.row > 2 && cell.row < WORLD_ROWS - 1;
+  return cell.col >= 1 && cell.col <= WORLD_COLS && cell.row >= 1 && cell.row <= WORLD_ROWS;
 }
 
 function ensureAnimalLayer() {
