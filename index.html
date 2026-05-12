@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v15.5</title>
+  <title>GameNjd v18.1</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="All-Pic/logo/njd-white-black-ful.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v15.5" />
+  <meta property="og:title" content="GameNjd v18.1" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v15.5" />
+  <meta name="twitter:title" content="GameNjd v18.1" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
 
@@ -235,7 +235,7 @@
             تجول
           </button>
 
-          <button id="changeCharacterBtn" class="mainBtn secondaryBtn" type="button">
+          <button id="changeCharacterBtn" class="mainBtn secondaryBtn hidden" type="button">
             <i class="fa-solid fa-user-pen"></i>
             تغيير الشخصية
           </button>
@@ -246,7 +246,7 @@
             <small data-home-cell>لم تحدد بيتك بعد</small>
           </button>
 
-          <button id="setHomeBtn" class="setHomeBtn" type="button">
+          <button id="setHomeBtn" class="setHomeBtn hidden" type="button">
             <i class="fa-solid fa-location-crosshairs"></i>
             تحديد جديد
           </button>
@@ -566,7 +566,7 @@
 
       <div id="authLoginPanel" class="authPanel">
         <label for="authUsernameInput">اسم المستخدم</label>
-        <input id="authUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
+        <input id="authUsernameInput" type="text" placeholder="مثال: rashid123 أو email@example.com" autocomplete="username" inputmode="latin" />
 
         <label for="authPassInput">كلمة المرور</label>
         <input id="authPassInput" type="password" placeholder="الرقم السري" autocomplete="current-password" />
@@ -579,7 +579,7 @@
 
       <div id="authSignupPanel" class="authPanel hidden">
         <label for="signupUsernameInput">اسم المستخدم الإنجليزي</label>
-        <input id="signupUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
+        <input id="signupUsernameInput" type="text" placeholder="مثال: rashid123 أو email@example.com" autocomplete="username" inputmode="latin" />
 
         <label for="signupPassInput">كلمة المرور</label>
         <input id="signupPassInput" type="password" placeholder="الرقم السري (6 أحرف على الأقل)" autocomplete="new-password" />
@@ -634,6 +634,12 @@
         <i class="fa-solid fa-user-pen"></i>
         تغيير الشخصية
       </button>
+
+      <button id="settingsChangeHomeBtn" class="dangerBtn dangerSettingsBtn" type="button">
+        <i class="fa-solid fa-house-circle-exclamation"></i>
+        تغيير الخلية
+      </button>
+      <p class="smallHint">مسموح لكل حساب بخلية بيت واحدة فقط.</p>
 
       <label for="linkEmailInput"><i class="fa-solid fa-envelope"></i> ربط الإيميل الحقيقي</label>
       <input id="linkEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
