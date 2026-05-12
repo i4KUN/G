@@ -2,21 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v18.1</title>
+  <title>GameNjd v18.2</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
 
-  <link rel="icon" href="All-Pic/logo/njd-white-black-ful.png" />
+  <link rel="icon" href="All-Pic/logo/njd-white-black-sq.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v18.1" />
+  <meta property="og:title" content="GameNjd v18.2" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v18.1" />
+  <meta name="twitter:title" content="GameNjd v18.2" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
 
@@ -385,21 +385,23 @@
           <input id="categorySelect" class="hidden" type="hidden" value="" />
           <input id="sizeFilter" class="hidden" type="hidden" value="all" />
 
-          <div class="previewToggleBox">
-            <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
-              <i class="fa-solid fa-eye"></i>
-              تكبير العناصر عند المرور: تشغيل
-            </button>
-          </div>
-
-          <div class="previewToggleBox">
-            <button id="autoAlignBtn" class="toggleFeatureBtn autoAlignBtn" type="button">
-              <i class="fa-solid fa-border-all"></i>
-              الترتيب التلقائي: إيقاف
-            </button>
-          </div>
-
           <div id="tileset" class="hidden"></div>
+
+          <div class="elementsBottomTools">
+            <div class="previewToggleBox">
+              <button id="tilePreviewToggle" class="toggleFeatureBtn" type="button">
+                <i class="fa-solid fa-eye"></i>
+                تكبير العناصر عند المرور: تشغيل
+              </button>
+            </div>
+
+            <div class="previewToggleBox">
+              <button id="autoAlignBtn" class="toggleFeatureBtn autoAlignBtn" type="button">
+                <i class="fa-solid fa-border-all"></i>
+                الترتيب التلقائي: إيقاف
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="section">
@@ -752,6 +754,7 @@
       onAuthStateChanged,
       sendPasswordResetEmail,
       updateEmail,
+      verifyBeforeUpdateEmail,
       reauthenticateWithCredential,
       EmailAuthProvider
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -796,6 +799,7 @@
     window.onAuthStateChanged = onAuthStateChanged;
     window.sendPasswordResetEmail = sendPasswordResetEmail;
     window.updateEmail = updateEmail;
+    window.verifyBeforeUpdateEmail = verifyBeforeUpdateEmail;
     window.reauthenticateWithCredential = reauthenticateWithCredential;
     window.EmailAuthProvider = EmailAuthProvider;
   </script>
