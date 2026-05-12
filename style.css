@@ -1,4 +1,4 @@
-/* GameNjd v15.5 */
+/* GameNjd v18.2 */
 
 * {
   box-sizing: border-box;
@@ -2595,5 +2595,109 @@ button { font-size: 13px; padding: 8px; }
   .topSideStats {
     min-width: 80px !important;
     font-size: 9.5px !important;
+  }
+}
+
+
+/* ===== GameNjd v18.2 fixes ===== */
+.topHudPanel {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.topHudPanel .topStatsPanel {
+  flex: 1 1 260px !important;
+  min-width: 220px !important;
+  max-width: 520px !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(120px, 1fr) auto !important;
+  grid-template-areas:
+    "healthLabel healthBar healthValue"
+    "hungerLabel hungerBar hungerValue" !important;
+  align-items: center !important;
+  gap: 6px 10px !important;
+}
+
+.topHudPanel .topStatsPanel .topStatRow {
+  display: contents !important;
+}
+
+.topHudPanel .topStatsPanel .topStatRow:nth-of-type(1) span { grid-area: healthLabel; white-space: nowrap; }
+.topHudPanel .topStatsPanel .topStatRow:nth-of-type(1) b { grid-area: healthValue; white-space: nowrap; }
+.topHudPanel .topStatsPanel .topStatusBar:nth-of-type(1) { grid-area: healthBar; width: 100% !important; }
+.topHudPanel .topStatsPanel .topStatRow:nth-of-type(2) span { grid-area: hungerLabel; white-space: nowrap; }
+.topHudPanel .topStatsPanel .topStatRow:nth-of-type(2) b { grid-area: hungerValue; white-space: nowrap; }
+.topHudPanel .topStatsPanel .topStatusBar:nth-of-type(2) { grid-area: hungerBar; width: 100% !important; }
+
+.topHudPanel .topStatusBar {
+  min-width: 0 !important;
+  height: 7px !important;
+  margin: 0 !important;
+}
+
+.topBagPanel {
+  align-self: center !important;
+  margin: 0 !important;
+  transform: none !important;
+  max-height: 78px !important;
+  overflow: visible !important;
+}
+
+.topBagSlots {
+  align-items: center !important;
+}
+
+.bagSlot.locked {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.elementsBottomTools {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.elementsBottomTools .previewToggleBox {
+  margin: 0 !important;
+}
+
+.joystick {
+  left: max(16px, env(safe-area-inset-left)) !important;
+  bottom: max(110px, env(safe-area-inset-bottom)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 32px) !important;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    height: auto !important;
+    min-height: 104px !important;
+    grid-template-columns: 1fr !important;
+    align-items: center !important;
+  }
+
+  .topHudPanel {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+
+  .topHudPanel .topStatsPanel {
+    order: 3;
+    flex-basis: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: auto minmax(80px, 1fr) auto !important;
+  }
+
+  .topBagPanel {
+    order: 1;
+  }
+
+  .topSideStats {
+    order: 2;
   }
 }
