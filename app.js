@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v18.1
+// GameNjd v18.2
 
 // v15.4: تم إلغاء الحفظ المحلي داخل كود اللعبة، والاعتماد على Firebase فقط.
 const __memoryStore = {};
@@ -19,7 +19,7 @@ const WORLD_ROWS = 20;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '18.1';
+const VERSION = '18.2';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -1287,7 +1287,7 @@ function loadBagFromFirebase() {
   }).catch(console.error);
 }
 
-function getBagLimit() { return 5; }
+function getBagLimit() { return 10; }
 function getBagCount() { return bagItems.reduce((sum, item) => sum + (Number(item.count) || 1), 0); }
 function findBagItem(id) { return bagItems.find(item => item.id === id); }
 
@@ -1352,13 +1352,27 @@ function updateBagUI() {
 function openBagItemMenu(index) {
   const item = bagItems[index];
   if (!item) return showToast('الخانة فارغة');
-  const useLabel = item.type === 'food' ? 'أكل' : item.type === 'medicine' ? 'علاج' : '';
-  const useButton = useLabel ? `<button type="button" class="bagUseBtn" onclick="window.__useBagItem('${item.id}')"><i class="fa-solid fa-check"></i> ${useLabel}</button>` : '<p class="smallHint">هذا عنصر مهمة أو عنصر خاص.</p>';
-  showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p>${useButton}<button type="button" class="bagDeleteBtn" onclick="window.__deleteBagItem('${item.id}')"><i class="fa-solid fa-trash"></i> حذف</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> إلغاء</button></div>`, true);
+
+  const safeId = String(item.id).replace(/'/g, "\\'");
+  if (item.type === 'food') {
+    return showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد الأكل؟</p><button type="button" class="bagUseBtn" onclick="window.__useBagItem('${safeId}')"><i class="fa-solid fa-check"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
+  }
+
+  if (item.type === 'medicine') {
+    return showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد استخدام العلاج؟</p><button type="button" class="bagUseBtn" onclick="window.__useBagItem('${safeId}')"><i class="fa-solid fa-check"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
+  }
+
+  showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد حذف العنصر؟</p><button type="button" class="bagDeleteBtn" onclick="window.__deleteBagItem('${safeId}')"><i class="fa-solid fa-trash"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
 }
 
 window.__useBagItem = id => { useBagItem(id); document.getElementById('infoModal')?.classList.add('hidden'); };
-window.__deleteBagItem = id => deleteBagItemWithConfirm(id);
+window.__deleteBagItem = id => {
+  const item = findBagItem(id);
+  if (!item) return;
+  removeBagItem(id);
+  document.getElementById('infoModal')?.classList.add('hidden');
+  showToast(item.type === 'quest' ? 'تم حذف عنصر المهمة ويمكنك أخذه مرة أخرى' : 'تم حذف العنصر');
+};
 
 function handleQuestNpc(kind) {
   const q = gameState.quests;
@@ -1804,14 +1818,11 @@ function subscribeNearbyWorldCells(force = false) {
 
 /* ===== Firebase ===== */
 
-function saveCellToFirebase(cellKey) {
-  if (!window.db || !window.ref || !window.set || !window.remove) return Promise.resolve();
+const cellSaveChains = {};
 
+function buildCellFirebasePayload(cellKey) {
   const cell = world[cellKey];
-
-  if (!cell || !Array.isArray(cell.items) || cell.items.length === 0) {
-    return removeCellFromFirebase(cellKey);
-  }
+  if (!cell || !Array.isArray(cell.items) || cell.items.length === 0) return null;
 
   if (cell.items.length > MAX_ITEMS_PER_CELL) {
     cell.items = cell.items.slice(0, MAX_ITEMS_PER_CELL);
@@ -1822,24 +1833,53 @@ function saveCellToFirebase(cellKey) {
     .map(item => sanitizeItemForSave(item, cellKey))
     .filter(Boolean);
 
-  return window.set(window.ref(window.db, 'world/' + cellKey), {
-    owner: currentOwner(),
-    items: safeItems
-  }).catch(error => {
-    console.error('Firebase cell save error:', error);
-    showToast('فشل حفظ الخلية');
-    throw error;
+  if (!safeItems.length) return null;
+  return { owner: currentOwner(), items: safeItems };
+}
+
+function saveCellToFirebase(cellKey) {
+  if (!window.db || !window.ref || !window.set || !window.remove) return Promise.resolve();
+
+  const doSave = () => {
+    const payload = buildCellFirebasePayload(cellKey);
+    const action = payload
+      ? window.set(window.ref(window.db, 'world/' + cellKey), payload)
+      : window.remove(window.ref(window.db, 'world/' + cellKey));
+
+    return action.catch(error => {
+      console.error('Firebase cell save error:', error);
+      showToast('فشل حفظ الخلية');
+      throw error;
+    });
+  };
+
+  const previous = cellSaveChains[cellKey] || Promise.resolve();
+  const next = previous.catch(() => {}).then(doSave);
+  cellSaveChains[cellKey] = next.finally(() => {
+    if (cellSaveChains[cellKey] === next) delete cellSaveChains[cellKey];
   });
+  return next;
 }
 
 function removeCellFromFirebase(cellKey) {
   if (!window.db || !window.ref || !window.remove) return Promise.resolve();
 
-  return window.remove(window.ref(window.db, 'world/' + cellKey)).catch(error => {
+  const doRemove = () => {
+    const payload = buildCellFirebasePayload(cellKey);
+    if (payload) return window.set(window.ref(window.db, 'world/' + cellKey), payload);
+    return window.remove(window.ref(window.db, 'world/' + cellKey));
+  };
+
+  const previous = cellSaveChains[cellKey] || Promise.resolve();
+  const next = previous.catch(() => {}).then(doRemove).catch(error => {
     console.error('Firebase cell remove error:', error);
     showToast('فشل حذف الخلية من Firebase');
     throw error;
   });
+  cellSaveChains[cellKey] = next.finally(() => {
+    if (cellSaveChains[cellKey] === next) delete cellSaveChains[cellKey];
+  });
+  return next;
 }
 
 function saveWorldToFirebaseFull() {
@@ -3907,27 +3947,34 @@ function applyAutoAlign(item, cellKey) {
   const cellData = world[cellKey];
   if (!cellData || !Array.isArray(cellData.items)) return;
 
-  const near = 75;
+  const snapRange = 120;
+  const candidates = [];
 
   for (const other of cellData.items) {
     if (!other || other.uid === item.uid) continue;
-    if (Math.abs((other.layer || 1) - (item.layer || 1)) > 1) continue;
+    if ((other.layer || 1) !== (item.layer || 1)) continue;
 
-    const sameHeight = Math.abs(other.h - item.h) <= 8;
-    const sameWidth = Math.abs(other.w - item.w) <= 8;
+    const sameHeight = Math.abs(other.h - item.h) <= 10;
+    const sameWidth = Math.abs(other.w - item.w) <= 10;
 
-    if (sameHeight && Math.abs(item.y - other.y) <= near) item.y = other.y;
-    if (sameWidth && Math.abs(item.x - other.x) <= near) item.x = other.x;
+    if (sameHeight) {
+      candidates.push({ x: other.x + other.w, y: other.y, score: Math.hypot(item.x - (other.x + other.w), item.y - other.y) });
+      candidates.push({ x: other.x - item.w, y: other.y, score: Math.hypot(item.x - (other.x - item.w), item.y - other.y) });
+    }
 
-    const rightEdge = other.x + other.w;
-    const leftEdge = other.x - item.w;
-    const bottomEdge = other.y + other.h;
-    const topEdge = other.y - item.h;
+    if (sameWidth) {
+      candidates.push({ x: other.x, y: other.y + other.h, score: Math.hypot(item.x - other.x, item.y - (other.y + other.h)) });
+      candidates.push({ x: other.x, y: other.y - item.h, score: Math.hypot(item.x - other.x, item.y - (other.y - item.h)) });
+    }
+  }
 
-    if (sameHeight && Math.abs(item.x - rightEdge) <= near) item.x = rightEdge;
-    if (sameHeight && Math.abs(item.x - leftEdge) <= near) item.x = leftEdge;
-    if (sameWidth && Math.abs(item.y - bottomEdge) <= near) item.y = bottomEdge;
-    if (sameWidth && Math.abs(item.y - topEdge) <= near) item.y = topEdge;
+  const best = candidates
+    .filter(c => c.score <= snapRange)
+    .sort((a, b) => a.score - b.score)[0];
+
+  if (best) {
+    item.x = best.x;
+    item.y = best.y;
   }
 }
 
@@ -4752,33 +4799,58 @@ function linkRealEmail() {
 
   if (!isLoggedIn()) { if (msg) msg.textContent = 'سجل دخولك أولًا'; return; }
   if (!email || !email.includes('@') || email.endsWith('@gamenjd.local')) { if (msg) msg.textContent = 'اكتب إيميل حقيقي صحيح'; return; }
-  if (!window.updateEmail) { if (msg) msg.textContent = 'خدمة ربط الإيميل غير جاهزة'; return; }
+  if (!pass) { if (msg) msg.textContent = 'اكتب كلمة المرور الحالية أولًا'; return; }
 
   const user = window.auth.currentUser;
-  const currentEmail = String(user?.email || '');
+  const currentEmail = String(user?.email || '').toLowerCase();
   const username = cleanUsername(emailToUsername(currentEmail));
-  const finishUpdate = () => window.updateEmail(user, email).then(() => {
+
+  const rememberPendingEmail = () => {
+    currentUserEmail = user.email || currentEmail;
+    return saveUsernameMapping(username, currentEmail || usernameToEmail(username), {
+      pendingRealEmail: email,
+      realEmail: email,
+      uid: user.uid
+    }).then(() => {
+      if (window.db && window.ref && window.update) {
+        return window.update(window.ref(window.db, 'profiles/' + user.uid), {
+          realEmail: email,
+          pendingRealEmail: email,
+          updatedAt: Date.now()
+        }).catch(console.error);
+      }
+    });
+  };
+
+  const applyDirectUpdate = () => window.updateEmail(user, email).then(() => {
     currentUserEmail = email;
-    return saveUsernameMapping(username, email);
+    return saveUsernameMapping(username, email, { realEmail: email, uid: user.uid });
   }).then(() => {
     saveProfileData();
     updateAuthUI();
     if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي، وتستطيع الدخول باسم المستخدم أو الإيميل';
   });
 
-  const run = () => {
-    if (currentEmail && pass && window.reauthenticateWithCredential && window.EmailAuthProvider) {
-      const credential = window.EmailAuthProvider.credential(currentEmail, pass);
-      return window.reauthenticateWithCredential(user, credential).then(finishUpdate);
+  const sendVerifyUpdate = () => {
+    if (window.verifyBeforeUpdateEmail) {
+      return window.verifyBeforeUpdateEmail(user, email).then(rememberPendingEmail).then(() => {
+        if (msg) msg.textContent = 'تم إرسال رابط تأكيد للإيميل. بعد التأكيد تقدر تدخل باسم المستخدم أو الإيميل.';
+      });
     }
-    return finishUpdate();
+    if (window.updateEmail) return applyDirectUpdate();
+    if (msg) msg.textContent = 'خدمة ربط الإيميل غير جاهزة';
+    return Promise.resolve();
+  };
+
+  const run = () => {
+    if (currentEmail && window.reauthenticateWithCredential && window.EmailAuthProvider) {
+      const credential = window.EmailAuthProvider.credential(currentEmail, pass);
+      return window.reauthenticateWithCredential(user, credential).then(sendVerifyUpdate);
+    }
+    return sendVerifyUpdate();
   };
 
   run().catch(error => {
-    if (error && error.code === 'auth/requires-recent-login') {
-      if (msg) msg.textContent = 'اكتب كلمة المرور الحالية ثم حاول الربط مرة أخرى';
-      return;
-    }
     if (msg) msg.textContent = authErrorMessage(error);
   });
 }
@@ -4855,20 +4927,46 @@ function showSettingsHelpOnce() {
   setTimeout(showSettingsHelp, 700);
 }
 
-function saveUsernameMapping(username, email) {
-  if (!username || !email || !window.db || !window.ref || !window.set) return Promise.resolve();
-  return window.set(window.ref(window.db, 'usernames/' + cleanUsername(username)), String(email).trim().toLowerCase()).catch(console.error);
+function saveUsernameMapping(username, email, extra = {}) {
+  const clean = cleanUsername(username);
+  const loginEmail = String(email || '').trim().toLowerCase();
+  if (!clean || !loginEmail || !window.db || !window.ref || !window.set) return Promise.resolve();
+  const payload = Object.assign({
+    username: clean,
+    loginEmail,
+    email: loginEmail,
+    updatedAt: Date.now()
+  }, extra || {});
+  return window.set(window.ref(window.db, 'usernames/' + clean), payload).catch(console.error);
+}
+
+function uniqueEmails(list) {
+  const seen = new Set();
+  return list.map(v => String(v || '').trim().toLowerCase()).filter(v => {
+    if (!v || !v.includes('@') || seen.has(v)) return false;
+    seen.add(v);
+    return true;
+  });
+}
+
+function resolveLoginEmails(usernameOrEmail) {
+  const raw = String(usernameOrEmail || '').trim().toLowerCase();
+  if (raw.includes('@')) return Promise.resolve([raw]);
+  const username = cleanUsername(raw);
+  const fallback = usernameToEmail(username);
+  if (!window.db || !window.ref || !window.get) return Promise.resolve([fallback]);
+  return window.get(window.ref(window.db, 'usernames/' + username)).then(snapshot => {
+    const data = snapshot.val();
+    if (typeof data === 'string') return uniqueEmails([data, fallback]);
+    if (data && typeof data === 'object') {
+      return uniqueEmails([data.realEmail, data.pendingRealEmail, data.loginEmail, data.email, fallback]);
+    }
+    return [fallback];
+  }).catch(() => [fallback]);
 }
 
 function resolveLoginEmail(usernameOrEmail) {
-  const raw = String(usernameOrEmail || '').trim().toLowerCase();
-  if (raw.includes('@')) return Promise.resolve(raw);
-  const username = cleanUsername(raw);
-  if (!window.db || !window.ref || !window.get) return Promise.resolve(usernameToEmail(username));
-  return window.get(window.ref(window.db, 'usernames/' + username)).then(snapshot => {
-    const mapped = String(snapshot.val() || '').trim().toLowerCase();
-    return mapped.includes('@') ? mapped : usernameToEmail(username);
-  }).catch(() => usernameToEmail(username));
+  return resolveLoginEmails(usernameOrEmail).then(list => list[0] || usernameToEmail(cleanUsername(usernameOrEmail)));
 }
 
 function signup() {
@@ -4910,9 +5008,22 @@ function login() {
 
   offlineStore.setItem(LAST_EMAIL_KEY, rawLogin.includes('@') ? rawLogin : username);
 
-  resolveLoginEmail(rawLogin).then(loginEmail => {
-    return window.signInWithEmailAndPassword(window.auth, loginEmail, pass);
-  }).then(() => {
+  const tryEmails = emails => {
+    const list = Array.isArray(emails) && emails.length ? emails : [usernameToEmail(username)];
+    let index = 0;
+    const tryNext = lastError => {
+      if (index >= list.length) return Promise.reject(lastError);
+      const email = list[index++];
+      return window.signInWithEmailAndPassword(window.auth, email, pass).catch(tryNext);
+    };
+    return tryNext();
+  };
+
+  resolveLoginEmails(rawLogin).then(tryEmails).then(() => {
+    if (!rawLogin.includes('@')) {
+      const actualEmail = String(window.auth.currentUser?.email || '').toLowerCase();
+      if (actualEmail && !actualEmail.endsWith('@gamenjd.local')) saveUsernameMapping(username, actualEmail, { realEmail: actualEmail, uid: window.auth.currentUser.uid });
+    }
     showAuthMessage('تم تسجيل الدخول');
     closeAuthModal();
     updateAuthUI();
@@ -4959,18 +5070,16 @@ function resetPassword() {
 }
 
 function authErrorMessage(error) {
-  const code = error?.code || '';
-
-  if (code.includes('email-already-in-use')) return 'اسم المستخدم مستخدم مسبقًا، جرّب تسجيل الدخول';
-  if (code.includes('invalid-email')) return 'اسم المستخدم غير صحيح';
-  if (code.includes('weak-password')) return 'كلمة المرور ضعيفة';
-  if (code.includes('user-not-found')) return 'هذا الحساب غير مسجل، يمكنك إنشاء حساب جديد';
-  if (code.includes('wrong-password')) return 'كلمة المرور غير صحيحة';
-  if (code.includes('invalid-credential')) return 'هذا الحساب غير مسجل أو أن كلمة المرور غير صحيحة، تأكد من البيانات أو أنشئ حسابًا جديدًا';
+  const code = String(error?.code || '');
   if (code.includes('email-already-in-use')) return 'هذا الإيميل مستخدم في حساب آخر';
-  if (code.includes('requires-recent-login')) return 'للحماية اكتب كلمة المرور الحالية ثم حاول مرة أخرى';
-  if (code.includes('too-many-requests')) return 'محاولات كثيرة، حاول لاحقًا';
-
+  if (code.includes('operation-not-allowed')) return 'طريقة الدخول أو تغيير الإيميل غير مفعلة في Firebase';
+  if (code.includes('requires-recent-login')) return 'سجل خروج وادخل مرة ثانية ثم حاول';
+  if (code.includes('wrong-password') || code.includes('invalid-credential')) return 'اسم المستخدم أو كلمة المرور غير صحيحة';
+  if (code.includes('invalid-email')) return 'الإيميل غير صحيح';
+  if (code.includes('weak-password')) return 'كلمة المرور ضعيفة';
+  if (code.includes('user-not-found')) return 'الحساب غير موجود';
+  if (code.includes('too-many-requests')) return 'محاولات كثيرة، انتظر قليلًا';
+  if (code.includes('network-request-failed')) return 'تأكد من اتصال الإنترنت';
   return 'حدث خطأ، حاول مرة أخرى';
 }
 
