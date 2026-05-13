@@ -1,4 +1,4 @@
-/* GameNjd v18.2 */
+/* GameNjd v18.3 */
 
 * {
   box-sizing: border-box;
@@ -2700,4 +2700,21 @@ button { font-size: 13px; padding: 8px; }
   .topSideStats {
     order: 2;
   }
+}
+
+
+/* ===== GameNjd v18.3 fixes ===== */
+.topBagPanel,
+.topHudPanel,
+.topStatsPanel {
+  min-height: 0 !important;
+}
+
+.topBagSlots {
+  align-content: center !important;
+}
+
+.joystick {
+  left: max(16px, env(safe-area-inset-left)) !important;
+  bottom: max(110px, env(safe-area-inset-bottom)) !important;
 }
