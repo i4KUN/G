@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v18.3
+// GameNjd v18.4
 
 // v15.4: تم إلغاء الحفظ المحلي داخل كود اللعبة، والاعتماد على Firebase فقط.
 const __memoryStore = {};
@@ -19,7 +19,7 @@ const WORLD_ROWS = 20;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '18.3';
+const VERSION = '18.4';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -260,6 +260,7 @@ let lastNearbyNpc = null;
 let activeTalkingNpc = null;
 const BAG_KEY = storageKey('bag_items');
 let bagItems = loadBagItems();
+let lastBagRenderSnapshot = '';
 let lastGameStateSave = 0;
 let buildBoundaryFlashUntil = 0;
 let buildBoundaryFlashStart = 0;
@@ -360,29 +361,68 @@ function loadGameState() {
 }
 
 let gameState = loadGameState();
+let gameStateFirebaseReady = false;
+let lastGameStateSnapshot = '';
+
+function normalizeGameState(data = {}) {
+  const base = loadGameState();
+  const now = Date.now();
+  return {
+    health: clampNumber(data.health ?? base.health, 0, 100, 100),
+    hunger: clampNumber(data.hunger ?? base.hunger, 0, 100, 100),
+    levelPoints: Math.max(0, Math.floor(Number(data.levelPoints ?? base.levelPoints) || 0)),
+    money: Math.max(0, Math.floor(Number(data.money ?? base.money) || 0)),
+    lastHungerAt: Number(data.lastHungerAt) || now,
+    lastHealthAt: Number(data.lastHealthAt) || now,
+    lastLevelAt: Number(data.lastLevelAt) || now,
+    quests: data.quests && typeof data.quests === 'object' ? data.quests : (base.quests || {}),
+    updatedAt: Number(data.updatedAt) || Date.now()
+  };
+}
 
 function saveGameState(localOnly = false) {
+  gameState.updatedAt = Date.now();
   offlineStore.setItem(GAME_STATE_KEY, JSON.stringify(gameState));
   if (localOnly || !isLoggedIn() || !window.db || !window.ref || !window.set) return;
+  if (!gameStateFirebaseReady) return; // لا نكتب الحالة الافتراضية فوق بيانات قديمة قبل انتهاء التحميل
   const user = window.auth.currentUser;
-  window.set(window.ref(window.db, 'inventory/' + user.uid + '/gameState'), gameState).catch(console.error);
+  const snapshot = JSON.stringify({
+    health: gameState.health,
+    hunger: gameState.hunger,
+    levelPoints: gameState.levelPoints,
+    money: gameState.money,
+    quests: gameState.quests,
+    lastHungerAt: gameState.lastHungerAt,
+    lastHealthAt: gameState.lastHealthAt,
+    lastLevelAt: gameState.lastLevelAt
+  });
+  if (snapshot === lastGameStateSnapshot) return;
+  lastGameStateSnapshot = snapshot;
+  window.set(window.ref(window.db, 'inventory/' + user.uid + '/gameState'), gameState).catch(error => {
+    lastGameStateSnapshot = '';
+    console.error(error);
+  });
 }
 
 function loadGameStateFromFirebase() {
   if (!isLoggedIn() || !window.db || !window.ref || !window.get) return;
   const user = window.auth.currentUser;
+  gameStateFirebaseReady = false;
   window.get(window.ref(window.db, 'inventory/' + user.uid + '/gameState')).then(snapshot => {
     const data = snapshot.val();
-    if (!data) return saveGameState();
-    gameState = Object.assign(loadGameState(), data);
+    gameState = normalizeGameState(data || gameState);
     const now = Date.now();
-    gameState.lastHungerAt = now;
-    gameState.lastHealthAt = now;
-    if (!gameState.lastLevelAt) gameState.lastLevelAt = now;
+    gameState.lastHungerAt = Number(gameState.lastHungerAt) || now;
+    gameState.lastHealthAt = Number(gameState.lastHealthAt) || now;
+    gameState.lastLevelAt = Number(gameState.lastLevelAt) || now;
+    gameStateFirebaseReady = true;
     saveGameState(true);
+    if (!data) saveGameState();
     updateStatsPanel();
-  updateBagUI();
-  }).catch(console.error);
+  }).catch(error => {
+    console.error(error);
+    gameStateFirebaseReady = true;
+  });
 }
 
 function handleEmptyBars() {
@@ -442,7 +482,7 @@ function updateStatsPanel() {
   document.querySelectorAll('[data-stat="hungerText"]').forEach(el => el.textContent = `${gameState.hunger}%`);
   document.querySelectorAll('[data-stat="levelPoints"]').forEach(el => el.textContent = String(gameState.levelPoints));
   document.querySelectorAll('[data-stat="money"]').forEach(el => el.textContent = `${gameState.money} ريال`);
-  updateBagUI();
+  // الحقيبة لا تتحدث مع كل فريم حتى لا تضيع ضغطات اللاعب
 }
 
 function spendMoney(price) {
@@ -493,13 +533,37 @@ function currentCenterCell() {
   return cellFromWorld(center.x, center.y);
 }
 
+function cameraForCell(cellKey, z = zoom) {
+  const cell = parseCell(cellKey);
+  if (!cell) return { camX, camY, zoom: z };
+  const safeZoom = clampZoomValue(Number(z) || zoom || BASE_ZOOM);
+  const centerX = (cell.col - 0.5) * CELL;
+  const centerY = (cell.row - 0.5) * CELL;
+  return {
+    camX: centerX - canvas.clientWidth / safeZoom / 2,
+    camY: centerY - canvas.clientHeight / safeZoom / 2,
+    zoom: safeZoom
+  };
+}
+
+function centerCameraOnCell(cellKey, z = zoom) {
+  const data = cameraForCell(cellKey, z);
+  camX = data.camX;
+  camY = data.camY;
+  zoom = data.zoom;
+  clampCam();
+  subscribeNearbyWorldCells(true);
+}
+
 function saveHomeDataLocal(data) {
   if (!data || !data.cell) return;
+  const cellKey = String(data.cell);
+  const camera = cameraForCell(cellKey, Number(data.zoom) || zoom || BUILD_BASE_ZOOM);
   const safe = {
-    cell: String(data.cell),
-    camX: Number(data.camX) || 0,
-    camY: Number(data.camY) || 0,
-    zoom: Number(data.zoom) || BASE_ZOOM,
+    cell: cellKey,
+    camX: camera.camX,
+    camY: camera.camY,
+    zoom: camera.zoom,
     updatedAt: Number(data.updatedAt) || Date.now()
   };
   offlineStore.setItem(HOME_KEY, JSON.stringify(safe));
@@ -508,12 +572,14 @@ function saveHomeDataLocal(data) {
 function saveHomeToFirebase(data) {
   if (!isLoggedIn() || !data?.cell || !window.db || !window.ref || !window.set) return Promise.resolve();
   const user = window.auth.currentUser;
+  const cellKey = String(data.cell);
+  const camera = cameraForCell(cellKey, Number(data.zoom) || zoom || BUILD_BASE_ZOOM);
   const safe = {
     uid: user.uid,
-    cell: String(data.cell),
-    camX: Number(data.camX) || 0,
-    camY: Number(data.camY) || 0,
-    zoom: Number(data.zoom) || BASE_ZOOM,
+    cell: cellKey,
+    camX: camera.camX,
+    camY: camera.camY,
+    zoom: camera.zoom,
     updatedAt: Date.now()
   };
   return window.set(window.ref(window.db, 'homes/' + user.uid), safe)
@@ -545,9 +611,7 @@ function loadHomeFromFirebase() {
     if (data && data.cell) {
       saveHomeDataLocal(data);
       reserveCellOwner(data.cell);
-    } else {
-      const local = getHomeData();
-      if (local?.cell) saveHomeToFirebase(local);
+      if (!walkMode) centerCameraOnCell(data.cell, Number(data.zoom) || BUILD_BASE_ZOOM);
     }
     updateHomeButton();
     updateHomeCellText();
@@ -864,21 +928,40 @@ function applyWorldNpcsData(data) {
     const stale = !saved.updatedAt || Date.now() - Number(saved.updatedAt) > NPC_STALE_MS;
     npc.homeX = clampNumber(saved.homeX, CELL, WORLD_COLS * CELL - CELL, initial.homeX);
     npc.homeY = clampNumber(saved.homeY, CELL, WORLD_ROWS * CELL - CELL, initial.homeY);
-    npc.x = clampNumber(saved.x, CELL, WORLD_COLS * CELL - CELL, initial.x);
-    npc.y = clampNumber(saved.y, CELL, WORLD_ROWS * CELL - CELL, initial.y);
-    npc.targetX = clampNumber(saved.targetX, CELL, WORLD_COLS * CELL - CELL, npc.targetX || npc.x);
-    npc.targetY = clampNumber(saved.targetY, CELL, WORLD_ROWS * CELL - CELL, npc.targetY || npc.y);
+    const savedX = clampNumber(saved.x, CELL, WORLD_COLS * CELL - CELL, initial.x);
+    const savedY = clampNumber(saved.y, CELL, WORLD_ROWS * CELL - CELL, initial.y);
+    const savedTargetX = clampNumber(saved.targetX, CELL, WORLD_COLS * CELL - CELL, savedX);
+    const savedTargetY = clampNumber(saved.targetY, CELL, WORLD_ROWS * CELL - CELL, savedY);
     npc.dir = ['up', 'down', 'left', 'right'].includes(saved.dir) ? saved.dir : npc.dir;
-    npc.moving = !!saved.moving;
     npc.chasing = !!saved.chasing;
     npc.targetPlayer = typeof saved.targetPlayer === 'string' ? saved.targetPlayer : '';
-    clampNpcToHomeCell(npc);
     const homeCell = cellFromWorld(npc.homeX, npc.homeY);
-    const currentCell = cellFromWorld(npc.x, npc.y);
-    if (stale || !homeCell || !currentCell || homeCell.key !== currentCell.key) {
+    const savedCell = cellFromWorld(savedX, savedY);
+    if (stale || !homeCell || !savedCell || homeCell.key !== savedCell.key) {
       npc.x = initial.x; npc.y = initial.y; npc.homeX = initial.homeX; npc.homeY = initial.homeY;
-      npc.targetX = initial.x; npc.targetY = initial.y; npc.moving = false; npc.chasing = false; npc.targetPlayer = '';
+      npc.targetX = initial.x; npc.targetY = initial.y; npc.syncTargetX = initial.x; npc.syncTargetY = initial.y;
+      npc.moving = false; npc.chasing = false; npc.targetPlayer = '';
+      continue;
     }
+    if (isNpcController()) {
+      npc.x = savedX;
+      npc.y = savedY;
+      npc.targetX = savedTargetX;
+      npc.targetY = savedTargetY;
+      npc.moving = !!saved.moving;
+    } else {
+      if (!npc.__syncReady) {
+        npc.x = savedX;
+        npc.y = savedY;
+        npc.__syncReady = true;
+      }
+      npc.syncTargetX = savedX;
+      npc.syncTargetY = savedY;
+      npc.targetX = savedTargetX;
+      npc.targetY = savedTargetY;
+      npc.moving = !!saved.moving || Math.hypot((npc.syncTargetX || npc.x) - npc.x, (npc.syncTargetY || npc.y) - npc.y) > 2;
+    }
+    clampNpcToHomeCell(npc);
   }
   if (hasBadNpcCluster()) {
     resetNpcsToInitialPositions();
@@ -901,6 +984,9 @@ function resetNpcsToInitialPositions() {
     npc.moving = false;
     npc.chasing = false;
     npc.targetPlayer = '';
+    npc.__syncReady = false;
+    npc.syncTargetX = pos.x;
+    npc.syncTargetY = pos.y;
   }
 }
 
@@ -1015,7 +1101,7 @@ function updateNpcs() {
   const chaseDistance = CELL * 2;
   const stopChaseDistance = CELL * 1;
   const playerSpeed = player.speed || 5;
-  const controller = isNpcController();
+  const controller = isNpcController() || !isLoggedIn();
 
   for (const npc of npcs) {
     if (!isNpcActive(npc)) {
@@ -1033,7 +1119,23 @@ function updateNpcs() {
       continue;
     }
 
-    if (!controller) continue;
+    if (!controller) {
+      const sx = Number(npc.syncTargetX);
+      const sy = Number(npc.syncTargetY);
+      if (Number.isFinite(sx) && Number.isFinite(sy)) {
+        const npcHome = getNpcHomeBounds(npc);
+        const dx = sx - npc.x;
+        const dy = sy - npc.y;
+        const dist = Math.hypot(dx, dy);
+        npc.moving = dist > 1.5;
+        if (dist > 0.5) {
+          const step = Math.min(dist, Math.max(1.2, dist * 0.16));
+          npc.x = clampNumber(npc.x + dx / dist * step, npcHome.minX, npcHome.maxX, npc.x);
+          npc.y = clampNumber(npc.y + dy / dist * step, npcHome.minY, npcHome.maxY, npc.y);
+        }
+      }
+      continue;
+    }
 
     const config = NPC_CONFIG[npc.kind];
     if (config.fixed) { npc.moving = false; continue; }
@@ -1283,8 +1385,12 @@ function loadBagFromFirebase() {
   if (!isLoggedIn() || !window.db || !window.ref || !window.get) return;
   window.get(window.ref(window.db, 'inventory/' + window.auth.currentUser.uid + '/bagItems')).then(snapshot => {
     const data = snapshot.val();
-    if (Array.isArray(data)) bagItems = data;
-    saveBagItems();
+    if (Array.isArray(data)) {
+      bagItems = data;
+      saveBagItems();
+    } else {
+      updateBagUI(true);
+    }
   }).catch(console.error);
 }
 
@@ -1333,11 +1439,15 @@ function deleteBagItemWithConfirm(id) {
   });
 }
 
-function updateBagUI() {
+function updateBagUI(force = false) {
   const bag = document.getElementById('topBagSlots');
   if (!bag) return;
   const limit = getBagLimit();
   const slots = 10;
+  const snapshot = JSON.stringify(bagItems.map(item => item ? [item.id, item.name, item.type, item.value, item.img, item.count] : null));
+  if (!force && snapshot === lastBagRenderSnapshot && bag.children.length === slots) return;
+  lastBagRenderSnapshot = snapshot;
+
   let html = '';
   for (let i = 0; i < slots; i++) {
     const item = bagItems[i];
@@ -1346,24 +1456,45 @@ function updateBagUI() {
   }
   bag.innerHTML = html;
   bag.querySelectorAll('.bagSlot:not(.locked)').forEach(btn => {
-    btn.onclick = () => openBagItemMenu(Number(btn.dataset.bagIndex));
+    const open = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      openBagItemMenu(Number(btn.dataset.bagIndex));
+    };
+    btn.onclick = open;
+    btn.onpointerdown = open;
   });
+}
+
+function bagActionHtml(item, actionText, yesClass, yesHandler, extraText = '') {
+  const safeId = String(item.id).replace(/'/g, "\\'");
+  const img = item.img ? `<img class="bagModalImg" src="${item.img}" alt="${item.name}">` : '';
+  return `<div class="bagActionBox">
+    ${img}
+    <h3>${item.name}</h3>
+    <p>${actionText}</p>
+    ${extraText ? `<small class="bagMissionHint">${extraText}</small>` : ''}
+    <div class="bagActionButtons">
+      <button type="button" class="${yesClass}" onclick="${yesHandler}('${safeId}')"><i class="fa-solid fa-check"></i> نعم</button>
+      <button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button>
+    </div>
+  </div>`;
 }
 
 function openBagItemMenu(index) {
   const item = bagItems[index];
   if (!item) return showToast('الخانة فارغة');
 
-  const safeId = String(item.id).replace(/'/g, "\\'");
   if (item.type === 'food') {
-    return showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد الأكل؟</p><button type="button" class="bagUseBtn" onclick="window.__useBagItem('${safeId}')"><i class="fa-solid fa-check"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
+    return showInfo('الحقيبة', bagActionHtml(item, 'هل تريد الأكل؟', 'bagUseBtn', 'window.__useBagItem'), true);
   }
 
   if (item.type === 'medicine') {
-    return showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد استخدام العلاج؟</p><button type="button" class="bagUseBtn" onclick="window.__useBagItem('${safeId}')"><i class="fa-solid fa-check"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
+    return showInfo('الحقيبة', bagActionHtml(item, 'هل تريد استخدام العلاج؟', 'bagUseBtn', 'window.__useBagItem'), true);
   }
 
-  showInfo('الحقيبة', `<div class="bagActionBox"><p><b>${item.name}</b></p><p>هل تريد حذف العنصر؟</p><button type="button" class="bagDeleteBtn" onclick="window.__deleteBagItem('${safeId}')"><i class="fa-solid fa-trash"></i> نعم</button><button type="button" onclick="document.getElementById('infoModal')?.classList.add('hidden')"><i class="fa-solid fa-xmark"></i> لا</button></div>`, true);
+  const hint = item.type === 'quest' ? 'تستطيع أخذ المهمة مرة أخرى' : '';
+  showInfo('الحقيبة', bagActionHtml(item, 'هل تريد حذف العنصر؟', 'bagDeleteBtn', 'window.__deleteBagItem', hint), true);
 }
 
 window.__useBagItem = id => { useBagItem(id); document.getElementById('infoModal')?.classList.add('hidden'); };
@@ -2163,6 +2294,17 @@ function visualRect(item) {
 function collisionRect(item) {
   const rect = visualRect(item);
   const shrink = 0.05;
+  const tileId = String(item.tileId || '');
+  const isWall = tileId.startsWith('wall_') || tileId.includes('wall');
+
+  if (isWall) {
+    return {
+      x: rect.x + rect.w * 0.08,
+      y: rect.y + rect.h * 0.58,
+      w: rect.w * 0.84,
+      h: rect.h * 0.34
+    };
+  }
 
   return {
     x: rect.x + rect.w * shrink,
@@ -2170,6 +2312,12 @@ function collisionRect(item) {
     w: rect.w * (1 - shrink * 2),
     h: rect.h * (1 - shrink * 2)
   };
+}
+
+function clampItemToCellByVisiblePixels(item) {
+  const box = getAlphaBox(item);
+  item.x = clampNumber(item.x, -item.w * box.left, CELL - item.w * box.right, item.x);
+  item.y = clampNumber(item.y, -item.h * box.top, CELL - item.h * box.bottom, item.y);
 }
 
 function rectsHit(a, b) {
@@ -2852,9 +3000,11 @@ function drawItems() {
     if (isGifSrc(tile.image)) placeGifDom(item.uid, tile.image, point.x, point.y, rect.w * zoom, rect.h * zoom, true, !!item.flipX, !!item.flipY);
 
     if (!walkMode && selectedIds.has(item.uid)) {
+      const vr = visualRect(item);
+      const vp = worldToScreen(vr.x, vr.y);
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2;
-      ctx.strokeRect(point.x - 3, point.y - 3, rect.w * zoom + 6, rect.h * zoom + 6);
+      ctx.strokeRect(vp.x - 3, vp.y - 3, vr.w * zoom + 6, vr.h * zoom + 6);
       drawResizeHandles(item);
       ctx.lineWidth = 1;
     }
@@ -2908,7 +3058,7 @@ function drawGhostTile() {
 }
 
 function getResizeHandles(item) {
-  const rect = itemRect(item);
+  const rect = visualRect(item);
   const p = worldToScreen(rect.x, rect.y);
   const w = rect.w * zoom;
   const h = rect.h * zoom;
@@ -3059,6 +3209,53 @@ function drawOnlinePlayers() {
   }
 }
 
+function drawHouseLabels() {
+  if (!walkMode) return;
+  const owners = {};
+  for (const item of getItems()) {
+    const owner = item.owner || world[item.cell]?.owner || '';
+    if (!owner || owner === currentOwner()) continue;
+    const profile = houseProfiles[owner];
+    if (!profile) continue;
+    const rect = visualRect(item);
+    if (!owners[owner]) owners[owner] = { minX: rect.x, minY: rect.y, maxX: rect.x + rect.w, maxY: rect.y + rect.h, profile };
+    else {
+      owners[owner].minX = Math.min(owners[owner].minX, rect.x);
+      owners[owner].minY = Math.min(owners[owner].minY, rect.y);
+      owners[owner].maxX = Math.max(owners[owner].maxX, rect.x + rect.w);
+      owners[owner].maxY = Math.max(owners[owner].maxY, rect.y + rect.h);
+    }
+  }
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const ownerId of Object.keys(owners)) {
+    const box = owners[ownerId];
+    const name = cleanHouseName(box.profile?.name || 'بيت لاعب', 30);
+    if (!name) continue;
+    const rating = getHouseRating(ownerId);
+    const stars = rating.count ? '★'.repeat(Math.max(1, Math.round(rating.avg))) + '☆'.repeat(Math.max(0, 5 - Math.round(rating.avg))) : '☆☆☆☆☆';
+    const centerX = (box.minX + box.maxX) / 2;
+    const topY = box.minY - 36;
+    const p = worldToScreen(centerX, topY);
+    if (p.x < -120 || p.x > canvas.clientWidth + 120 || p.y < -80 || p.y > canvas.clientHeight + 80) continue;
+    const fontSize = Math.max(14, 20 * zoom);
+    ctx.font = `800 ${fontSize}px "Baloo Bhaijaan 2", Arial, sans-serif`;
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(0,0,0,0.68)';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeText(name, p.x, p.y);
+    ctx.fillText(name, p.x, p.y);
+    ctx.font = `800 ${Math.max(11, 15 * zoom)}px Arial, sans-serif`;
+    ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillStyle = '#facc15';
+    ctx.strokeText(stars, p.x, p.y + fontSize * 0.95);
+    ctx.fillText(stars, p.x, p.y + fontSize * 0.95);
+  }
+  ctx.restore();
+}
+
 function drawSelectionBox() {
   if (!selectionBox || walkMode) return;
 
@@ -3086,6 +3283,7 @@ function draw() {
     drawRandomScenery();
     drawMapMoney();
     drawItems();
+    drawHouseLabels();
     drawNpcs();
     drawGrid(width, height);
     drawHomeHighlight();
@@ -3425,6 +3623,11 @@ function hideBigTilePreview() {
   document.getElementById('bigTilePreview')?.classList.add('hidden');
 }
 
+function updateActiveLayerLabel() {
+  const label = document.getElementById('layerCurrentText');
+  if (label) label.textContent = `الطبقة الحالية: ${activeLayer}`;
+}
+
 function setActiveLayer(n) {
   activeLayer = Math.max(1, Math.min(5, Number(n || 1)));
 
@@ -3434,6 +3637,7 @@ function setActiveLayer(n) {
   document.querySelectorAll('.layerBtn').forEach(button => {
     button.classList.toggle('active', Number(button.dataset.layer) === activeLayer);
   });
+  updateActiveLayerLabel();
 
   if (selectedIds.size && isLoggedIn()) {
     pushUndo();
@@ -3750,11 +3954,7 @@ function toggleHomeCamera() {
     return;
   }
 
-  camX = Number(saved.camX) || camX;
-  camY = Number(saved.camY) || camY;
-  if (typeof saved.zoom === 'number') zoom = saved.zoom;
-  clampCam();
-  subscribeNearbyWorldCells(true);
+  centerCameraOnCell(saved.cell, Number(saved.zoom) || BUILD_BASE_ZOOM);
   flashHomeCell(saved.cell);
   showToast('تمت العودة للمنزل');
 }
@@ -3772,7 +3972,7 @@ function setHomeCamera() {
   if (!cell) return;
   if (!canEditCell(cell.key)) return showToast('هذه الخلية مملوكة للاعب آخر');
 
-  const data = { camX, camY, zoom, cell: cell.key, updatedAt: Date.now() };
+  const data = { ...cameraForCell(cell.key, zoom || BUILD_BASE_ZOOM), cell: cell.key, updatedAt: Date.now() };
   saveHomeDataLocal(data);
   saveHomeToFirebase(data).then(() => {
     flashHomeCell(cell.key);
@@ -3830,7 +4030,7 @@ function moveHomeToCurrentCell() {
       .then(() => window.remove(window.ref(window.db, 'world/' + oldCell)).catch(() => {}))
       .then(() => releaseCellOwner(oldCell))
       .then(() => {
-        const data = { camX, camY, zoom, cell: newCell, updatedAt: Date.now() };
+        const data = { ...cameraForCell(newCell, zoom || BUILD_BASE_ZOOM), cell: newCell, updatedAt: Date.now() };
         saveHomeDataLocal(data);
         return saveHomeToFirebase(data);
       })
@@ -4034,8 +4234,7 @@ function paintOne(x, y) {
   };
 
   applyAutoAlign(item, cell.key);
-  item.x = clampNumber(item.x, -scaledW + 1, CELL - 1, 0);
-  item.y = clampNumber(item.y, -scaledH + 1, CELL - 1, 0);
+  clampItemToCellByVisiblePixels(item);
   cellData.items.push(item);
 
   saveLocalWorld();
@@ -4107,8 +4306,7 @@ function moveSelected(dx, dy) {
     if (selectedIds.has(item.uid) && canEditCell(item.cell) && canUseBuildSettingsAtCell(item.cell, false)) {
       item.x += dx;
       item.y += dy;
-      item.x = clampNumber(item.x, 0, CELL, item.x);
-      item.y = clampNumber(item.y, 0, CELL, item.y);
+      clampItemToCellByVisiblePixels(item);
       changedCells.add(item.cell);
     }
   }
@@ -5362,6 +5560,8 @@ function waitFirebaseReady() {
     resetRealtimeSession();
 
     if (currentUser) {
+      gameStateFirebaseReady = false;
+      lastGameStateSnapshot = '';
       gameState.lastHungerAt = Date.now();
       gameState.lastHealthAt = Date.now();
       saveGameState(true);
