@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v18.2</title>
+  <title>GameNjd v18.3</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,15 +10,15 @@
   <link rel="icon" href="All-Pic/logo/njd-white-black-sq.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v18.2" />
+  <meta property="og:title" content="GameNjd v18.3" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
-  <meta property="og:image" content="All-Pic/logo/njd-white-black-ful.png" />
+  <meta property="og:image" content="All-Pic/logo/njd-white-black-sq.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v18.2" />
+  <meta name="twitter:title" content="GameNjd v18.3" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
-  <meta name="twitter:image" content="All-Pic/logo/njd-white-black-ful.png" />
+  <meta name="twitter:image" content="All-Pic/logo/njd-white-black-sq.png" />
 
   <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;600;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
@@ -568,7 +568,7 @@
 
       <div id="authLoginPanel" class="authPanel">
         <label for="authUsernameInput">اسم المستخدم</label>
-        <input id="authUsernameInput" type="text" placeholder="مثال: rashid123 أو email@example.com" autocomplete="username" inputmode="latin" />
+        <input id="authUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
 
         <label for="authPassInput">كلمة المرور</label>
         <input id="authPassInput" type="password" placeholder="الرقم السري" autocomplete="current-password" />
@@ -581,7 +581,7 @@
 
       <div id="authSignupPanel" class="authPanel hidden">
         <label for="signupUsernameInput">اسم المستخدم الإنجليزي</label>
-        <input id="signupUsernameInput" type="text" placeholder="مثال: rashid123 أو email@example.com" autocomplete="username" inputmode="latin" />
+        <input id="signupUsernameInput" type="text" placeholder="مثال: rashid123" autocomplete="username" inputmode="latin" />
 
         <label for="signupPassInput">كلمة المرور</label>
         <input id="signupPassInput" type="password" placeholder="الرقم السري (6 أحرف على الأقل)" autocomplete="new-password" />
@@ -601,7 +601,7 @@
       <div id="authResetPanel" class="authPanel hidden">
         <label for="resetEmailInput">الإيميل الحقيقي المربوط</label>
         <input id="resetEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
-        <p class="smallHint">لن تصلك رسالة استعادة إذا لم تربط حسابك بإيميل حقيقي.</p>
+        <p class="smallHint">يمكنك تغيير الإيميل الحقيقي من الإعدادات بعد الدخول.</p>
 
         <button id="resetPasswordBtn" class="mainBtn authSubmitBtn" type="button">
           <i class="fa-solid fa-envelope"></i>
@@ -643,14 +643,14 @@
       </button>
       <p class="smallHint">مسموح لكل حساب بخلية بيت واحدة فقط.</p>
 
-      <label for="linkEmailInput"><i class="fa-solid fa-envelope"></i> ربط الإيميل الحقيقي</label>
+      <label for="linkEmailInput"><i class="fa-solid fa-envelope"></i> تغيير الإيميل الحقيقي</label>
       <input id="linkEmailInput" type="email" placeholder="example@email.com" autocomplete="email" />
       <label for="linkPasswordInput"><i class="fa-solid fa-key"></i> كلمة المرور الحالية</label>
       <input id="linkPasswordInput" type="password" placeholder="اكتب كلمة المرور الحالية للتأكيد" autocomplete="current-password" />
-      <p class="smallHint">بعد الربط تستطيع استخدام استعادة كلمة المرور على الإيميل الحقيقي.</p>
+      <p class="smallHint">بعد تغيير الإيميل تستطيع استخدام استعادة كلمة المرور على الإيميل الحقيقي.</p>
       <button id="linkEmailBtn" class="mainBtn authSubmitBtn" type="button">
         <i class="fa-solid fa-link"></i>
-        ربط الإيميل
+        تغيير الإيميل
       </button>
       <p id="settingsMessage" class="authMessage"></p>
     </div>
