@@ -1,4 +1,4 @@
-/* GameNjd v18.3 */
+/* GameNjd v18.4 */
 
 * {
   box-sizing: border-box;
@@ -2703,7 +2703,7 @@ button { font-size: 13px; padding: 8px; }
 }
 
 
-/* ===== GameNjd v18.3 fixes ===== */
+/* ===== GameNjd v18.4 fixes ===== */
 .topBagPanel,
 .topHudPanel,
 .topStatsPanel {
@@ -2717,4 +2717,124 @@ button { font-size: 13px; padding: 8px; }
 .joystick {
   left: max(16px, env(safe-area-inset-left)) !important;
   bottom: max(110px, env(safe-area-inset-bottom)) !important;
+}
+
+
+/* ===== GameNjd v18.4 fixes ===== */
+.topHudPanel .topStatsPanel {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 6px !important;
+  min-width: 260px !important;
+  max-width: 460px !important;
+  align-content: center !important;
+}
+
+.topStatLine {
+  display: grid !important;
+  grid-template-columns: 70px minmax(130px, 1fr) 105px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  direction: ltr !important;
+}
+
+.topStatLine b {
+  color: #facc15 !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.topStatLine span {
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  direction: rtl !important;
+}
+
+.topStatLine span i {
+  margin-right: 7px !important;
+  margin-left: 0 !important;
+}
+
+.topStatLine .topStatusBar {
+  width: 100% !important;
+  height: 8px !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+.layerCurrentText {
+  display: block;
+  color: #facc15;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.bagActionBox {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.bagModalImg {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  background: #020617;
+  border: 1px solid #475569;
+  border-radius: 18px;
+  padding: 10px;
+  image-rendering: auto;
+}
+
+.bagActionBox h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.bagActionBox p {
+  margin: 0;
+  color: #facc15;
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.bagMissionHint {
+  color: #93c5fd;
+  font-weight: 800;
+}
+
+.bagActionButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: min(360px, 100%);
+}
+
+.bagUseBtn { background: #16a34a !important; }
+.bagDeleteBtn { background: #dc2626 !important; }
+
+.topBagSlots .bagSlot {
+  touch-action: manipulation;
+}
+
+@media (max-width: 760px) {
+  .topHudPanel .topStatsPanel {
+    min-width: 220px !important;
+    max-width: 100% !important;
+  }
+  .topStatLine {
+    grid-template-columns: 56px minmax(100px, 1fr) 86px !important;
+    gap: 8px !important;
+  }
+  .topStatLine b,
+  .topStatLine span {
+    font-size: 15px !important;
+  }
 }
