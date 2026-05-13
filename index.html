@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>GameNjd v18.3</title>
+  <title>GameNjd v18.4</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f172a" />
@@ -10,13 +10,13 @@
   <link rel="icon" href="All-Pic/logo/njd-white-black-sq.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="GameNjd v18.3" />
+  <meta property="og:title" content="GameNjd v18.4" />
   <meta property="og:description" content="لعبة بناء وتجول عربية على شبكة كبيرة، ابنِ عالمك واختر شخصيتك وتجول بين الخلايا." />
   <meta property="og:image" content="All-Pic/logo/njd-white-black-sq.png" />
   <meta property="og:url" content="./" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GameNjd v18.3" />
+  <meta name="twitter:title" content="GameNjd v18.4" />
   <meta name="twitter:description" content="لعبة بناء وتجول عربية على شبكة كبيرة." />
   <meta name="twitter:image" content="All-Pic/logo/njd-white-black-sq.png" />
 
@@ -70,10 +70,16 @@
 
       <div class="topHudPanel">
         <div class="topStatsPanel">
-          <div class="topStatRow"><span><i class="fa-solid fa-heart-pulse"></i> الصحة</span><b data-stat="healthText">100%</b></div>
-          <div class="topStatusBar"><span data-stat="healthFill"></span></div>
-          <div class="topStatRow"><span><i class="fa-solid fa-bowl-food"></i> الجوع</span><b data-stat="hungerText">100%</b></div>
-          <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+          <div class="topStatLine healthStatLine">
+            <b data-stat="healthText">100%</b>
+            <div class="topStatusBar"><span data-stat="healthFill"></span></div>
+            <span>الصحة <i class="fa-solid fa-heart-pulse"></i></span>
+          </div>
+          <div class="topStatLine hungerStatLine">
+            <b data-stat="hungerText">100%</b>
+            <div class="topStatusBar hungerBar"><span data-stat="hungerFill"></span></div>
+            <span>الجوع <i class="fa-solid fa-bowl-food"></i></span>
+          </div>
         </div>
         <div class="topBagPanel">
           <div class="bagTitle"><i class="fa-solid fa-briefcase"></i> الحقيبة</div>
@@ -408,6 +414,7 @@
           <label>
             <i class="fa-solid fa-layer-group"></i>
             الطبقة
+            <b id="layerCurrentText" class="layerCurrentText">الطبقة الحالية: 1</b>
           </label>
 
           <div id="layersPanel" class="layerChoices">
@@ -448,7 +455,7 @@
             <i class="fa-solid fa-maximize"></i>
             حجم العنصر
           </label>
-          <input id="itemScale" type="range" min="0.20" max="1.00" step="0.04" value="0.70" />
+          <input id="itemScale" type="range" min="0.10" max="2.00" step="0.09" value="0.60" />
         </div>
 
         <div class="desktopTools">
@@ -504,7 +511,7 @@
             انتقال إلى خلية
           </label>
 
-          <input id="jumpInput" type="text" placeholder="مثال K90" />
+          <input id="jumpInput" type="text" placeholder="مثال K10" />
 
           <button id="jumpBtn" type="button">
             <i class="fa-solid fa-paper-plane"></i>
