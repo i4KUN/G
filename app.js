@@ -1,5 +1,5 @@
 'use strict';
-// GameNjd v18.2
+// GameNjd v18.3
 
 // v15.4: تم إلغاء الحفظ المحلي داخل كود اللعبة، والاعتماد على Firebase فقط.
 const __memoryStore = {};
@@ -19,7 +19,7 @@ const WORLD_ROWS = 20;
 const CELL = 500;
 const MINI = 10;
 
-const VERSION = '18.2';
+const VERSION = '18.3';
 const KEY_PREFIX = 'GameNjd_v' + VERSION.replace(/\D/g, '');
 
 function storageKey(name) {
@@ -70,15 +70,16 @@ const HOME_MOVE_MODE_KEY = storageKey('home_move_mode');
 
 // حدود الزوم: التبعيد محدود، والتقريب واسع
 const BASE_ZOOM = 0.30;
-const ZOOM_STEP = 1.12;
+const BUILD_BASE_ZOOM = 1.80;
+const ZOOM_STEP = 1.10;
 const ZOOM_OUT_STEPS = 3;
 const WALK_ZOOM_OUT_STEPS = 3;
 const WALK_ZOOM_IN_STEPS = 3; // زوم التجول بين 1 و2 تقريبًا
 const ZOOM_IN_STEPS = 10;
-const WALK_BASE_ZOOM = 1.00;
-const MIN_ZOOM = 0.10;
-const MAX_ZOOM = 0.80;
-const WALK_MIN_ZOOM = 1.00;
+const WALK_BASE_ZOOM = 1.50;
+const MIN_ZOOM = 1.10;
+const MAX_ZOOM = 2.80;
+const WALK_MIN_ZOOM = 1.40;
 const WALK_MAX_ZOOM = 2.00;
 
 // أوقات النقصان والزيادة
@@ -92,8 +93,8 @@ const ASSET_BASE = 'All-Pic/tiles';
 
 const SPRITE_COLS = 4;
 const SPRITE_ROWS = 4;
-const PLAYER_DRAW_W = 80;
-const PLAYER_DRAW_H = 80;
+const PLAYER_DRAW_W = 70;
+const PLAYER_DRAW_H = 70;
 
 const DEFAULT_FLOOR_SRC = 'All-Pic/map-pic/00.png';
 
@@ -164,30 +165,30 @@ const SIZE_DATA = {
 };
 
 const tileGroups = [
-  { key: 'bag', name: 'أكياس', folder: 'Bag', prefix: 'Bag', count: 10, w: 23, h: 23, blocking: false },
-  { key: 'lighting', name: 'إنارات', folder: 'Lighting', prefix: 'Lighting', count: 10, w: 21, h: 27, blocking: false },
-  { key: 'door', name: 'باب', folder: 'Door', prefix: 'Door', count: 11, w: 30, h: 36, blocking: true },
-  { key: 'coffee_pot', name: 'دلة', folder: 'teapot', prefix: 'teapot', count: 18, w: 21, h: 21, blocking: false },
-  { key: 'cabinet', name: 'دولاب', folder: 'Cabinet', prefix: 'Cabinet', count: 16, w: 36, h: 36, blocking: false },
-  { key: 'decor', name: 'ديكورات', folder: 'Decor', prefix: 'Decor', count: 74, w: 21, h: 21, blocking: false },
-  { key: 'carpet', name: 'زولية', folder: 'Carpet', prefix: 'Carpet', count: 13, w: 45, h: 36, blocking: false },
-  { key: 'curtain', name: 'ستارة', folder: 'Curtain', prefix: 'Curtain', count: 14, w: 30, h: 36, blocking: false },
-  { key: 'bed', name: 'سرير', folder: 'Bed', prefix: 'Bed', count: 5, w: 45, h: 33, blocking: false },
-  { key: 'plant', name: 'شجرة', folder: 'Plant', prefix: 'Plant', count: 106, w: 24, h: 24, blocking: false },
-  { key: 'bedsheet', name: 'شرشف', folder: 'Bedsheet', prefix: 'Bedsheet', count: 24, w: 39, h: 30, blocking: false },
-  { key: 'plate', name: 'صحن', folder: 'Plate', prefix: 'Plate', count: 83, w: 20, h: 20, blocking: false },
-  { key: 'box', name: 'صندوق', folder: 'Box', prefix: 'Box', count: 8, w: 24, h: 24, blocking: false },
-  { key: 'table', name: 'طاولة', folder: 'Table', prefix: 'Table', count: 49, w: 36, h: 27, blocking: false },
-  { key: 'pottery', name: 'فخار', folder: 'Pottery', prefix: 'Pottery', count: 25, w: 23, h: 23, blocking: false },
-  { key: 'cooking_pot', name: 'قدر', folder: 'Pot', prefix: 'Pot', count: 12, w: 23, h: 23, blocking: false },
-  { key: 'chair', name: 'كرسي', folder: 'Chair', prefix: 'Chair', count: 15, w: 29, h: 29, blocking: false },
-  { key: 'cup', name: 'كوب', folder: 'Cup', prefix: 'Cup', count: 18, w: 17, h: 17, blocking: false },
-  { key: 'painting', name: 'لوحة', folder: 'Painting', prefix: 'Painting', count: 20, w: 27, h: 23, blocking: false },
-  { key: 'pillow', name: 'مخدة', folder: 'Pillow', prefix: 'Pillow', count: 41, w: 21, h: 17, blocking: false },
-  { key: 'floor_mattress', name: 'مرتبة', folder: 'Mattress', prefix: 'Mattress', count: 12, w: 39, h: 30, blocking: false },
-  { key: 'window', name: 'نافذة', folder: 'Window', prefix: 'Window', count: 15, w: 29, h: 29, blocking: false },
-  { key: 'floor', name: 'ارضيات', folder: 'Floof', prefix: 'Floof', count: 86, w: 66, h: 66, blocking: false },
-  { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 48, h: 48, blocking: true }
+  { key: 'bag', name: 'أكياس', folder: 'Bag', prefix: 'Bag', count: 10, w: 27, h: 27, blocking: false },
+  { key: 'lighting', name: 'إنارات', folder: 'Lighting', prefix: 'Lighting', count: 10, w: 25, h: 32, blocking: false },
+  { key: 'door', name: 'باب', folder: 'Door', prefix: 'Door', count: 11, w: 35, h: 42, blocking: true },
+  { key: 'coffee_pot', name: 'دلة', folder: 'teapot', prefix: 'teapot', count: 18, w: 25, h: 25, blocking: false },
+  { key: 'cabinet', name: 'دولاب', folder: 'Cabinet', prefix: 'Cabinet', count: 16, w: 42, h: 42, blocking: false },
+  { key: 'decor', name: 'ديكورات', folder: 'Decor', prefix: 'Decor', count: 74, w: 25, h: 25, blocking: false },
+  { key: 'carpet', name: 'زولية', folder: 'Carpet', prefix: 'Carpet', count: 13, w: 52, h: 42, blocking: false },
+  { key: 'curtain', name: 'ستارة', folder: 'Curtain', prefix: 'Curtain', count: 14, w: 35, h: 42, blocking: false },
+  { key: 'bed', name: 'سرير', folder: 'Bed', prefix: 'Bed', count: 5, w: 52, h: 38, blocking: false },
+  { key: 'plant', name: 'شجرة', folder: 'Plant', prefix: 'Plant', count: 106, w: 28, h: 28, blocking: false },
+  { key: 'bedsheet', name: 'شرشف', folder: 'Bedsheet', prefix: 'Bedsheet', count: 24, w: 45, h: 35, blocking: false },
+  { key: 'plate', name: 'صحن', folder: 'Plate', prefix: 'Plate', count: 83, w: 23, h: 23, blocking: false },
+  { key: 'box', name: 'صندوق', folder: 'Box', prefix: 'Box', count: 8, w: 28, h: 28, blocking: false },
+  { key: 'table', name: 'طاولة', folder: 'Table', prefix: 'Table', count: 49, w: 42, h: 32, blocking: false },
+  { key: 'pottery', name: 'فخار', folder: 'Pottery', prefix: 'Pottery', count: 25, w: 27, h: 27, blocking: false },
+  { key: 'cooking_pot', name: 'قدر', folder: 'Pot', prefix: 'Pot', count: 12, w: 27, h: 27, blocking: false },
+  { key: 'chair', name: 'كرسي', folder: 'Chair', prefix: 'Chair', count: 15, w: 33, h: 33, blocking: false },
+  { key: 'cup', name: 'كوب', folder: 'Cup', prefix: 'Cup', count: 18, w: 20, h: 20, blocking: false },
+  { key: 'painting', name: 'لوحة', folder: 'Painting', prefix: 'Painting', count: 20, w: 32, h: 27, blocking: false },
+  { key: 'pillow', name: 'مخدة', folder: 'Pillow', prefix: 'Pillow', count: 41, w: 25, h: 20, blocking: false },
+  { key: 'floor_mattress', name: 'مرتبة', folder: 'Mattress', prefix: 'Mattress', count: 12, w: 45, h: 35, blocking: false },
+  { key: 'window', name: 'نافذة', folder: 'Window', prefix: 'Window', count: 15, w: 33, h: 33, blocking: false },
+  { key: 'floor', name: 'ارضيات', folder: 'Floof', prefix: 'Floof', count: 86, w: 77, h: 77, blocking: false },
+  { key: 'wall', name: 'جدران', folder: 'Wall', prefix: 'Wall', count: 27, w: 57, h: 57, blocking: true }
 ];
 
 let zoom = BASE_ZOOM;
@@ -204,10 +205,10 @@ let blockingMode = false;
 let flipMode = false;
 let flipYMode = false;
 let autoAlignMode = false;
-let itemScale = 0.70;
-const ITEM_SCALE_MIN = 0.20;
-const ITEM_SCALE_MAX = 1.00;
-const ITEM_SCALE_STEP = 0.04;
+let itemScale = 0.60;
+const ITEM_SCALE_MIN = 0.10;
+const ITEM_SCALE_MAX = 2.00;
+const ITEM_SCALE_STEP = 0.09;
 
 let walkMode = false;
 let isDown = false;
@@ -550,6 +551,7 @@ function loadHomeFromFirebase() {
     }
     updateHomeButton();
     updateHomeCellText();
+    subscribeNearbyWorldCells(true);
   }).catch(error => console.error('home load error:', error));
 }
 
@@ -786,17 +788,17 @@ const NPC_CONFIG = {
   shepherd: { label: 'الراعي', src: 'All-Pic/npc/q7.png', mode: 'always', type: 'quest' },
   camel: { label: 'الجمل الضائع', src: 'All-Pic/npc/q3.png', mode: 'always', type: 'quest' },
   archaeologist: { label: 'الباحثة الأثرية', src: 'All-Pic/npc/q09.png', mode: 'always', type: 'quest' },
-  ruins: { label: 'الآثار', src: 'All-Pic/npc/q10.png', mode: 'always', type: 'quest', fixed: true },
+  ruins: { label: 'الآثار', src: 'All-Pic/npc/q10.png', mode: 'always', type: 'quest', fixed: true, scale: 1 },
   herbalist: { label: 'العطارة', src: 'All-Pic/npc/q11.png', mode: 'always', type: 'quest' },
-  rarePlant: { label: 'النبتة النادرة', src: 'All-Pic/npc/q12.png', mode: 'always', type: 'quest', fixed: true },
+  rarePlant: { label: 'النبتة النادرة', src: 'All-Pic/npc/q12.png', mode: 'always', type: 'quest', fixed: true, scale: 0.57 },
   messenger: { label: 'صاحب الرسالة', src: 'All-Pic/npc/q13.png', mode: 'always', type: 'quest' },
   messengerFriend: { label: 'صديق صاحب الرسالة', src: 'All-Pic/npc/q14.png', mode: 'always', type: 'quest' },
   fireMan: { label: 'صاحب الخيمة', src: 'All-Pic/npc/q15.png', mode: 'always', type: 'quest' },
-  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', fixed: true, light: true, scale: 2.2, blocking: true },
-  well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', fixed: true },
+  burningTent: { label: 'الخيمة المحترقة', src: 'All-Pic/npc/q16.gif', mode: 'always', type: 'quest', fixed: true, light: true, scale: 3.57, blocking: true },
+  well: { label: 'البئر', src: 'All-Pic/npc/q17.png', mode: 'always', type: 'quest', fixed: true, scale: 0.71 },
   dateWoman: { label: 'صاحبة الضيوف', src: 'All-Pic/npc/q18.png', mode: 'always', type: 'quest' },
-  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', fixed: true, scale: 2.2, blocking: true },
-  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', fixed: true, scale: 1.4, blocking: true }
+  dateHouse: { label: 'بيت صاحبة الضيوف', src: 'All-Pic/npc/q19.png', mode: 'always', type: 'quest', fixed: true, scale: 3.57, blocking: true },
+  palm: { label: 'النخلة', src: 'All-Pic/npc/q20.png', mode: 'always', type: 'quest', fixed: true, scale: 2.86, blocking: true }
 };
 
 const npcImageCache = {};
@@ -941,7 +943,6 @@ function saveWorldNpcsToFirebase(force = false) {
 
 function listenWorldNpcsFromFirebase() {
   if (worldNpcsListenerStarted) return;
-  if (!isLoggedIn()) return;
   if (!window.db || !window.ref || !window.onValue) return;
 
   worldNpcsListenerStarted = true;
@@ -1513,7 +1514,7 @@ function drawMapMoney() {
     }
 
     const p = worldToScreen(coin.x, coin.y);
-    const size = 34 * zoom;
+    const size = 30 * zoom;
     if (!img) {
       img = document.createElement('img');
       img.id = 'coin_' + coin.id;
@@ -1777,7 +1778,7 @@ function nearbyCellKeys(centerKey, radius = CHUNK_RADIUS) {
 
 function subscribeNearbyWorldCells(force = false) {
   if (!isLoggedIn() || !USE_NEARBY_WORLD_LOADING || !window.db || !window.ref || !window.onValue) return;
-  const currentCell = cellFromWorld(player.x, player.y) || cellFromWorld(camX + canvas.clientWidth / zoom / 2, camY + canvas.clientHeight / zoom / 2);
+  const currentCell = walkMode ? cellFromWorld(player.x, player.y) : cellFromWorld(camX + canvas.clientWidth / zoom / 2, camY + canvas.clientHeight / zoom / 2);
   if (!currentCell) return;
   if (!force && currentCell.key === lastSubscribedCenterCell) return;
 
@@ -1806,6 +1807,7 @@ function subscribeNearbyWorldCells(force = false) {
       }
       saveLocalWorld();
       updateInfoPanel();
+      updateHousePanel();
     };
 
     worldListeners[key] = callback;
@@ -3752,6 +3754,7 @@ function toggleHomeCamera() {
   camY = Number(saved.camY) || camY;
   if (typeof saved.zoom === 'number') zoom = saved.zoom;
   clampCam();
+  subscribeNearbyWorldCells(true);
   flashHomeCell(saved.cell);
   showToast('تمت العودة للمنزل');
 }
@@ -3875,7 +3878,7 @@ function changeItemScale(delta) {
 }
 
 function updateItemScale(event) {
-  const newScale = Math.max(ITEM_SCALE_MIN, Math.min(ITEM_SCALE_MAX, Number(event.target.value || 0.70))); 
+  const newScale = Math.max(ITEM_SCALE_MIN, Math.min(ITEM_SCALE_MAX, Number(event.target.value || 0.60))); 
   const factor = newScale / itemScale;
   itemScale = newScale;
 
@@ -3947,7 +3950,7 @@ function applyAutoAlign(item, cellKey) {
   const cellData = world[cellKey];
   if (!cellData || !Array.isArray(cellData.items)) return;
 
-  const snapRange = 120;
+  const snapRange = Math.max(18, Math.min(item.w, item.h) * 0.55);
   const candidates = [];
 
   for (const other of cellData.items) {
@@ -5177,7 +5180,7 @@ function toggleWalk() {
   walkMode = !walkMode;
 
   if (walkMode) {
-    previousBuildZoom = zoom;
+    previousBuildZoom = zoom < MIN_ZOOM ? BUILD_BASE_ZOOM : zoom;
     zoom = clampZoomValue(WALK_BASE_ZOOM);
     selectedIds.clear();
     clearPaintState();
@@ -5193,7 +5196,7 @@ function toggleWalk() {
     showCharacterModal(false);
   } else {
     npcs.forEach(npc => { npc.chasing = false; npc.moving = false; pickNpcTarget(npc); });
-    zoom = clampZoomValue(previousBuildZoom || BASE_ZOOM);
+    zoom = clampZoomValue(previousBuildZoom || BUILD_BASE_ZOOM);
     document.body.classList.remove('walking');
     panel?.classList.remove('closed');
     resetJoystick();
@@ -5374,6 +5377,7 @@ function waitFirebaseReady() {
       listenWorldNpcsFromFirebase();
     } else {
       if (walkMode) toggleWalk();
+      listenWorldNpcsFromFirebase();
     }
 
     updateAuthUI();
