@@ -153,7 +153,6 @@ let gridOpacity = 0.45;
 let selectedTile = null;
 let activeCategory = '';
 let activeLayer = 1;
-let brushSize = 1;
 let eraser = false;
 let blockingMode = false;
 let flipMode = false;
@@ -307,10 +306,11 @@ function loadGameState() {
       lastHungerAt: Number(saved.lastHungerAt) || now,
       lastHealthAt: Number(saved.lastHealthAt) || now,
       lastLevelAt: Number(saved.lastLevelAt) || now,
+      visitedCells: Array.isArray(saved.visitedCells) ? saved.visitedCells.filter(Boolean).slice(-50) : [],
       quests: saved.quests && typeof saved.quests === 'object' ? saved.quests : {}
     };
   } catch {
-    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, quests: {} };
+    return { health: 100, hunger: 100, levelPoints: 0, money: 0, lastHungerAt: now, lastHealthAt: now, lastLevelAt: now, visitedCells: [], quests: {} };
   }
 }
 
@@ -329,6 +329,7 @@ function normalizeGameState(data = {}) {
     lastHungerAt: Number(data.lastHungerAt) || now,
     lastHealthAt: Number(data.lastHealthAt) || now,
     lastLevelAt: Number(data.lastLevelAt) || now,
+    visitedCells: Array.isArray(data.visitedCells) ? data.visitedCells.filter(Boolean).slice(-50) : (base.visitedCells || []),
     quests: data.quests && typeof data.quests === 'object' ? data.quests : (base.quests || {}),
     updatedAt: Number(data.updatedAt) || Date.now()
   };
@@ -345,6 +346,7 @@ function saveGameState(localOnly = false) {
     hunger: gameState.hunger,
     levelPoints: gameState.levelPoints,
     money: gameState.money,
+    visitedCells: gameState.visitedCells,
     quests: gameState.quests,
     lastHungerAt: gameState.lastHungerAt,
     lastHealthAt: gameState.lastHealthAt,
@@ -684,7 +686,7 @@ function saveHouseProfile() {
 }
 
 function listenHouseData() {
-  if (!isLoggedIn() || !window.db || !window.ref || !window.onValue) return;
+  if (!window.db || !window.ref || !window.onValue) return;
   if (houseProfilesListenerOff || houseRatingsListenerOff) return;
 
   houseProfilesListenerOff = window.onValue(window.ref(window.db, 'houseProfiles'), snapshot => {
@@ -785,6 +787,8 @@ npcs.forEach(npc => { initialNpcPositions[npc.id] = { x: npc.x, y: npc.y, homeX:
 let worldNpcsListenerStarted = false;
 let worldNpcsLoaded = false;
 let lastWorldNpcsSave = 0;
+let worldNpcControllerUid = '';
+let worldNpcControllerUpdatedAt = 0;
 
 function npcToFirebaseData(npc) {
   return {
@@ -800,6 +804,7 @@ function npcToFirebaseData(npc) {
     targetX: Math.round(npc.targetX || npc.x),
     targetY: Math.round(npc.targetY || npc.y),
     targetPlayer: npc.targetPlayer || '',
+    controllerUid: getNpcControllerUid() || currentUser?.uid || '',
     updatedAt: Date.now()
   };
 }
@@ -809,6 +814,13 @@ function applyWorldNpcsData(data) {
     seedWorldNpcsToFirebase();
     return;
   }
+  const controllerRows = Object.values(data || {}).filter(item => item && typeof item === 'object' && item.controllerUid);
+  if (controllerRows.length) {
+    controllerRows.sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+    worldNpcControllerUid = String(controllerRows[0].controllerUid || '');
+    worldNpcControllerUpdatedAt = Number(controllerRows[0].updatedAt || 0);
+  }
+
   const ids = new Set(npcs.map(n => n.id));
   const savedIds = Object.keys(data || {});
   const missing = [...ids].some(id => !data[id]);
@@ -901,6 +913,10 @@ function hasBadNpcCluster() {
 }
 
 function getNpcControllerUid() {
+  if (worldNpcControllerUid && Date.now() - worldNpcControllerUpdatedAt < NPC_STALE_MS) {
+    return worldNpcControllerUid;
+  }
+
   const ids = Object.keys(onlinePlayers || {}).filter(Boolean);
   if (currentUser?.uid && !ids.includes(currentUser.uid)) ids.push(currentUser.uid);
   ids.sort();
@@ -912,18 +928,16 @@ function isNpcController() {
 }
 
 function seedWorldNpcsToFirebase() {
-  if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
-  const data = {};
-  npcs.forEach(npc => { data[npc.id] = npcToFirebaseData(npc); });
-  window.set(window.ref(window.db, 'worldNpcs'), data).catch(error => console.error('worldNpcs seed error:', error));
+  if (!isLoggedIn() || !isNpcController() || !window.db || !window.ref || !window.set) return;
+  Promise.all(npcs.map(npc => window.set(window.ref(window.db, 'worldNpcs/' + npc.id), npcToFirebaseData(npc))))
+    .catch(error => console.error('worldNpcs seed error:', error));
 }
 
 function saveWorldNpcsToFirebase(force = false) {
   if (!force && !isNpcController()) return;
   if (!isLoggedIn() || !window.db || !window.ref || !window.set) return;
-  const data = {};
-  npcs.forEach(npc => { data[npc.id] = npcToFirebaseData(npc); });
-  window.set(window.ref(window.db, 'worldNpcs'), data).catch(error => console.error('worldNpcs save error:', error));
+  Promise.all(npcs.map(npc => window.set(window.ref(window.db, 'worldNpcs/' + npc.id), npcToFirebaseData(npc))))
+    .catch(error => console.error('worldNpcs save error:', error));
 }
 
 function listenWorldNpcsFromFirebase() {
@@ -943,6 +957,8 @@ function stopWorldNpcsListener() {
   worldNpcsListenerOff = null;
   worldNpcsListenerStarted = false;
   worldNpcsLoaded = false;
+  worldNpcControllerUid = '';
+  worldNpcControllerUpdatedAt = 0;
   resetNpcsToInitialPositions();
 }
 
@@ -1264,6 +1280,41 @@ function completeQuestReward(questKey = '') {
   updateStatsPanel();
   updateMissionsPanel();
   return true;
+}
+
+const AUTOMATIC_MISSION_REWARD_KEYS = new Set([
+  'chooseCharacter',
+  'placeFiveItems',
+  'useThreeCategories',
+  'setHome',
+  'visitThreeCells',
+  'collectFirstMoney',
+  'usedShop'
+]);
+
+function claimAutomaticMissionRewards(missions, missionDone) {
+  if (!isLoggedIn() || !gameStateFirebaseReady) return;
+  if (!gameState.quests || typeof gameState.quests !== 'object') gameState.quests = {};
+  if (!gameState.quests.missionRewards || typeof gameState.quests.missionRewards !== 'object') {
+    gameState.quests.missionRewards = {};
+  }
+
+  let changed = false;
+  for (const mission of missions) {
+    if (!AUTOMATIC_MISSION_REWARD_KEYS.has(mission.key)) continue;
+    if (!missionDone[mission.key]) continue;
+    if (gameState.quests.missionRewards[mission.key]) continue;
+
+    gameState.quests.missionRewards[mission.key] = true;
+    gameState.money += 5;
+    gameState.levelPoints += 5;
+    changed = true;
+  }
+
+  if (changed) {
+    saveGameState();
+    updateStatsPanel();
+  }
 }
 
 function loadBagItems() {
@@ -1757,19 +1808,6 @@ function disablePlayButtonsIfGuest() {
 }
 
 
-function cleanPlayerName(name, max = 40) {
-  return String(name || '')
-    .replace(/[<>]/g, '')
-    .trim()
-    .slice(0, max);
-}
-
-function clampNumber(value, min, max, fallback = min) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.max(min, Math.min(max, n));
-}
-
 function sanitizeItemForSave(item, cellKey) {
   if (!item || !item.uid || !item.tileId) return null;
 
@@ -1807,7 +1845,7 @@ function nearbyCellKeys(centerKey, radius = CHUNK_RADIUS) {
 }
 
 function subscribeNearbyWorldCells(force = false) {
-  if (!isLoggedIn() || !USE_NEARBY_WORLD_LOADING || !window.db || !window.ref || !window.onValue) return;
+  if (!USE_NEARBY_WORLD_LOADING || !window.db || !window.ref || !window.onValue) return;
   const currentCell = walkMode ? cellFromWorld(player.x, player.y) : cellFromWorld(camX + canvas.clientWidth / zoom / 2, camY + canvas.clientHeight / zoom / 2);
   if (!currentCell) return;
   if (!force && currentCell.key === lastSubscribedCenterCell) return;
@@ -1929,7 +1967,6 @@ function saveWorld() {
 }
 
 function listenWorldFromFirebase() {
-  if (!isLoggedIn()) return;
   if (!window.db || !window.ref || !window.onValue) return;
 
   if (USE_NEARBY_WORLD_LOADING) {
@@ -2555,20 +2592,48 @@ function fixedNpcCollisionRect(npc) {
 }
 
 function drawRandomScenery() {
+  const winterAlpha = getWinterAlpha();
+
   for (const item of randomSceneryTiles) {
     const cell = parseCell(item.cell);
     if (!isSafeFixedCell(cell)) continue;
     const img = getTileImage(item.src);
+    const iceImg = winterAlpha > 0.01 ? getTileImage(iceSrc(item.src)) : null;
+    const hasIce = iceImg && iceImg.complete && iceImg.naturalWidth;
     const x = (cell.col - 1) * CELL + CELL / 2 - item.w / 2;
     const y = (cell.row - 1) * CELL + CELL / 2 - item.h / 2;
     const p = worldToScreen(x, y);
     const w = item.w * zoom;
     const h = item.h * zoom;
     if (p.x + w < -80 || p.y + h < -80 || p.x > canvas.clientWidth + 80 || p.y > canvas.clientHeight + 80) continue;
-    if (img && img.complete && img.naturalWidth) ctx.drawImage(img, p.x, p.y, w, h);
+
+    if (img && img.complete && img.naturalWidth) {
+      ctx.save();
+      ctx.globalAlpha = hasIce ? (1 - winterAlpha) : 1;
+      ctx.drawImage(img, p.x, p.y, w, h);
+      ctx.restore();
+    }
+
+    if (hasIce) {
+      ctx.save();
+      ctx.globalAlpha = winterAlpha;
+      ctx.drawImage(iceImg, p.x, p.y, w, h);
+      ctx.restore();
+    }
   }
 }
 
+
+let fixedEditorMapTilesSortedCache = null;
+
+function getSortedFixedEditorMapTiles() {
+  if (!fixedEditorMapTilesSortedCache) {
+    fixedEditorMapTilesSortedCache = getFixedEditorMapTiles()
+      .slice()
+      .sort((a, b) => Number(a.layer || 1) - Number(b.layer || 1));
+  }
+  return fixedEditorMapTilesSortedCache;
+}
 
 function getFixedEditorMapTiles() {
   return (typeof fixedEditorMapTiles !== 'undefined' && Array.isArray(fixedEditorMapTiles)) ? fixedEditorMapTiles : [];
@@ -2686,12 +2751,12 @@ function editorMapCollisionRect(item) {
 }
 
 function drawFixedEditorMapTiles() {
-  const tiles = getFixedEditorMapTiles();
+  const tiles = getSortedFixedEditorMapTiles();
   if (!tiles.length) return;
 
   const winterAlpha = getWinterAlpha();
 
-  for (const item of tiles.slice().sort((a, b) => Number(a.layer || 1) - Number(b.layer || 1))) {
+  for (const item of tiles) {
     const rect = editorMapItemRect(item);
     if (!rect) continue;
 
@@ -3486,7 +3551,6 @@ function initUI() {
   bind('undoBtn', 'click', undo);
   bind('jumpBtn', 'click', jump);
   bind('walkBtn', 'click', toggleWalk);
-  bind('saveNameBtn', 'click', saveDisplayName);
   bind('saveHouseNameBtn', 'click', saveHouseProfile);
   bind('npcInteractBtn', 'click', () => openNpcInteraction());
   bind('npcCloseBtn', 'click', () => { activeTalkingNpc = null; document.getElementById('npcModal')?.classList.add('hidden'); });
@@ -3517,12 +3581,6 @@ function initUI() {
     button.onclick = () => toggleCategory(button.dataset.category);
   });
 
-  const displayNameInput = document.getElementById('displayNameInput');
-  if (displayNameInput) {
-    displayNameInput.value = displayName;
-    displayNameInput.onchange = saveDisplayName;
-  }
-
   const signupNameInput = document.getElementById('signupDisplayNameInput');
   if (signupNameInput) signupNameInput.value = displayName;
 
@@ -3540,13 +3598,6 @@ function initUI() {
   if (gridInput) {
     gridInput.oninput = event => {
       gridOpacity = Number(event.target.value);
-    };
-  }
-
-  const brushInput = document.getElementById('brushSize');
-  if (brushInput) {
-    brushInput.oninput = event => {
-      brushSize = Number(event.target.value || 1);
     };
   }
 
@@ -3722,13 +3773,11 @@ function setActiveLayer(n) {
 }
 
 function updateAuthUI() {
-  const statusText = document.getElementById('statusText');
   const authState = document.getElementById('authState');
   const openAuthBtn = document.getElementById('openAuthBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const loginHint = document.getElementById('loginHint');
 
-  if (statusText) statusText.textContent = walkMode ? 'وضع التجول' : 'وضع البناء';
   document.body.classList.toggle('loggedIn', isLoggedIn());
 
   if (authState) {
@@ -3746,9 +3795,6 @@ function updateAuthUI() {
   if (openAuthBtn) openAuthBtn.classList.toggle('hidden', isLoggedIn());
   if (logoutBtn) logoutBtn.classList.toggle('hidden', !isLoggedIn());
   if (loginHint) loginHint.classList.toggle('hidden', isLoggedIn());
-
-  const nameInput = document.getElementById('displayNameInput');
-  if (nameInput && nameInput.value !== displayName) nameInput.value = displayName;
 
   updateHomeButton();
   disablePlayButtonsIfGuest();
@@ -3819,20 +3865,18 @@ function updateInfoPanel() {
 }
 
 function getVisitedCells() {
-  try {
-    const saved = JSON.parse(offlineStore.getItem(VISITED_CELLS_KEY) || '[]');
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
+  if (Array.isArray(gameState.visitedCells)) return gameState.visitedCells;
+  gameState.visitedCells = [];
+  return gameState.visitedCells;
 }
 
 function rememberVisitedCell(cellKey) {
-  if (!cellKey) return;
+  if (!cellKey || !isLoggedIn()) return;
   const cells = getVisitedCells();
   if (cells.includes(cellKey)) return;
   cells.push(cellKey);
-  offlineStore.setItem(VISITED_CELLS_KEY, JSON.stringify(cells.slice(-50)));
+  gameState.visitedCells = cells.slice(-50);
+  saveGameState();
 }
 
 function updateMissionsPanel() {
@@ -3864,6 +3908,8 @@ function updateMissionsPanel() {
     ...mission,
     done: !!missionDone[mission.key]
   }));
+
+  claimAutomaticMissionRewards(missions, missionDone);
 
   box.innerHTML = missions.map(mission => `
     <div class="missionItem ${mission.done ? 'done' : ''}">
@@ -4966,7 +5012,7 @@ function jump() {
   const cell = parseCell(input?.value);
 
   if (!cell) {
-    showToast('اكتب خلية صحيحة مثل K90 — علمًا أن حدود الخريطة 100×100');
+    showToast('اكتب خلية صحيحة مثل K10 أو T20 — حدود الخريطة 20×20');
     return;
   }
 
@@ -5020,20 +5066,6 @@ function showSettingsHelp() {
 
 /* ===== Profile / Auth ===== */
 
-function saveDisplayName() {
-  const input = document.getElementById('displayNameInput');
-
-  displayName = cleanPlayerName(input?.value, 20);
-
-  offlineStore.setItem(DISPLAY_NAME_KEY, displayName);
-
-  saveProfileData();
-  savePlayerToFirebase();
-  updateAuthUI();
-
-  showToast('تم حفظ الاسم');
-}
-
 function openSettingsModal() {
   const modal = document.getElementById('settingsModal');
   const input = document.getElementById('settingsNameInput');
@@ -5053,8 +5085,6 @@ function saveSettingsName() {
   const input = document.getElementById('settingsNameInput');
   displayName = cleanPlayerName(input?.value, 20);
   offlineStore.setItem(DISPLAY_NAME_KEY, displayName);
-  const oldInput = document.getElementById('displayNameInput');
-  if (oldInput) oldInput.value = displayName;
   saveProfileData();
   savePlayerToFirebase();
   updateAuthUI();
@@ -5078,11 +5108,7 @@ function linkRealEmail() {
 
   const rememberPendingEmail = () => {
     currentUserEmail = user.email || currentEmail;
-    return saveUsernameMapping(username, currentEmail || usernameToEmail(username), {
-      pendingRealEmail: email,
-      realEmail: email,
-      uid: user.uid
-    }).then(() => {
+    return saveUsernameMapping(username, usernameToEmail(username), { uid: user.uid }).then(() => {
       if (window.db && window.ref && window.update) {
         return window.update(window.ref(window.db, 'profiles/' + user.uid), {
           realEmail: email,
@@ -5095,17 +5121,17 @@ function linkRealEmail() {
 
   const applyDirectUpdate = () => window.updateEmail(user, email).then(() => {
     currentUserEmail = email;
-    return saveUsernameMapping(username, email, { realEmail: email, uid: user.uid });
+    return saveUsernameMapping(username, usernameToEmail(username), { uid: user.uid });
   }).then(() => {
     saveProfileData();
     updateAuthUI();
-    if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي، وتستطيع الدخول باسم المستخدم أو الإيميل';
+    if (msg) msg.textContent = 'تم ربط الإيميل الحقيقي وحفظه في ملفك الشخصي';
   });
 
   const sendVerifyUpdate = () => {
     if (window.verifyBeforeUpdateEmail) {
       return window.verifyBeforeUpdateEmail(user, email).then(rememberPendingEmail).then(() => {
-        if (msg) msg.textContent = 'تم إرسال رابط تأكيد للإيميل. بعد التأكيد تقدر تدخل باسم المستخدم أو الإيميل.';
+        if (msg) msg.textContent = 'تم إرسال رابط تأكيد للإيميل. بعد التأكيد يتم حفظ الإيميل في ملفك الشخصي.';
       });
     }
     if (window.updateEmail) return applyDirectUpdate();
@@ -5131,7 +5157,8 @@ function saveProfileData() {
 
   const user = window.auth.currentUser;
 
-  window.set(window.ref(window.db, 'profiles/' + user.uid), {
+  const writeProfile = window.update || window.set;
+  writeProfile(window.ref(window.db, 'profiles/' + user.uid), {
     uid: user.uid,
     email: user.email || '',
     displayName: cleanPlayerName(displayName, 20) || '',
@@ -5200,14 +5227,18 @@ function showSettingsHelpOnce() {
 
 function saveUsernameMapping(username, email, extra = {}) {
   const clean = cleanUsername(username);
-  const loginEmail = String(email || '').trim().toLowerCase();
-  if (!clean || !loginEmail || !window.db || !window.ref || !window.set) return Promise.resolve();
-  const payload = Object.assign({
+  const loginEmail = usernameToEmail(clean);
+  const uid = String(extra?.uid || currentUser?.uid || window.auth?.currentUser?.uid || '');
+  if (!clean || !loginEmail || !uid || !window.db || !window.ref || !window.set) return Promise.resolve();
+
+  const payload = {
     username: clean,
     loginEmail,
     email: loginEmail,
+    uid,
     updatedAt: Date.now()
-  }, extra || {});
+  };
+
   return window.set(window.ref(window.db, 'usernames/' + clean), payload).catch(console.error);
 }
 
@@ -5230,7 +5261,7 @@ function resolveLoginEmails(usernameOrEmail) {
     const data = snapshot.val();
     if (typeof data === 'string') return uniqueEmails([data, fallback]);
     if (data && typeof data === 'object') {
-      return uniqueEmails([data.realEmail, data.pendingRealEmail, data.loginEmail, data.email, fallback]);
+      return uniqueEmails([data.loginEmail, data.email, fallback]);
     }
     return [fallback];
   }).catch(() => [fallback]);
@@ -5255,8 +5286,8 @@ function signup() {
   offlineStore.setItem(DISPLAY_NAME_KEY, displayName);
   offlineStore.setItem(LAST_EMAIL_KEY, username);
 
-  window.createUserWithEmailAndPassword(window.auth, email, pass).then(() => {
-    saveUsernameMapping(username, email);
+  window.createUserWithEmailAndPassword(window.auth, email, pass).then(credential => {
+    saveUsernameMapping(username, email, { uid: credential?.user?.uid || window.auth.currentUser?.uid });
     showAuthMessage('تم إنشاء الحساب');
     closeAuthModal();
     saveProfileData();
@@ -5292,8 +5323,7 @@ function login() {
 
   resolveLoginEmails(rawLogin).then(tryEmails).then(() => {
     if (!rawLogin.includes('@')) {
-      const actualEmail = String(window.auth.currentUser?.email || '').toLowerCase();
-      if (actualEmail && !actualEmail.endsWith('@gamenjd.local')) saveUsernameMapping(username, actualEmail, { realEmail: actualEmail, uid: window.auth.currentUser.uid });
+      saveUsernameMapping(username, usernameToEmail(username), { uid: window.auth.currentUser.uid });
     }
     showAuthMessage('تم تسجيل الدخول');
     closeAuthModal();
@@ -5653,6 +5683,8 @@ function waitFirebaseReady() {
       listenWorldNpcsFromFirebase();
     } else {
       if (walkMode) toggleWalk();
+      listenHouseData();
+      listenWorldFromFirebase();
       listenWorldNpcsFromFirebase();
     }
 
