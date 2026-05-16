@@ -18,7 +18,20 @@ const fixedGroundTiles = [];
 
 const fixedAnimalTiles = [];
 
-const randomSceneryTiles = [];
+const randomSceneryTiles = [
+  {
+    "cell": "E9",
+    "src": "All-Pic/npc/q45.png",
+    "w": 70,
+    "h": 70
+  },
+  {
+    "cell": "J8",
+    "src": "All-Pic/npc/q47.png",
+    "w": 70,
+    "h": 70
+  }
+];
 
 const fixedEditorMapHitboxes = {
   "picsmap_map-101": {
