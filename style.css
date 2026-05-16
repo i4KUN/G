@@ -147,14 +147,6 @@ body.loaded #loadingScreen {
   flex: 0 0 auto;
 }
 
-#statusText {
-  color: #93c5fd;
-  font-size: 14px;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .topControls {
   display: flex;
   align-items: center;
@@ -962,11 +954,6 @@ body.walking .worldWrap {
     height: 36px;
   }
 
-  #statusText {
-    font-size: 12px;
-    max-width: 86px;
-  }
-
   .topControls {
     gap: 5px;
   }
@@ -1100,10 +1087,6 @@ body.walking .worldWrap {
   .topLogo {
     width: 34px;
     height: 34px;
-  }
-
-  #statusText {
-    max-width: 70px;
   }
 
   .authMainBtn {
