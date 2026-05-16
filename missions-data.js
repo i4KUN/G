@@ -143,7 +143,6 @@ const NPC_STARTS = {
     "P13"
   ],
   "palm": [
-    "O16",
     "O16"
   ]
 };
@@ -292,31 +291,31 @@ const MISSION_DEFINITIONS = [
   {
     "key": "chooseCharacter",
     "text": "اختر شخصية",
-    "money": 0,
+    "money": 5,
     "points": 5
   },
   {
     "key": "placeFiveItems",
     "text": "ضع 5 عناصر في عالمك",
-    "money": 1,
+    "money": 5,
     "points": 5
   },
   {
     "key": "useThreeCategories",
     "text": "استخدم 3 أقسام مختلفة",
-    "money": 2,
-    "points": 10
+    "money": 5,
+    "points": 5
   },
   {
     "key": "setHome",
     "text": "حدد منزلك",
-    "money": 1,
+    "money": 5,
     "points": 5
   },
   {
     "key": "visitThreeCells",
     "text": "زر 3 خلايا مختلفة",
-    "money": 1,
+    "money": 5,
     "points": 5
   },
   {
@@ -358,13 +357,13 @@ const MISSION_DEFINITIONS = [
   {
     "key": "collectFirstMoney",
     "text": "اجمع أول ريال من الخريطة",
-    "money": 0,
+    "money": 5,
     "points": 5
   },
   {
     "key": "usedShop",
     "text": "تحدث مع صاحب البقالة أو الصيدلي",
-    "money": 0,
+    "money": 5,
     "points": 5
   }
 ];
